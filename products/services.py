@@ -22,10 +22,12 @@ def create_brand(name: str, slug: str = "", **kwargs) -> Brand:
 
 def increment_product_views(product: Product) -> None:
     """
-    Atomically increments the view count for a product without race conditions.
+    Atomically increments the view count for a product in the database without race conditions,
+    and updates the in-memory instance without clearing prefetched relations (such as images).
     """
     Product.objects.filter(pk=product.pk).update(view_count=F("view_count") + 1)
-    product.refresh_from_db(fields=["view_count"])
+    product.view_count += 1
+
 
 
 def mark_product_featured(product: Product, featured: bool = True) -> Product:

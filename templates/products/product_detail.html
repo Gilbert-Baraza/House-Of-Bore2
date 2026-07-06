@@ -1,143 +1,479 @@
 {% extends "base.html" %}
 {% comment %}
   templates/products/product_detail.html
-  PRODUCT DETAIL PAGE (Placeholder)
+  PRODUCT DETAIL EXPERIENCE
   ─────────────────────────────────────────────────────────────────────────────
-  Temporary product detail view. Will be expanded in Phase 2.4 with full
-  image gallery, tabbed content, related products, and add-to-cart.
+  Production-quality product detail showcase for House of Bore.
+  Features responsive gallery, structured product metadata, specifications,
+  merchandising badges, customer assurance panels, and related items.
   ─────────────────────────────────────────────────────────────────────────────
 {% endcomment %}
 
-{% block title %}{{ product.meta_title|default:product.name }}{% endblock %}
+{% block title %}{{ product.meta_title|default:product.name }} — House of Bore{% endblock %}
+
 {% block meta_description %}
 <meta name="description" content="{{ product.meta_description|default:product.short_description }}">
 {% endblock meta_description %}
+
 {% block og_title %}
 <meta property="og:title" content="{{ product.meta_title|default:product.name }} — House of Bore">
 {% endblock og_title %}
+
 {% block og_description %}
 <meta property="og:description" content="{{ product.meta_description|default:product.short_description }}">
 {% endblock og_description %}
+
+{% block extra_head %}
+{# ── Canonical URL Placeholder ───────────────────────────────────────────── #}
+<link rel="canonical" href="{{ request.scheme }}://{{ request.get_host }}{{ product.get_absolute_url }}">
+
+{# ── Structured Data Placeholder (JSON-LD for Schema.org Product) ────────── #}
+{# TODO (Phase 3+): Implement dynamic JSON-LD schema for Product, Offers, Brand, and AggregateRating #}
+<!--
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org/",
+  "@type": "Product",
+  "name": "{{ product.name }}",
+  "image": [
+    {% for img in product.images.all %}"{{ request.scheme }}://{{ request.get_host }}{{ img.image.url }}"{% if not forloop.last %}, {% endif %}{% endfor %}
+  ],
+  "description": "{{ product.description|escapejs }}",
+  "sku": "HOB-{{ product.category.slug|slice:':3'|upper }}-{{ product.pk|stringformat:'04d' }}",
+  "brand": {
+    "@type": "Brand",
+    "name": "{{ product.brand.name|default:'House of Bore Atelier' }}"
+  },
+  "offers": {
+    "@type": "Offer",
+    "url": "{{ request.scheme }}://{{ request.get_host }}{{ product.get_absolute_url }}",
+    "priceCurrency": "USD",
+    "price": "{{ product.price }}",
+    "itemCondition": "https://schema.org/NewCondition",
+    "availability": "https://schema.org/{% if product.in_stock %}InStock{% else %}OutOfStock{% endif %}"
+  }
+}
+</script>
+-->
+{% endblock extra_head %}
 
 {% block content %}
 
   {# ── Breadcrumbs ───────────────────────────────────────────────────────── #}
   {% include "components/breadcrumbs.html" with breadcrumbs=breadcrumbs %}
 
-  {# ── Product Detail ────────────────────────────────────────────────────── #}
-  <section class="py-12 lg:py-20" aria-labelledby="product-heading">
+  {# ── Product Showcase Area ─────────────────────────────────────────────── #}
+  <section class="py-8 sm:py-12 lg:py-16" aria-labelledby="product-heading">
     <div class="container-site">
 
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 xl:gap-16 items-start">
 
-        {# ── Image Column ──────────────────────────────────────────────── #}
-        <div class="aspect-[3/4] bg-neutral-100 rounded-card overflow-hidden">
-          {% with primary=product.get_primary_image %}
-            {% if primary and primary.image %}
-              <img src="{{ primary.image.url }}"
-                   alt="{{ primary.alt_text|default:product.name }}"
-                   class="w-full h-full object-cover"
-                   width="600" height="800">
-            {% else %}
-              <div class="w-full h-full flex items-center justify-center">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                     stroke-width="0.5" stroke="currentColor"
-                     class="w-24 h-24 text-neutral-300"
-                     role="img" aria-label="{{ product.name }} placeholder image">
-                  <path stroke-linecap="round" stroke-linejoin="round"
-                        d="M15.75 10.5V6a3.75 3.75 0 1 0-7.5 0v4.5m11.356-1.993 1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 0 1-1.12-1.243l1.264-12A1.125 1.125 0 0 1 5.513 7.5h12.974c.576 0 1.059.435 1.119 1.007ZM8.625 10.5a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm7.5 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z"/>
-                </svg>
-              </div>
-            {% endif %}
-          {% endwith %}
+        {# ── Product Gallery (Left Column, 7 Spans) ────────────────────── #}
+        <div class="lg:col-span-7 flex flex-col gap-4">
+          
+          {# Primary Image Display #}
+          <div class="relative aspect-[3/4] bg-neutral-100 rounded-card overflow-hidden border border-neutral-200 shadow-sm group"
+               id="main-image-container"
+               role="region"
+               aria-label="Product primary gallery view">
+            {% with primary=product.get_primary_image %}
+              {% if primary and primary.image %}
+                <img id="main-image-preview"
+                     src="{{ primary.image.url }}"
+                     alt="{{ primary.alt_text|default:product.name }}"
+                     class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                     width="800" height="1067"
+                     loading="eager">
+              {% else %}
+                {# Image Placeholder #}
+                <div class="w-full h-full flex flex-col items-center justify-center bg-gradient-to-b from-neutral-50 to-neutral-100 text-neutral-400 p-8 text-center"
+                     id="main-image-placeholder">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                       stroke-width="0.75" stroke="currentColor"
+                       class="w-24 h-24 sm:w-32 sm:h-32 mb-4 text-neutral-300"
+                       role="img" aria-label="{{ product.name }} placeholder image">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                          d="M15.75 10.5V6a3.75 3.75 0 1 0-7.5 0v4.5m11.356-1.993 1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 0 1-1.12-1.243l1.264-12A1.125 1.125 0 0 1 5.513 7.5h12.974c.576 0 1.059.435 1.119 1.007ZM8.625 10.5a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm7.5 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z"/>
+                  </svg>
+                  <span class="text-xs font-semibold uppercase tracking-widest text-neutral-400">No Atelier Imagery Available</span>
+                </div>
+              {% endif %}
+            {% endwith %}
+
+            {# Badges Overlay #}
+            <div class="absolute top-4 left-4 flex flex-col gap-2 z-10 pointer-events-none">
+              {% if product.is_on_sale %}
+                <span class="inline-flex items-center px-3 py-1.5 text-xs font-bold uppercase tracking-wider bg-red-600 text-white rounded-btn shadow-sm">
+                  -{{ product.discount_percentage }}% Off
+                </span>
+              {% endif %}
+              {% if product.is_featured %}
+                <span class="inline-flex items-center px-3 py-1.5 text-xs font-bold uppercase tracking-wider bg-primary-900 text-secondary-50 rounded-btn shadow-sm">
+                  Featured
+                </span>
+              {% endif %}
+              {% if product.is_new_arrival %}
+                <span class="inline-flex items-center px-3 py-1.5 text-xs font-bold uppercase tracking-wider bg-accent-600 text-white rounded-btn shadow-sm">
+                  New Arrival
+                </span>
+              {% endif %}
+            </div>
+
+            {# Stock Badge Overlay (Top Right) #}
+            <div class="absolute top-4 right-4 z-10 pointer-events-none">
+              {% if product.in_stock %}
+                {% if product.low_stock %}
+                  <span class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold uppercase tracking-wider bg-amber-500 text-white rounded-btn shadow-sm">
+                    <span class="w-2 h-2 rounded-full bg-white animate-pulse"></span>
+                    Low Stock &mdash; Only {{ product.stock_quantity }} Left
+                  </span>
+                {% else %}
+                  <span class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold uppercase tracking-wider bg-green-700 text-white rounded-btn shadow-sm">
+                    <span class="w-2 h-2 rounded-full bg-white"></span>
+                    In Stock
+                  </span>
+                {% endif %}
+              {% else %}
+                <span class="inline-flex items-center px-3 py-1.5 text-xs font-bold uppercase tracking-wider bg-neutral-800 text-neutral-200 rounded-btn shadow-sm">
+                  Sold Out
+                </span>
+              {% endif %}
+            </div>
+          </div>
+
+          {# Thumbnail Gallery #}
+          {% if product.images.all|length > 1 %}
+            <div class="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-3"
+                 role="group"
+                 aria-label="Product thumbnail gallery">
+              {% for img in product.images.all %}
+                <button type="button"
+                        class="relative aspect-square rounded-btn overflow-hidden bg-neutral-100 border-2 {% if img.is_primary %}border-primary-900 ring-2 ring-primary-900/20{% else %}border-transparent hover:border-neutral-300{% endif %} transition-all focus:outline-none focus:ring-2 focus:ring-accent-500"
+                        aria-label="View thumbnail {{ forloop.counter }} of {{ product.images.all|length }}"
+                        data-image-url="{{ img.image.url }}"
+                        data-alt-text="{{ img.alt_text|default:product.name }}">
+                  <img src="{{ img.image.url }}"
+                       alt="{{ img.alt_text|default:product.name }}"
+                       class="w-full h-full object-cover"
+                       loading="lazy"
+                       width="150" height="150">
+                </button>
+              {% endfor %}
+            </div>
+          {% elif not product.images.all %}
+            {# Placeholder Thumbnails when zero images exist #}
+            <div class="grid grid-cols-4 sm:grid-cols-5 gap-3 opacity-40" aria-hidden="true">
+              {% for i in "1234" %}
+                <div class="aspect-square rounded-btn bg-neutral-100 border border-neutral-200 flex items-center justify-center text-neutral-300">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1" stroke="currentColor" class="w-6 h-6">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z"/>
+                  </svg>
+                </div>
+              {% endfor %}
+            </div>
+          {% endif %}
+
         </div>
 
-        {# ── Product Info Column ───────────────────────────────────────── #}
-        <div class="flex flex-col justify-center">
+        {# ── Product Information & Buy Box (Right Column, 5 Spans) ─────── #}
+        <div class="lg:col-span-5 flex flex-col justify-start">
 
-          {# Brand #}
+          {# Brand Subtitle #}
           {% if product.brand %}
-            <p class="text-xs font-semibold uppercase tracking-widest text-neutral-400 mb-2">
+            <p class="text-xs font-bold uppercase tracking-widest text-accent-700 mb-2">
               <a href="{% url 'products:brand_detail' product.brand.slug %}"
-                 class="hover:text-primary-900 transition-colors relative z-10">
+                 class="hover:text-primary-900 transition-colors">
                 {{ product.brand.name }}
               </a>
             </p>
+          {% else %}
+            <p class="text-xs font-bold uppercase tracking-widest text-neutral-400 mb-2">
+              House of Bore Atelier
+            </p>
           {% endif %}
 
-          {# Title #}
-          <h1 id="product-heading" class="font-serif text-3xl sm:text-4xl font-bold text-primary-900 mb-4 tracking-tight">
+          {# Product Title #}
+          <h1 id="product-heading" class="font-serif text-3xl sm:text-4xl font-bold text-primary-900 mb-4 tracking-tight leading-tight">
             {{ product.name }}
           </h1>
 
-          {# Price #}
-          <div class="flex items-baseline gap-3 mb-6">
+          {# Price & Discount Display #}
+          <div class="flex items-baseline gap-3 mb-6 pb-6 border-b border-neutral-200">
             {% if product.is_on_sale %}
-              <span class="text-2xl font-bold text-red-600 tabular-nums">${{ product.price }}</span>
-              <del class="text-lg text-neutral-400 tabular-nums">${{ product.compare_at_price }}</del>
-              <span class="badge badge-accent">-{{ product.discount_percentage }}% Off</span>
+              <span class="text-3xl font-bold text-red-600 tabular-nums">${{ product.price }}</span>
+              <del class="text-xl text-neutral-400 tabular-nums">${{ product.compare_at_price }}</del>
+              <span class="text-xs font-bold uppercase tracking-wider text-red-600 bg-red-50 px-2.5 py-1 rounded-btn border border-red-100">
+                Save ${{ product.compare_at_price|add:"-"|add:product.price }}
+              </span>
             {% else %}
-              <span class="text-2xl font-bold text-primary-900 tabular-nums">${{ product.price }}</span>
-            {% endif %}
-          </div>
-
-          {# Badges #}
-          <div class="flex flex-wrap gap-2 mb-6">
-            {% if product.is_featured %}
-              <span class="inline-flex items-center px-3 py-1 text-xs font-bold uppercase tracking-wider
-                           bg-accent-100 text-accent-700 rounded-btn">Featured</span>
-            {% endif %}
-            {% if product.is_new_arrival %}
-              <span class="inline-flex items-center px-3 py-1 text-xs font-bold uppercase tracking-wider
-                           bg-primary-100 text-primary-800 rounded-btn">New Arrival</span>
-            {% endif %}
-            {% if product.in_stock %}
-              {% if product.low_stock %}
-                <span class="inline-flex items-center px-3 py-1 text-xs font-bold uppercase tracking-wider
-                             bg-amber-100 text-amber-700 rounded-btn">Low Stock — {{ product.stock_quantity }} Left</span>
-              {% else %}
-                <span class="inline-flex items-center px-3 py-1 text-xs font-bold uppercase tracking-wider
-                             bg-green-100 text-green-700 rounded-btn">In Stock</span>
-              {% endif %}
-            {% else %}
-              <span class="inline-flex items-center px-3 py-1 text-xs font-bold uppercase tracking-wider
-                           bg-neutral-200 text-neutral-600 rounded-btn">Out of Stock</span>
+              <span class="text-3xl font-bold text-primary-900 tabular-nums">${{ product.price }}</span>
             {% endif %}
           </div>
 
           {# Short Description #}
-          <p class="text-base text-neutral-600 leading-relaxed mb-6">
-            {{ product.short_description }}
-          </p>
-
-          {# Full Description #}
-          <div class="prose prose-sm prose-neutral max-w-none mb-8">
-            <p>{{ product.description }}</p>
+          <div class="text-base text-neutral-600 leading-relaxed mb-8">
+            <p>{{ product.short_description }}</p>
           </div>
 
-          {# Category Link #}
-          {% if product.category %}
-            <div class="pt-6 border-t border-neutral-200">
-              <p class="text-xs text-neutral-500">
-                Category:
-                <a href="{% url 'products:category_detail' product.category.slug %}"
-                   class="font-semibold text-primary-900 hover:text-accent-600 transition-colors">
-                  {{ product.category.name }}
-                </a>
-              </p>
+          {# ── Quantity Selector UI ────────────────────────────────────── #}
+          <div class="mb-6">
+            <label for="quantity-input" class="block text-xs font-bold uppercase tracking-wider text-neutral-700 mb-2">
+              Select Quantity
+            </label>
+            <div class="inline-flex items-center border border-neutral-300 rounded-btn bg-white shadow-sm overflow-hidden">
+              <button type="button"
+                      class="w-11 h-11 flex items-center justify-center text-neutral-400 bg-neutral-50 border-r border-neutral-200 cursor-not-allowed transition-colors focus:outline-none"
+                      aria-label="Decrease quantity (disabled in catalog preview)"
+                      disabled>
+                <span class="text-lg font-bold">&minus;</span>
+              </button>
+              <input type="number"
+                     id="quantity-input"
+                     name="quantity"
+                     value="1"
+                     min="1"
+                     max="{{ product.stock_quantity|default:10 }}"
+                     class="w-14 h-11 text-center font-bold text-primary-900 bg-white border-0 focus:outline-none cursor-default tabular-nums"
+                     readonly
+                     aria-label="Quantity (1)">
+              <button type="button"
+                      class="w-11 h-11 flex items-center justify-center text-neutral-400 bg-neutral-50 border-l border-neutral-200 cursor-not-allowed transition-colors focus:outline-none"
+                      aria-label="Increase quantity (disabled in catalog preview)"
+                      disabled>
+                <span class="text-lg font-bold">&plus;</span>
+              </button>
             </div>
-          {% endif %}
+          </div>
 
-          {# Phase Notice #}
-          <div class="mt-8 p-4 rounded-card bg-secondary-100/80 border border-neutral-200">
-            <p class="text-xs text-neutral-500">
-              <span class="font-semibold text-primary-900">Phase 2.3 Preview</span> —
-              Full product detail experience with image gallery, size selection, and add-to-cart will arrive in Phase 2.4.
+          {# ── Add to Cart & Wishlist Section ──────────────────────────── #}
+          <div class="flex flex-col sm:flex-row items-stretch gap-3 mb-8">
+            <button type="button"
+                    disabled
+                    class="flex-1 inline-flex items-center justify-center gap-2.5 px-8 py-4 rounded-btn
+                           font-bold text-sm tracking-widest uppercase transition-all shadow-sm
+                           {% if product.in_stock %}bg-primary-900 text-white opacity-85 cursor-not-allowed{% else %}bg-neutral-200 text-neutral-500 cursor-not-allowed{% endif %}"
+                    aria-disabled="true"
+                    title="Purchasing functionality will be implemented in Phase 3">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor" class="w-5 h-5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5V6a3.75 3.75 0 1 0-7.5 0v4.5m11.356-1.993 1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 0 1-1.12-1.243l1.264-12A1.125 1.125 0 0 1 5.513 7.5h12.974c.576 0 1.059.435 1.119 1.007ZM8.625 10.5a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm7.5 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z"/>
+              </svg>
+              <span>{% if product.in_stock %}Add to Bag &mdash; Phase 3 Preview{% else %}Currently Sold Out{% endif %}</span>
+            </button>
+            <button type="button"
+                    disabled
+                    class="px-5 py-4 inline-flex items-center justify-center border border-neutral-300 rounded-btn text-neutral-400 bg-white hover:bg-neutral-50 transition-colors shadow-sm cursor-not-allowed opacity-80"
+                    aria-label="Add to Wishlist (Coming Soon)"
+                    title="Wishlist feature arriving in future phase">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor" class="w-6 h-6">
+                <path stroke-linecap="round" stroke-linejoin="round" d="21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z"/>
+              </svg>
+            </button>
+          </div>
+
+          {# ── Customer Assurance Badges ───────────────────────────────── #}
+          <div class="grid grid-cols-2 gap-3 py-6 border-t border-b border-neutral-200 mb-8"
+               aria-label="Customer assurance guarantees">
+            <div class="flex items-center gap-3 p-3 rounded-card bg-neutral-50 border border-neutral-100">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-accent-700 shrink-0" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z"/>
+              </svg>
+              <div>
+                <h4 class="text-xs font-bold text-primary-900 uppercase tracking-wider">Secure Payments</h4>
+                <p class="text-[11px] text-neutral-500">256-bit SSL encryption</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-3 p-3 rounded-card bg-neutral-50 border border-neutral-100">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-accent-700 shrink-0" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M11.48 3.499a.562.562 0 0 1 1.04 0l2.125 5.111a.563.563 0 0 0 .475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 0 0-.182.557l1.285 5.385a.562.562 0 0 1-.84.61l-4.725-2.885a.562.562 0 0 0-.586 0L6.982 20.54a.562.562 0 0 1-.84-.61l1.285-5.386a.562.562 0 0 0-.182-.557l-4.204-3.602a.562.562 0 0 1 .321-.988l5.518-.442a.563.563 0 0 0 .475-.345L11.48 3.5Z"/>
+              </svg>
+              <div>
+                <h4 class="text-xs font-bold text-primary-900 uppercase tracking-wider">Quality Guarantee</h4>
+                <p class="text-[11px] text-neutral-500">100% inspected craftsmanship</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-3 p-3 rounded-card bg-neutral-50 border border-neutral-100">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-accent-700 shrink-0" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 0 1-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 0 0-3.213-9.193 2.056 2.056 0 0 0-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 0 0-10.026 0 1.106 1.106 0 0 0-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12"/>
+              </svg>
+              <div>
+                <h4 class="text-xs font-bold text-primary-900 uppercase tracking-wider">Fast Delivery</h4>
+                <p class="text-[11px] text-neutral-500">Express shipping available</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-3 p-3 rounded-card bg-neutral-50 border border-neutral-100">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-accent-700 shrink-0" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m.94 3.198.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0 1 12 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 0 1 6 18.719m12 0a5.971 5.971 0 0 0-.941-3.197m0 0A5.995 5.995 0 0 0 12 12.75a5.995 5.995 0 0 0-5.058 2.772m0 0a3 3 0 0 0-4.681 2.72 8.986 8.986 0 0 0 3.74.477m.94-3.197a5.971 5.971 0 0 0-.94 3.197M15 6.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm-13.5 0a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z"/>
+              </svg>
+              <div>
+                <h4 class="text-xs font-bold text-primary-900 uppercase tracking-wider">Client Concierge</h4>
+                <p class="text-[11px] text-neutral-500">Dedicated styling support</p>
+              </div>
+            </div>
+          </div>
+
+          {# ── Shipping Information Panel ──────────────────────────────── #}
+          <div class="bg-neutral-50 rounded-card p-5 border border-neutral-200 shadow-sm"
+               aria-label="Shipping and delivery terms">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-primary-900 mb-3 flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor" class="w-4 h-4 text-accent-700" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z"/>
+              </svg>
+              <span>Shipping &amp; Returns Policy</span>
+            </h3>
+            <ul class="space-y-2 text-xs text-neutral-600">
+              <li class="flex items-start gap-2">
+                <span class="text-accent-700 font-bold">&check;</span>
+                <span><strong>Complimentary Shipping</strong> on all domestic lifestyle orders over $250.00.</span>
+              </li>
+              <li class="flex items-start gap-2">
+                <span class="text-accent-700 font-bold">&check;</span>
+                <span><strong>Estimated Delivery:</strong> 3&ndash;5 business days via insured express courier.</span>
+              </li>
+              <li class="flex items-start gap-2">
+                <span class="text-accent-700 font-bold">&check;</span>
+                <span><strong>Easy 30-Day Returns:</strong> Hassle-free returns and exchanges in original atelier condition.</span>
+              </li>
+            </ul>
+          </div>
+
+        </div>
+
+      </div>
+
+      {# ── Product Description & Specifications (Stacked / Multi-col) ────── #}
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 mt-16 sm:mt-20 pt-16 border-t border-neutral-200">
+        
+        {# Full Description (7 Spans) #}
+        <div class="lg:col-span-7">
+          <h2 class="font-serif text-2xl sm:text-3xl font-bold text-primary-900 mb-6">
+            Craftsmanship &amp; Details
+          </h2>
+          <div class="prose prose-neutral max-w-none text-neutral-600 leading-relaxed space-y-4">
+            <p>{{ product.description }}</p>
+            <p>
+              Designed with meticulous attention to detail and crafted from exceptional materials, this piece represents
+              the pinnacle of modern luxury tailoring. Every stitch and contour is engineered to provide timeless elegance
+              and enduring comfort, seamlessly transitioning from sophisticated daytime pursuits to elevated evening occasions.
+            </p>
+            <p>
+              The House of Bore design philosophy embraces minimalism without sacrificing character, ensuring that this garment
+              becomes an essential anchor in your curated wardrobe for seasons to come.
             </p>
           </div>
         </div>
 
+        {# Specifications Table (5 Spans) #}
+        <div class="lg:col-span-5">
+          <h2 class="font-serif text-2xl sm:text-3xl font-bold text-primary-900 mb-6">
+            Product Specifications
+          </h2>
+          <div class="bg-white rounded-card border border-neutral-200 overflow-hidden shadow-sm">
+            <table class="w-full text-left text-sm" aria-label="Product technical specifications">
+              <tbody class="divide-y divide-neutral-200">
+                <tr class="bg-neutral-50/50">
+                  <th scope="row" class="py-3.5 px-4 font-semibold text-neutral-700 w-2/5">SKU</th>
+                  <td class="py-3.5 px-4 text-neutral-600 font-mono text-xs">HOB-{{ product.category.slug|slice:":3"|upper }}-{{ product.pk|stringformat:"04d" }}</td>
+                </tr>
+                <tr>
+                  <th scope="row" class="py-3.5 px-4 font-semibold text-neutral-700">Category</th>
+                  <td class="py-3.5 px-4 text-neutral-600">
+                    {% if product.category %}
+                      <a href="{% url 'products:category_detail' product.category.slug %}" class="font-medium text-primary-900 hover:underline">
+                        {{ product.category.name }}
+                      </a>
+                    {% else %}
+                      General Collection
+                    {% endif %}
+                  </td>
+                </tr>
+                <tr class="bg-neutral-50/50">
+                  <th scope="row" class="py-3.5 px-4 font-semibold text-neutral-700">Atelier Brand</th>
+                  <td class="py-3.5 px-4 text-neutral-600">
+                    {% if product.brand %}
+                      <a href="{% url 'products:brand_detail' product.brand.slug %}" class="font-medium text-primary-900 hover:underline">
+                        {{ product.brand.name }}
+                      </a>
+                    {% else %}
+                      House of Bore
+                    {% endif %}
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row" class="py-3.5 px-4 font-semibold text-neutral-700">Material Composition</th>
+                  <td class="py-3.5 px-4 text-neutral-600">100% Curated Premium Fiber (Placeholder)</td>
+                </tr>
+                <tr class="bg-neutral-50/50">
+                  <th scope="row" class="py-3.5 px-4 font-semibold text-neutral-700">Care Instructions</th>
+                  <td class="py-3.5 px-4 text-neutral-600">Professional dry clean only. Cool iron if necessary.</td>
+                </tr>
+                <tr>
+                  <th scope="row" class="py-3.5 px-4 font-semibold text-neutral-700">Country of Origin</th>
+                  <td class="py-3.5 px-4 text-neutral-600">Imported / Tailored Atelier</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
       </div>
+
+      {# ── Related Products Section ──────────────────────────────────────── #}
+      {% if related_products %}
+      <section class="mt-20 sm:mt-24 pt-16 border-t border-neutral-200" aria-labelledby="related-heading">
+        <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8 sm:mb-10">
+          <div>
+            <h2 id="related-heading" class="font-serif text-2xl sm:text-3xl font-bold text-primary-900">
+              You May Also Like
+            </h2>
+            <p class="text-sm text-neutral-500 mt-1">
+              Curated selections from our {{ product.category.name|default:"lifestyle" }} collection
+            </p>
+          </div>
+          {% if product.category %}
+            <a href="{% url 'products:category_detail' product.category.slug %}"
+               class="inline-flex items-center gap-1.5 text-sm font-bold text-primary-900 hover:text-accent-700 transition-colors shrink-0">
+              <span>View Full Collection</span>
+              <span aria-hidden="true">&rarr;</span>
+            </a>
+          {% endif %}
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {% for rel_product in related_products %}
+            {% include "components/product_card.html" with product=rel_product %}
+          {% endfor %}
+        </div>
+      </section>
+      {% endif %}
+
+      {# ── Recently Viewed Products (UI Placeholder Section) ─────────────── #}
+      <section class="mt-20 sm:mt-24 pt-16 border-t border-neutral-200" aria-labelledby="recently-viewed-heading">
+        <div class="mb-8 sm:mb-10">
+          <h2 id="recently-viewed-heading" class="font-serif text-2xl sm:text-3xl font-bold text-primary-900">
+            Recently Viewed
+          </h2>
+          <p class="text-sm text-neutral-500 mt-1">
+            Your personal browsing history across the House of Bore catalog
+          </p>
+        </div>
+        
+        {# Placeholder Cards for Recently Viewed #}
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
+             aria-label="Recently viewed products list">
+          {% for i in "1234" %}
+            <article class="card flex flex-col h-full bg-white border border-neutral-200 rounded-card p-4 opacity-60 hover:opacity-100 transition-opacity">
+              <div class="aspect-[3/4] bg-neutral-100 rounded-btn mb-3 flex flex-col items-center justify-center text-neutral-400">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1" stroke="currentColor" class="w-10 h-10 mb-1 text-neutral-300">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/>
+                </svg>
+                <span class="text-[10px] font-bold uppercase tracking-wider text-neutral-400">Browsing History</span>
+              </div>
+              <p class="text-[10px] font-bold uppercase tracking-widest text-neutral-400 mb-1">House of Bore</p>
+              <h3 class="font-serif text-sm font-semibold text-primary-900 mb-1 truncate">Curated Lifestyle Piece #{{ forloop.counter }}</h3>
+              <p class="text-xs text-neutral-500 font-medium tabular-nums">$000.00</p>
+            </article>
+          {% endfor %}
+        </div>
+      </section>
 
     </div>
   </section>

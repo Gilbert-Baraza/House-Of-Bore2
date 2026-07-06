@@ -30,6 +30,7 @@ from products.selectors import (
     get_product_by_slug,
     get_products_by_brand,
     get_products_by_category,
+    get_related_products,
     get_root_categories,
 )
 from products.services import increment_product_views, mark_product_featured
@@ -428,6 +429,40 @@ class ProductSelectorTests(TestCase):
         self.assertIn(low, get_low_stock_products())
         self.assertNotIn(self.product, get_low_stock_products())
 
+    def test_get_related_products(self):
+        rel1 = Product.objects.create(
+            name="Related 1",
+            slug="rel-1",
+            short_description="S",
+            description="D",
+            category=self.category,
+            price=Decimal("100.00"),
+            is_active=True
+        )
+        rel2 = Product.objects.create(
+            name="Related 2",
+            slug="rel-2",
+            short_description="S",
+            description="D",
+            category=self.category,
+            price=Decimal("200.00"),
+            is_active=True
+        )
+        inactive_rel = Product.objects.create(
+            name="Inactive Related",
+            slug="inactive-rel",
+            short_description="S",
+            description="D",
+            category=self.category,
+            price=Decimal("300.00"),
+            is_active=False
+        )
+        related = get_related_products(self.product, limit=4)
+        self.assertIn(rel1, related)
+        self.assertIn(rel2, related)
+        self.assertNotIn(self.product, related)
+        self.assertNotIn(inactive_rel, related)
+
 
 # ─── Sorting Tests ────────────────────────────────────────────────────────────
 
@@ -646,6 +681,35 @@ class ProductDetailViewTests(TestCase):
         breadcrumbs = response.context["breadcrumbs"]
         self.assertEqual(breadcrumbs[-1]["label"], "Chelsea Boots")
         self.assertIsNone(breadcrumbs[-1]["url"])
+
+    def test_product_detail_returns_404_for_inactive_product(self):
+        inactive = Product.objects.create(
+            name="Inactive Boot",
+            slug="inactive-boot",
+            short_description="S",
+            description="D",
+            category=self.category,
+            price=Decimal("300.00"),
+            is_active=False
+        )
+        response = self.client.get(reverse("products:product_detail", kwargs={"slug": "inactive-boot"}))
+        self.assertEqual(response.status_code, 404)
+
+    def test_product_detail_increments_view_count(self):
+        initial_count = self.product.view_count
+        self.client.get(reverse("products:product_detail", kwargs={"slug": "chelsea-boots"}))
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.view_count, initial_count + 1)
+
+    def test_product_detail_renders_new_sections(self):
+        response = self.client.get(reverse("products:product_detail", kwargs={"slug": "chelsea-boots"}))
+        self.assertContains(response, "Product Specifications")
+        self.assertContains(response, "Select Quantity")
+        self.assertContains(response, "Secure Payments")
+        self.assertContains(response, "Shipping &amp; Returns Policy")
+        self.assertContains(response, "Recently Viewed")
+        self.assertContains(response, "Add to Bag &mdash; Phase 3 Preview")
+
 
 
 class CategoryListViewTests(TestCase):

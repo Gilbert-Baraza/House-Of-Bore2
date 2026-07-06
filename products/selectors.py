@@ -164,6 +164,23 @@ def get_product_by_slug(slug: str) -> Product:
     )
 
 
+def get_related_products(product: Product, limit: int = 4) -> QuerySet[Product]:
+    """
+    Returns active products belonging to the same category or its descendants,
+    excluding the given product itself. Sliced to the specified limit and ordered
+    by featured merchandising status and creation date.
+    """
+    if not product.category_id:
+        return Product.objects.none()
+    categories = product.category.get_descendants(include_self=True)
+    return (
+        _base_product_qs()
+        .filter(category__in=categories)
+        .exclude(pk=product.pk)
+        .order_by("-is_featured", "-created_at")[:limit]
+    )
+
+
 def get_low_stock_products() -> QuerySet[Product]:
     """
     Returns active products that are running low on inventory.

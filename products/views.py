@@ -52,8 +52,9 @@ class ProductListView(ListView):
 
 class ProductDetailView(DetailView):
     """
-    Temporary product detail placeholder.
-    Will be expanded in Phase 2.4 with full gallery, tabs, and related products.
+    Public product detail showcase.
+    Retrieves product by slug with eager loading, increments view count atomically,
+    and supplies related products and hierarchical breadcrumbs.
     """
     model = Product
     template_name = "products/product_detail.html"
@@ -66,9 +67,19 @@ class ProductDetailView(DetailView):
         except Product.DoesNotExist:
             raise Http404("Product not found.")
 
+    def get(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        from products.services import increment_product_views
+        increment_product_views(self.object)
+        context = self.get_context_data(object=self.object)
+        return self.render_to_response(context)
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         product = context["product"]
+        from products.selectors import get_related_products
+        context["related_products"] = get_related_products(product, limit=4)
+        
         breadcrumbs = [
             {"label": "Home", "url": "/"},
             {"label": "Products", "url": "/products/"},
@@ -81,6 +92,7 @@ class ProductDetailView(DetailView):
         breadcrumbs.append({"label": product.name, "url": None})
         context["breadcrumbs"] = breadcrumbs
         return context
+
 
 
 # ─── Categories ───────────────────────────────────────────────────────────────
