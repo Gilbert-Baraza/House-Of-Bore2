@@ -1,22 +1,22 @@
 {% extends "base.html" %}
 {% comment %}
   templates/products/product_list.html
-  PRODUCT LISTING PAGE
+  PRODUCT LISTING & DISCOVERY PAGE
   ─────────────────────────────────────────────────────────────────────────────
-  Displays a paginated, sortable grid of all active products.
-  Supports server-side sorting via query parameters.
+  Displays a paginated, sortable, and searchable grid of active products
+  with support for hierarchical category and brand filtering, price ranges, and promotional toggles.
   ─────────────────────────────────────────────────────────────────────────────
 {% endcomment %}
 
-{% block title %}Shop All Products{% endblock %}
+{% block title %}{{ page_title|default:"Shop All Products" }}{% endblock %}
 {% block meta_description %}
-<meta name="description" content="Browse the full House of Bore catalog. Premium clothing, footwear, and accessories crafted from the finest European materials.">
+<meta name="description" content="{{ meta_description|default:'Browse the full House of Bore catalog. Premium clothing, footwear, and accessories crafted from the finest European materials.' }}">
 {% endblock meta_description %}
 {% block og_title %}
-<meta property="og:title" content="Shop All Products — House of Bore">
+<meta property="og:title" content="{{ page_title|default:'Shop All Products' }} — House of Bore">
 {% endblock og_title %}
 {% block og_description %}
-<meta property="og:description" content="Discover our curated collection of premium menswear, womenswear, footwear, and accessories.">
+<meta property="og:description" content="{{ meta_description|default:'Discover our curated collection of premium menswear, womenswear, footwear, and accessories.' }}">
 {% endblock og_description %}
 
 {% block content %}
@@ -25,42 +25,79 @@
   {% include "components/breadcrumbs.html" with breadcrumbs=breadcrumbs %}
 
   {# ── Page Header ───────────────────────────────────────────────────────── #}
-  <header class="bg-primary-900 text-secondary-50 py-16 lg:py-20 border-b border-primary-800">
-    <div class="container-site text-center max-w-3xl mx-auto">
-      <span class="badge badge-accent mb-4">Full Catalog</span>
-      <h1 class="font-serif text-4xl sm:text-5xl font-bold text-secondary-50 tracking-tight mb-4">
-        Shop All Products
+  <header class="bg-primary-900 text-secondary-50 py-12 lg:py-16 border-b border-primary-800">
+    <div class="container-site max-w-3xl mx-auto text-center">
+      <span class="badge badge-accent mb-3">Catalog Discovery</span>
+      <h1 class="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-secondary-50 tracking-tight mb-4">
+        {{ page_title|default:"Shop All Products" }}
       </h1>
-      <p class="text-base sm:text-lg text-secondary-300 leading-relaxed">
-        Every garment, accessory, and artifact in our permanent collection — designed for longevity and crafted without compromise.
+      <p class="text-sm sm:text-base text-secondary-300 leading-relaxed mb-8 max-w-2xl mx-auto">
+        {{ meta_description|default:"Every garment, accessory, and artifact in our permanent collection — designed for longevity and crafted without compromise." }}
       </p>
+
+      {# Search Form #}
+      <div class="max-w-xl mx-auto text-left">
+        {% include "components/search_form.html" %}
+      </div>
     </div>
   </header>
 
-  {# ── Product Grid Section ──────────────────────────────────────────────── #}
-  <section class="py-12 lg:py-16" aria-labelledby="product-grid-heading">
+  {# ── Main Catalog Section ──────────────────────────────────────────────── #}
+  <section class="py-12 lg:py-16" aria-labelledby="catalog-heading">
     <div class="container-site">
+      <h2 id="catalog-heading" class="sr-only">Product Catalog</h2>
 
-      <h2 id="product-grid-heading" class="sr-only">Product Grid</h2>
+      <div class="flex flex-col lg:flex-row gap-8 items-start">
+        {# Filter Sidebar (Left Column) #}
+        {% include "components/filter_sidebar.html" %}
 
-      {% if products %}
+        {# Product Grid (Right Column) #}
+        <div class="flex-1 w-full min-w-0">
+          {% if products %}
+            {# Sort Bar & Active Filter Badges #}
+            {% include "components/sort_bar.html" with current_sort=current_sort page_obj=page_obj products=products %}
 
-        {# Sort Bar #}
-        {% include "components/sort_bar.html" with current_sort=current_sort page_obj=page_obj %}
+            {# Responsive Product Grid #}
+            <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-3 gap-4 sm:gap-6">
+              {% for product in products %}
+                {% include "components/product_card.html" with product=product %}
+              {% endfor %}
+            </div>
 
-        {# Responsive Product Grid #}
-        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
-          {% for product in products %}
-            {% include "components/product_card.html" with product=product %}
-          {% endfor %}
+            {# Pagination #}
+            <div class="mt-12">
+              {% include "components/pagination.html" %}
+            </div>
+
+          {% else %}
+            {# Empty State #}
+            <div class="bg-neutral-50 border border-neutral-200 rounded-xl p-12 text-center my-6">
+              <div class="w-16 h-16 bg-neutral-200/60 rounded-full flex items-center justify-center mx-auto mb-4 text-neutral-500">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="32" height="32">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/>
+                </svg>
+              </div>
+              {% if is_filtered or current_q %}
+                <h3 class="font-serif text-xl font-bold text-primary-900 mb-2">No products matched your search or filters</h3>
+                <p class="text-sm text-neutral-600 max-w-md mx-auto mb-6">
+                  We couldn't find any items matching your selection. Try clearing some filters or searching with different keywords.
+                </p>
+                <a href="{% url 'products:product_list' %}" class="inline-flex items-center justify-center px-6 py-2.5 bg-primary-900 hover:bg-primary-800 text-secondary-50 text-xs font-semibold uppercase tracking-wider rounded-btn transition-colors shadow-sm">
+                  Clear All Filters
+                </a>
+              {% else %}
+                <h3 class="font-serif text-xl font-bold text-primary-900 mb-2">No Products Available</h3>
+                <p class="text-sm text-neutral-600 max-w-md mx-auto mb-6">
+                  Our catalog is currently being curated. Check back soon for new arrivals.
+                </p>
+                <a href="{% url 'core:home' %}" class="inline-flex items-center justify-center px-6 py-2.5 bg-primary-900 hover:bg-primary-800 text-secondary-50 text-xs font-semibold uppercase tracking-wider rounded-btn transition-colors shadow-sm">
+                  Return Home
+                </a>
+              {% endif %}
+            </div>
+          {% endif %}
         </div>
-
-        {# Pagination #}
-        {% include "components/pagination.html" %}
-
-      {% else %}
-        {% include "components/empty_state.html" with title="No Products Available" description="Our catalog is currently being curated. Check back soon for new arrivals." action_url="/" action_text="Return Home" %}
-      {% endif %}
+      </div>
 
     </div>
   </section>

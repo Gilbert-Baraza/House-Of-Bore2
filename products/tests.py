@@ -14,6 +14,7 @@ from products.models import Brand, Category, Product, ProductImage
 from products.selectors import (
     DEFAULT_SORT,
     SORT_OPTIONS,
+    filter_products,
     get_active_brands,
     get_active_categories,
     get_active_products,
@@ -24,6 +25,7 @@ from products.selectors import (
     get_category_tree,
     get_featured_brands,
     get_featured_products,
+    get_filter_options,
     get_latest_products,
     get_low_stock_products,
     get_new_arrivals,
@@ -32,6 +34,8 @@ from products.selectors import (
     get_products_by_category,
     get_related_products,
     get_root_categories,
+    search_products,
+    sort_products,
 )
 from products.services import increment_product_views, mark_product_featured
 from products.views import (
@@ -900,3 +904,157 @@ class PaginationTests(TestCase):
         response = self.client.get(reverse("products:product_list") + "?sort=price_asc&page=1")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context["current_sort"], "price_asc")
+
+
+# ─── Search, Filtering & Discovery Tests ─────────────────────────────────────
+
+class CatalogDiscoveryTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.root_cat = Category.objects.create(name="Apparel", slug="apparel")
+        self.child_cat = Category.objects.create(name="Jackets", slug="jackets", parent=self.root_cat)
+        self.brand = Brand.objects.create(name="North Trail", slug="north-trail")
+        self.other_brand = Brand.objects.create(name="Urban Edge", slug="urban-edge")
+
+        self.p1 = Product.objects.create(
+            name="Weatherproof Parka Jacket",
+            short_description="Heavy winter parka.",
+            description="Crafted from waterproof nylon with down insulation.",
+            category=self.child_cat,
+            brand=self.brand,
+            price=Decimal("450.00"),
+            compare_at_price=Decimal("550.00"),  # On sale
+            stock_quantity=10,
+            is_active=True,
+            is_featured=True,
+            is_new_arrival=True,
+            view_count=100
+        )
+        self.p2 = Product.objects.create(
+            name="Lightweight Windbreaker",
+            short_description="Summer windbreaker jacket.",
+            description="Breathable polyester windbreaker.",
+            category=self.child_cat,
+            brand=self.other_brand,
+            price=Decimal("150.00"),
+            stock_quantity=0,  # Out of stock
+            is_active=True,
+            is_featured=False,
+            is_new_arrival=False,
+            view_count=50
+        )
+        self.p3 = Product.objects.create(
+            name="Classic Cotton T-Shirt",
+            short_description="Basic tee.",
+            description="100% organic cotton jersey.",
+            category=self.root_cat,
+            brand=self.brand,
+            price=Decimal("50.00"),
+            stock_quantity=25,
+            is_active=True,
+            is_featured=False,
+            is_new_arrival=True,
+            view_count=200
+        )
+
+    def test_search_products_name_and_description(self):
+        # Search by name
+        res = search_products("parka")
+        self.assertEqual(list(res), [self.p1])
+
+        # Search by short description
+        res = search_products("winter")
+        self.assertEqual(list(res), [self.p1])
+
+        # Search by description
+        res = search_products("polyester")
+        self.assertEqual(list(res), [self.p2])
+
+        # Case insensitive partial match
+        res = search_products("JACKET")
+        self.assertEqual(set(res), {self.p1, self.p2})
+
+    def test_search_products_empty_query(self):
+        res = search_products("")
+        self.assertEqual(len(res), 3)
+        res = search_products(None)
+        self.assertEqual(len(res), 3)
+
+    def test_filter_products_by_category_hierarchy(self):
+        # Filtering by root category "apparel" should return both root and child category products
+        res = filter_products(category_slug="apparel")
+        self.assertEqual(set(res), {self.p1, self.p2, self.p3})
+
+        # Filtering by child category "jackets" should only return jackets
+        res = filter_products(category_slug="jackets")
+        self.assertEqual(set(res), {self.p1, self.p2})
+
+    def test_filter_products_by_brand(self):
+        res = filter_products(brand_slug="north-trail")
+        self.assertEqual(set(res), {self.p1, self.p3})
+
+        # Invalid brand slug
+        res = filter_products(brand_slug="invalid-brand")
+        self.assertEqual(len(res), 0)
+
+    def test_filter_products_by_price_range(self):
+        res = filter_products(min_price="100", max_price="300")
+        self.assertEqual(list(res), [self.p2])
+
+        res = filter_products(min_price="400")
+        self.assertEqual(list(res), [self.p1])
+
+        res = filter_products(max_price="60")
+        self.assertEqual(list(res), [self.p3])
+
+    def test_filter_products_by_availability(self):
+        res = filter_products(availability="in-stock")
+        self.assertEqual(set(res), {self.p1, self.p3})
+
+        res = filter_products(availability="out-of-stock")
+        self.assertEqual(list(res), [self.p2])
+
+    def test_filter_products_toggles(self):
+        res = filter_products(sale="true")
+        self.assertEqual(list(res), [self.p1])
+
+        res = filter_products(new="true")
+        self.assertEqual(set(res), {self.p1, self.p3})
+
+        res = filter_products(featured="true")
+        self.assertEqual(list(res), [self.p1])
+
+    def test_sort_products(self):
+        res = sort_products(sort_key="price_asc")
+        self.assertEqual(list(res), [self.p3, self.p2, self.p1])
+
+        res = sort_products(sort_key="price_desc")
+        self.assertEqual(list(res), [self.p1, self.p2, self.p3])
+
+        res = sort_products(sort_key="popular")
+        self.assertEqual(list(res), [self.p3, self.p1, self.p2])
+
+    def test_combined_filtering_and_sorting(self):
+        # Brand: North Trail, In Stock, sorted by price ascending
+        res = filter_products(brand_slug="north-trail", availability="in-stock")
+        res = sort_products(queryset=res, sort_key="price_asc")
+        self.assertEqual(list(res), [self.p3, self.p1])
+
+    def test_product_list_view_with_filters_and_seo(self):
+        response = self.client.get(reverse("products:product_list") + "?q=jacket&brand=north-trail")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(list(response.context["products"]), [self.p1])
+        self.assertTrue(response.context["is_filtered"])
+        self.assertEqual(response.context["active_filter_count"], 2)
+        self.assertEqual(response.context["page_title"], "Search results for 'jacket'")
+
+        # Test category SEO title
+        response = self.client.get(reverse("products:product_list") + "?category=jackets")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["page_title"], "Jackets")
+
+        # Test sale SEO title
+        response = self.client.get(reverse("products:product_list") + "?sale=true")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["page_title"], "Products on Sale")
+

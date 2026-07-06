@@ -10,6 +10,7 @@ Performance notes:
     which is cheaper than N lazy loads when rendering product cards with thumbnails.
 """
 
+from decimal import Decimal, InvalidOperation
 from django.db.models import Count, F, Prefetch, Q, QuerySet
 from products.models import Brand, Category, Product, ProductImage
 
@@ -88,9 +89,13 @@ def get_brands_with_product_counts() -> QuerySet[Brand]:
 # Centralised here so views and tests reference the same source of truth.
 SORT_OPTIONS = {
     "newest": ("-created_at", "name"),
+    "oldest": ("created_at", "name"),
     "price_asc": ("price", "name"),
     "price_desc": ("-price", "name"),
+    "name_asc": ("name",),
+    "name_desc": ("-name",),
     "featured": ("-is_featured", "-created_at", "name"),
+    "popular": ("-view_count", "-created_at", "name"),
 }
 DEFAULT_SORT = "newest"
 
@@ -190,3 +195,121 @@ def get_low_stock_products() -> QuerySet[Product]:
         stock_quantity__lte=F("low_stock_threshold"),
         stock_quantity__gt=0
     ).select_related("category", "brand")
+
+
+# ─── Search, Filtering & Discovery Selectors ──────────────────────────────────
+
+def search_products(query: str | None, queryset: QuerySet[Product] | None = None) -> QuerySet[Product]:
+    """
+    Performs case-insensitive partial matching across product name, short description,
+    and full description. Gracefully returns the unfiltered queryset if query is empty.
+    """
+    if queryset is None:
+        queryset = _base_product_qs()
+    if not query:
+        return queryset
+    query_str = str(query).strip()
+    if not query_str:
+        return queryset
+    return queryset.filter(
+        Q(name__icontains=query_str)
+        | Q(short_description__icontains=query_str)
+        | Q(description__icontains=query_str)
+    ).distinct()
+
+
+def filter_products(
+    queryset: QuerySet[Product] | None = None,
+    category_slug: str | None = None,
+    brand_slug: str | None = None,
+    min_price: str | Decimal | float | int | None = None,
+    max_price: str | Decimal | float | int | None = None,
+    availability: str | None = None,
+    featured: bool | str | None = None,
+    new: bool | str | None = None,
+    sale: bool | str | None = None,
+) -> QuerySet[Product]:
+    """
+    Applies server-side domain filters to a product queryset.
+    Handles category hierarchy, brands, price bounds, availability, and promotional toggles.
+    """
+    if queryset is None:
+        queryset = _base_product_qs()
+
+    # Category filter (includes hierarchical descendants)
+    if category_slug:
+        try:
+            cat = Category.objects.get(slug=str(category_slug).strip(), is_active=True)
+            categories = cat.get_descendants(include_self=True)
+            queryset = queryset.filter(category__in=categories)
+        except Category.DoesNotExist:
+            return Product.objects.none()
+
+    # Brand filter
+    if brand_slug:
+        try:
+            brand = Brand.objects.get(slug=str(brand_slug).strip(), is_active=True)
+            queryset = queryset.filter(brand=brand)
+        except Brand.DoesNotExist:
+            return Product.objects.none()
+
+    # Price range filters
+    if min_price is not None and str(min_price).strip() != "":
+        try:
+            min_val = Decimal(str(min_price).strip())
+            if min_val >= 0:
+                queryset = queryset.filter(price__gte=min_val)
+        except (ValueError, TypeError, InvalidOperation):
+            pass
+
+    if max_price is not None and str(max_price).strip() != "":
+        try:
+            max_val = Decimal(str(max_price).strip())
+            if max_val >= 0:
+                queryset = queryset.filter(price__lte=max_val)
+        except (ValueError, TypeError, InvalidOperation):
+            pass
+
+    # Availability filter
+    if availability:
+        avail_str = str(availability).strip().lower()
+        if avail_str == "in-stock":
+            queryset = queryset.filter(stock_quantity__gt=0)
+        elif avail_str == "out-of-stock":
+            queryset = queryset.filter(stock_quantity=0)
+
+    # Merchandising toggles
+    if featured in (True, "true", "True", "1", 1):
+        queryset = queryset.filter(is_featured=True)
+
+    if new in (True, "true", "True", "1", 1):
+        queryset = queryset.filter(is_new_arrival=True)
+
+    if sale in (True, "true", "True", "1", 1):
+        queryset = queryset.filter(
+            compare_at_price__isnull=False,
+            compare_at_price__gt=F("price")
+        )
+
+    return queryset
+
+
+def sort_products(queryset: QuerySet[Product] | None = None, sort_key: str = DEFAULT_SORT) -> QuerySet[Product]:
+    """
+    Applies sorting to a product queryset.
+    """
+    if queryset is None:
+        queryset = _base_product_qs()
+    return apply_sorting(queryset, sort_key)
+
+
+def get_filter_options() -> dict:
+    """
+    Returns available filter options (categories, brands) annotated with active product counts
+    for rendering in the filter sidebar.
+    """
+    return {
+        "categories": get_categories_with_product_counts(),
+        "brands": get_brands_with_product_counts(),
+    }
+

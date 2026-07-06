@@ -1,0 +1,39 @@
+{% comment %}
+  templates/components/filter_sidebar.html
+  FILTER SIDEBAR COMPONENT
+  ─────────────────────────────────────────────────────────────────────────────
+  Renders catalog filters: Categories, Brands, Price Range, Availability, Toggles.
+  Responsive: Desktop left column, mobile collapsible panel using CSS peer checkbox.
+  ─────────────────────────────────────────────────────────────────────────────
+{% endcomment %}
+{% load query_helpers %}
+
+{# Mobile Filter Drawer Toggle #}
+<div class="lg:hidden mb-6">
+  <label for="mobile-filters-toggle"
+         class="w-full flex items-center justify-between px-4 py-3 bg-white border border-neutral-200 rounded-btn text-sm font-semibold text-primary-900 cursor-pointer shadow-sm hover:bg-neutral-50 transition-colors">
+    <span class="flex items-center gap-2">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor" width="18" height="18">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-9.75 0h9.75"/>
+      </svg>
+      Filters & Refinements
+      {% if active_filter_count > 0 %}
+        <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-accent-500 text-secondary-50 text-xs font-bold">
+          {{ active_filter_count }}
+        </span>
+      {% endif %}
+    </span>
+    <span class="text-xs text-neutral-500 underline">Toggle</span>
+  </label>
+  <input type="checkbox" id="mobile-filters-toggle" class="peer sr-only">
+  
+  {# Collapsible content on mobile #}
+  <div class="hidden peer-checked:block mt-4 p-5 bg-white border border-neutral-200 rounded-lg shadow-md">
+    {% include "components/filter_sidebar_form.html" %}
+  </div>
+</div>
+
+{# Desktop Sidebar #}
+<aside class="hidden lg:block lg:w-64 shrink-0 pr-8 border-r border-neutral-200" aria-label="Catalog filters">
+  {% include "components/filter_sidebar_form.html" %}
+</aside>

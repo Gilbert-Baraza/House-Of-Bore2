@@ -1,0 +1,146 @@
+{% comment %}
+  templates/components/filter_sidebar_form.html
+  FILTER SIDEBAR FORM COMPONENT
+  ─────────────────────────────────────────────────────────────────────────────
+  Inner form for filter sidebar (shared between desktop and mobile drawer).
+  ─────────────────────────────────────────────────────────────────────────────
+{% endcomment %}
+{% load query_helpers %}
+
+<form method="get" action="{% url 'products:product_list' %}" id="filter-sidebar-form">
+  {# Preserve existing search and sort order #}
+  {% if current_q %}
+    <input type="hidden" name="q" value="{{ current_q }}">
+  {% endif %}
+  {% if current_sort and current_sort != "newest" %}
+    <input type="hidden" name="sort" value="{{ current_sort }}">
+  {% endif %}
+
+  <div class="flex items-center justify-between pb-4 mb-6 border-b border-neutral-200">
+    <h3 class="font-serif text-lg font-bold text-primary-900">Filters</h3>
+    {% if is_filtered %}
+      <a href="{% url 'products:product_list' %}{% if current_q %}?q={{ current_q }}{% endif %}" class="text-xs font-semibold text-accent-600 hover:text-accent-700 hover:underline">
+        Reset
+      </a>
+    {% endif %}
+  </div>
+
+  {# 1. Categories #}
+  <div class="mb-6 pb-6 border-b border-neutral-200">
+    <h4 class="text-xs font-bold uppercase tracking-wider text-neutral-500 mb-3">Category</h4>
+    <ul class="space-y-2 text-sm">
+      <li>
+        <label class="flex items-center justify-between cursor-pointer text-neutral-700 hover:text-primary-900 font-medium">
+          <span class="flex items-center gap-2">
+            <input type="radio" name="category" value="" {% if not current_category %}checked{% endif %} onchange="this.form.submit()" class="text-accent-600 focus:ring-accent-500 border-neutral-300">
+            All Categories
+          </span>
+        </label>
+      </li>
+      {% for cat in filter_options.categories %}
+        <li>
+          <label class="flex items-center justify-between cursor-pointer {% if current_category == cat.slug %}text-primary-900 font-bold{% else %}text-neutral-600 hover:text-primary-900{% endif %}">
+            <span class="flex items-center gap-2">
+              <input type="radio" name="category" value="{{ cat.slug }}" {% if current_category == cat.slug %}checked{% endif %} onchange="this.form.submit()" class="text-accent-600 focus:ring-accent-500 border-neutral-300">
+              {{ cat.name }}
+            </span>
+            <span class="text-xs text-neutral-400">({{ cat.product_count }})</span>
+          </label>
+        </li>
+      {% endfor %}
+    </ul>
+  </div>
+
+  {# 2. Brands #}
+  <div class="mb-6 pb-6 border-b border-neutral-200">
+    <h4 class="text-xs font-bold uppercase tracking-wider text-neutral-500 mb-3">Brand</h4>
+    <ul class="space-y-2 text-sm max-h-48 overflow-y-auto pr-1">
+      <li>
+        <label class="flex items-center justify-between cursor-pointer text-neutral-700 hover:text-primary-900 font-medium">
+          <span class="flex items-center gap-2">
+            <input type="radio" name="brand" value="" {% if not current_brand %}checked{% endif %} onchange="this.form.submit()" class="text-accent-600 focus:ring-accent-500 border-neutral-300">
+            All Brands
+          </span>
+        </label>
+      </li>
+      {% for brand in filter_options.brands %}
+        <li>
+          <label class="flex items-center justify-between cursor-pointer {% if current_brand == brand.slug %}text-primary-900 font-bold{% else %}text-neutral-600 hover:text-primary-900{% endif %}">
+            <span class="flex items-center gap-2">
+              <input type="radio" name="brand" value="{{ brand.slug }}" {% if current_brand == brand.slug %}checked{% endif %} onchange="this.form.submit()" class="text-accent-600 focus:ring-accent-500 border-neutral-300">
+              {{ brand.name }}
+            </span>
+            <span class="text-xs text-neutral-400">({{ brand.product_count }})</span>
+          </label>
+        </li>
+      {% endfor %}
+    </ul>
+  </div>
+
+  {# 3. Price Range #}
+  <div class="mb-6 pb-6 border-b border-neutral-200">
+    <h4 class="text-xs font-bold uppercase tracking-wider text-neutral-500 mb-3">Price Range (€)</h4>
+    <div class="flex items-center gap-2 mb-3">
+      <div>
+        <label for="min-price-input" class="sr-only">Minimum price</label>
+        <input type="number" step="1" min="0" id="min-price-input" name="min_price" value="{{ current_min_price }}" placeholder="Min" class="w-full px-2.5 py-1.5 text-xs bg-white border border-neutral-300 rounded text-primary-900 focus:outline-none focus:ring-1 focus:ring-accent-500">
+      </div>
+      <span class="text-neutral-400 text-xs">—</span>
+      <div>
+        <label for="max-price-input" class="sr-only">Maximum price</label>
+        <input type="number" step="1" min="0" id="max-price-input" name="max_price" value="{{ current_max_price }}" placeholder="Max" class="w-full px-2.5 py-1.5 text-xs bg-white border border-neutral-300 rounded text-primary-900 focus:outline-none focus:ring-1 focus:ring-accent-500">
+      </div>
+    </div>
+    <button type="submit" class="w-full py-1.5 bg-neutral-100 hover:bg-neutral-200 text-primary-900 text-xs font-semibold rounded transition-colors">
+      Apply Price
+    </button>
+  </div>
+
+  {# 4. Availability #}
+  <div class="mb-6 pb-6 border-b border-neutral-200">
+    <h4 class="text-xs font-bold uppercase tracking-wider text-neutral-500 mb-3">Availability</h4>
+    <ul class="space-y-2 text-sm">
+      <li>
+        <label class="flex items-center gap-2 cursor-pointer text-neutral-700">
+          <input type="radio" name="availability" value="" {% if not current_availability %}checked{% endif %} onchange="this.form.submit()" class="text-accent-600 focus:ring-accent-500 border-neutral-300">
+          All Items
+        </label>
+      </li>
+      <li>
+        <label class="flex items-center gap-2 cursor-pointer text-neutral-700">
+          <input type="radio" name="availability" value="in-stock" {% if current_availability == "in-stock" %}checked{% endif %} onchange="this.form.submit()" class="text-accent-600 focus:ring-accent-500 border-neutral-300">
+          In Stock Only
+        </label>
+      </li>
+      <li>
+        <label class="flex items-center gap-2 cursor-pointer text-neutral-700">
+          <input type="radio" name="availability" value="out-of-stock" {% if current_availability == "out-of-stock" %}checked{% endif %} onchange="this.form.submit()" class="text-accent-600 focus:ring-accent-500 border-neutral-300">
+          Out of Stock
+        </label>
+      </li>
+    </ul>
+  </div>
+
+  {# 5. Merchandising Toggles #}
+  <div class="mb-6 space-y-3">
+    <h4 class="text-xs font-bold uppercase tracking-wider text-neutral-500 mb-3">Highlights</h4>
+    <label class="flex items-center gap-2.5 cursor-pointer text-sm text-neutral-700 font-medium">
+      <input type="checkbox" name="sale" value="true" {% if current_sale == "true" or current_sale == "True" or current_sale == "1" %}checked{% endif %} onchange="this.form.submit()" class="rounded text-accent-600 focus:ring-accent-500 border-neutral-300">
+      On Sale
+    </label>
+    <label class="flex items-center gap-2.5 cursor-pointer text-sm text-neutral-700 font-medium">
+      <input type="checkbox" name="new" value="true" {% if current_new == "true" or current_new == "True" or current_new == "1" %}checked{% endif %} onchange="this.form.submit()" class="rounded text-accent-600 focus:ring-accent-500 border-neutral-300">
+      New Arrivals
+    </label>
+    <label class="flex items-center gap-2.5 cursor-pointer text-sm text-neutral-700 font-medium">
+      <input type="checkbox" name="featured" value="true" {% if current_featured == "true" or current_featured == "True" or current_featured == "1" %}checked{% endif %} onchange="this.form.submit()" class="rounded text-accent-600 focus:ring-accent-500 border-neutral-300">
+      Featured Collection
+    </label>
+  </div>
+
+  {% if is_filtered %}
+    <a href="{% url 'products:product_list' %}{% if current_q %}?q={{ current_q }}{% endif %}" class="w-full py-2 bg-neutral-900 hover:bg-neutral-800 text-secondary-50 text-xs font-semibold rounded-btn text-center block transition-colors">
+      Reset All Filters
+    </a>
+  {% endif %}
+</form>
