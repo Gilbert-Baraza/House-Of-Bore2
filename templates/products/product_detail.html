@@ -23,8 +23,31 @@
 <meta property="og:description" content="{{ product.meta_description|default:product.short_description }}">
 {% endblock og_description %}
 
+{% block og_image %}
+{% with primary=product.get_primary_image %}
+  {% if primary and primary.image %}
+<meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}{{ primary.image.url }}">
+  {% endif %}
+{% endwith %}
+{% endblock og_image %}
+
+{% block og_url %}
+<meta property="og:url" content="{{ request.scheme }}://{{ request.get_host }}{{ product.get_absolute_url }}">
+{% endblock og_url %}
+
+{% block twitter_card %}
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{{ product.meta_title|default:product.name }} — House of Bore">
+<meta name="twitter:description" content="{{ product.meta_description|default:product.short_description }}">
+{% with primary=product.get_primary_image %}
+  {% if primary and primary.image %}
+<meta name="twitter:image" content="{{ request.scheme }}://{{ request.get_host }}{{ primary.image.url }}">
+  {% endif %}
+{% endwith %}
+{% endblock twitter_card %}
+
 {% block extra_head %}
-{# ── Canonical URL Placeholder ───────────────────────────────────────────── #}
+{# ── Canonical URL ───────────────────────────────────────────────────────── #}
 <link rel="canonical" href="{{ request.scheme }}://{{ request.get_host }}{{ product.get_absolute_url }}">
 
 {# ── Structured Data Placeholder (JSON-LD for Schema.org Product) ────────── #}
@@ -234,8 +257,7 @@
                      min="1"
                      max="{{ product.stock_quantity|default:10 }}"
                      class="w-14 h-11 text-center font-bold text-primary-900 bg-white border-0 focus:outline-none cursor-default tabular-nums"
-                     readonly
-                     aria-label="Quantity (1)">
+                     readonly>
               <button type="button"
                       class="w-11 h-11 flex items-center justify-center text-neutral-400 bg-neutral-50 border-l border-neutral-200 cursor-not-allowed transition-colors focus:outline-none"
                       aria-label="Increase quantity (disabled in catalog preview)"

@@ -47,6 +47,15 @@
   {% block og_description %}
   <meta property="og:description" content="Premium lifestyle e-commerce.">
   {% endblock og_description %}
+  {% block og_image %}{% endblock og_image %}
+  {% block og_url %}{% endblock og_url %}
+
+  <!-- ── Twitter Card ───────────────────────────────────────────────────── -->
+  {% block twitter_card %}
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="House of Bore">
+  <meta name="twitter:description" content="Premium lifestyle e-commerce.">
+  {% endblock twitter_card %}
 
   {# ── Title ────────────────────────────────────────────────────────────── #}
   <title>{% block title %}House of Bore{% endblock %} — House of Bore</title>
@@ -71,8 +80,9 @@
   <link rel="icon" type="image/svg+xml"
     href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='10' fill='%231a1a1a'/%3E%3C/svg%3E">
 
-  {# ── Per-page CSS ─────────────────────────────────────────────────────── #}
+  {# ── Per-page CSS & Extra Head ────────────────────────────────────────── #}
   {% block extra_css %}{% endblock %}
+  {% block extra_head %}{% endblock extra_head %}
 </head>
 
 <body class="font-sans antialiased bg-secondary-50 text-neutral-700 min-h-screen flex flex-col">

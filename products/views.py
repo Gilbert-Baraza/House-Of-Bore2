@@ -19,7 +19,9 @@ from products.selectors import (
     get_product_by_slug,
     get_products_by_brand,
     get_products_by_category,
+    get_related_products,
 )
+from products.services import increment_product_views
 
 
 # ─── Products ─────────────────────────────────────────────────────────────────
@@ -69,7 +71,6 @@ class ProductDetailView(DetailView):
 
     def get(self, request, *args, **kwargs):
         self.object = self.get_object()
-        from products.services import increment_product_views
         increment_product_views(self.object)
         context = self.get_context_data(object=self.object)
         return self.render_to_response(context)
@@ -77,7 +78,6 @@ class ProductDetailView(DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         product = context["product"]
-        from products.selectors import get_related_products
         context["related_products"] = get_related_products(product, limit=4)
         
         breadcrumbs = [
@@ -92,6 +92,7 @@ class ProductDetailView(DetailView):
         breadcrumbs.append({"label": product.name, "url": None})
         context["breadcrumbs"] = breadcrumbs
         return context
+
 
 
 
