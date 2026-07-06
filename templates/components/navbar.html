@@ -42,8 +42,7 @@
     <div class="flex items-center justify-between h-16 lg:h-18">
 
       {# ── Logo ─────────────────────────────────────────────────────────── #}
-      {# Phase 2: replace href="/" with {% url 'core:home' %}              #}
-      <a href="/"
+      <a href="{% url 'core:home' %}"
          class="flex items-center gap-2.5 text-primary-900 no-underline group"
          aria-label="House of Bore — Home">
         {# Gold dot accent mark #}
@@ -55,33 +54,29 @@
       </a>
 
       {# ── Desktop Navigation Links ────────────────────────────────────── #}
-      {# Hidden below lg breakpoint. Phase 2+: wire href to real URL names. #}
       <nav class="hidden lg:flex items-center gap-8"
            aria-label="Main navigation">
-        <a href="#" class="nav-link">New Arrivals</a>
-        <a href="#" class="nav-link">Products</a>
-        <a href="#" class="nav-link">Collections</a>
-        <a href="#" class="nav-link">About</a>
+        <a href="{% url 'products:product_list' %}?sort=newest" class="nav-link">New Arrivals</a>
+        <a href="{% url 'products:product_list' %}" class="nav-link">Products</a>
+        <a href="{% url 'products:category_list' %}" class="nav-link">Collections</a>
+        <a href="{% url 'core:about' %}" class="nav-link">About</a>
       </nav>
 
       {# ── Right Actions ───────────────────────────────────────────────── #}
       <div class="flex items-center gap-0.5 lg:gap-1">
 
         {# Search — desktop only #}
-        {# Phase 2: open search overlay or navigate to search page         #}
-        <button type="button"
-                class="hidden lg:flex icon-btn"
-                aria-label="Search products">
+        <a href="{% url 'products:product_list' %}"
+           class="hidden lg:flex icon-btn"
+           aria-label="Search products">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                stroke-width="1.5" stroke="currentColor" width="20" height="20" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round"
                   d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"/>
           </svg>
-        </button>
+        </a>
 
         {# Account — links to login/profile #}
-        {# Phase 2: {% url 'accounts:profile' %} if request.user.is_authenticated #}
-        {# else {% url 'accounts:login' %}                                          #}
         <a href="#"
            class="hidden sm:inline-flex icon-btn"
            aria-label="My account">
@@ -93,8 +88,6 @@
         </a>
 
         {# Cart — with item count badge #}
-        {# Phase 2 (cart phase): wire to {% url 'cart:detail' %}           #}
-        {# and replace 0 with {{ cart.total_items }}                        #}
         <a href="#"
            class="icon-btn relative"
            aria-label="Shopping cart, 0 items">
@@ -103,7 +96,6 @@
             <path stroke-linecap="round" stroke-linejoin="round"
                   d="M15.75 10.5V6a3.75 3.75 0 1 0-7.5 0v4.5m11.356-1.993 1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 0 1-1.12-1.243l1.264-12A1.125 1.125 0 0 1 5.513 7.5h12.974c.576 0 1.059.435 1.119 1.007ZM8.625 10.5a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm7.5 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z"/>
           </svg>
-          {# Cart count badge — hidden when empty (phase 2: add {% if cart.total_items %}) #}
           <span class="absolute -top-0.5 -right-0.5 min-w-[1.1rem] h-[1.1rem] px-0.5
                         bg-accent-500 text-white text-[10px] font-bold
                         rounded-full flex items-center justify-center leading-none"
@@ -129,30 +121,28 @@
   </div>{# /container-site #}
 
   {# ── Mobile Menu ──────────────────────────────────────────────────────── #}
-  {# Shown when #nav-mobile-toggle checkbox is checked (peer-checked: class)  #}
-  {# Phase 2+: enhance with Alpine.js x-show + slide transition             #}
   <div class="hidden peer-checked:block lg:hidden border-t border-neutral-200 bg-white"
        id="mobile-menu"
        aria-label="Mobile navigation">
     <nav class="container-site py-3 flex flex-col gap-0.5">
 
       {# Mobile nav links — full-width touch targets #}
-      <a href="#"
+      <a href="{% url 'products:product_list' %}?sort=newest"
          class="px-3 py-2.5 rounded-btn text-sm font-medium text-neutral-700
                 hover:text-primary-900 hover:bg-neutral-50 transition-colors">
         New Arrivals
       </a>
-      <a href="#"
+      <a href="{% url 'products:product_list' %}"
          class="px-3 py-2.5 rounded-btn text-sm font-medium text-neutral-700
                 hover:text-primary-900 hover:bg-neutral-50 transition-colors">
         Products
       </a>
-      <a href="#"
+      <a href="{% url 'products:category_list' %}"
          class="px-3 py-2.5 rounded-btn text-sm font-medium text-neutral-700
                 hover:text-primary-900 hover:bg-neutral-50 transition-colors">
         Collections
       </a>
-      <a href="#"
+      <a href="{% url 'core:about' %}"
          class="px-3 py-2.5 rounded-btn text-sm font-medium text-neutral-700
                 hover:text-primary-900 hover:bg-neutral-50 transition-colors">
         About
@@ -162,7 +152,7 @@
       <hr class="divider my-2">
 
       {# Mobile search + account #}
-      <a href="#"
+      <a href="{% url 'products:product_list' %}"
          class="flex items-center gap-2.5 px-3 py-2.5 rounded-btn text-sm font-medium
                 text-neutral-700 hover:text-primary-900 hover:bg-neutral-50 transition-colors">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"

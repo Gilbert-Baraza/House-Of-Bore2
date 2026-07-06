@@ -26,34 +26,40 @@ class HomeView(TemplateView):
                 "description": "Architectural outerwear, unstructured tailoring, and relaxed wool trousers engineered for enduring modern elegance.",
                 "image_alt": "Men's Collection apparel",
                 "badge": "New Season",
+                "url": "/categories/",
             },
             {
                 "name": "Women's Collection",
                 "description": "Effortless silhouettes featuring draped silk blouses, cashmere knitwear, and structured weatherproof trench coats.",
                 "image_alt": "Women's Collection apparel",
                 "badge": "Popular",
+                "url": "/categories/",
             },
             {
                 "name": "Footwear",
                 "description": "Bench-made Chelsea boots, minimal suede loafers, and low-profile leather trainers crafted for exceptional all-day comfort.",
                 "image_alt": "Bench-made Footwear collection",
+                "url": "/categories/",
             },
             {
                 "name": "Leather Goods",
                 "description": "Full-grain vegetable-tanned weekend duffels, structured briefcases, and minimal wallets designed to develop a rich patina over decades.",
                 "image_alt": "Full-grain Leather Goods collection",
+                "url": "/categories/",
             },
             {
                 "name": "Seasonal Essentials",
                 "description": "Heavyweight Scottish cashmere turtlenecks, merino beanies, and water-repellent outerwear engineered for unpredictable climates.",
                 "image_alt": "Seasonal Essentials collection",
                 "badge": "Limited",
+                "url": "/categories/",
             },
             {
                 "name": "New Arrivals",
                 "description": "The latest additions to our permanent wardrobe, featuring limited-run Japanese selvedge denim and lightweight linen overshirts.",
                 "image_alt": "New Arrivals wardrobe collection",
                 "badge": "Just Dropped",
+                "url": "/products/?sort=newest",
             },
         ]
 
@@ -90,6 +96,7 @@ class HomeView(TemplateView):
                 "reviews_count": 42,
                 "badge": "Best Seller",
                 "image_alt": "Weatherproof Trench Coat in Camel",
+                "url": "/products/",
             },
             {
                 "name": "Heavyweight Cashmere Turtleneck",
@@ -98,6 +105,7 @@ class HomeView(TemplateView):
                 "reviews_count": 86,
                 "badge": "New Arrival",
                 "image_alt": "Cashmere Turtleneck Sweater in Charcoal",
+                "url": "/products/",
             },
             {
                 "name": "Full-Grain Weekender Duffel",
@@ -106,6 +114,7 @@ class HomeView(TemplateView):
                 "reviews_count": 19,
                 "badge": "Handcrafted",
                 "image_alt": "Leather Weekender Bag in Espresso",
+                "url": "/products/",
             },
             {
                 "name": "Pleated Italian Wool Trousers",
@@ -114,6 +123,7 @@ class HomeView(TemplateView):
                 "reviews_count": 31,
                 "badge": "Limited Edition",
                 "image_alt": "Pleated Italian Wool Trousers in Navy",
+                "url": "/products/",
             },
         ]
 

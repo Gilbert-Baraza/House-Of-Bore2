@@ -57,8 +57,7 @@
 
       {# Title #}
       <h3 class="font-serif text-lg font-semibold text-primary-900 mb-1 group-hover:text-accent-600 transition-colors">
-        {# Phase 2: replace href="#" with product detail URL #}
-        <a href="#" class="after:absolute after:inset-0 focus:outline-none">
+        <a href="{% if product.get_absolute_url %}{{ product.get_absolute_url }}{% elif product.url %}{{ product.url }}{% else %}{% url 'products:product_list' %}{% endif %}" class="after:absolute after:inset-0 focus:outline-none">
           {{ product.name }}
         </a>
       </h3>
