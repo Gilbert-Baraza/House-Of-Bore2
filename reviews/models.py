@@ -84,6 +84,12 @@ class Review(models.Model):
         verbose_name = _("Product Review")
         verbose_name_plural = _("Product Reviews")
         ordering = ["-created_at"]
+        indexes = [
+            models.Index(
+                fields=["product", "is_approved", "-created_at"],
+                name="rev_prod_appr_created_idx",
+            ),
+        ]
         constraints = [
             models.UniqueConstraint(
                 fields=["product", "user"],
@@ -97,6 +103,15 @@ class Review(models.Model):
 
     def __str__(self) -> str:
         return f"{self.rating}★ review by {self.user} on {self.product.name}"
+
+    @property
+    def is_verified_buyer(self) -> bool:
+        """
+        Returns whether the author has a verified purchase order for this product.
+        TODO (Phase 3+): Connect to Order and OrderItem models once implemented.
+        Currently defaults to True for demonstration purposes.
+        """
+        return True
 
     def get_absolute_url(self) -> str:
         """Redirects back to the product detail page anchored to the review section."""

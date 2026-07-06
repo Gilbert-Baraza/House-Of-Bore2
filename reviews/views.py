@@ -93,6 +93,11 @@ class UpdateReviewView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     template_name = "reviews/review_form.html"
     context_object_name = "review"
 
+    def get_object(self, queryset=None):
+        if not hasattr(self, "_object") or self._object is None:
+            self._object = super().get_object(queryset)
+        return self._object
+
     def test_func(self):
         review = self.get_object()
         return review.user == self.request.user
@@ -127,6 +132,11 @@ class DeleteReviewView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
     model = Review
     template_name = "reviews/review_confirm_delete.html"
     context_object_name = "review"
+
+    def get_object(self, queryset=None):
+        if not hasattr(self, "_object") or self._object is None:
+            self._object = super().get_object(queryset)
+        return self._object
 
     def test_func(self):
         review = self.get_object()
