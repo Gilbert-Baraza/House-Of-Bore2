@@ -1,0 +1,30 @@
+# core/templatetags/query_helpers.py
+"""
+Template tags for manipulating query string parameters cleanly.
+"""
+
+from django import template
+
+register = template.Library()
+
+
+@register.simple_tag(takes_context=True)
+def url_replace(context, **kwargs):
+    """
+    Replaces or adds query string parameters to the current request URL,
+    preserving existing parameters while stripping any that are set to None or empty string.
+
+    Usage:
+        {% load query_helpers %}
+        <a href="?{% url_replace page=page_obj.next_page_number %}">Next</a>
+    """
+    request = context.get("request")
+    if not request:
+        return ""
+    query = request.GET.copy()
+    for key, value in kwargs.items():
+        if value is None or value == "":
+            query.pop(key, None)
+        else:
+            query[key] = str(value)
+    return query.urlencode()

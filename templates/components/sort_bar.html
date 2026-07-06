@@ -27,6 +27,11 @@
 
   {# Sort Dropdown #}
   <form method="get" class="flex items-center gap-2" id="sort-form">
+    {% for key, value in request.GET.items %}
+      {% if key != 'sort' and key != 'page' %}
+        <input type="hidden" name="{{ key }}" value="{{ value }}">
+      {% endif %}
+    {% endfor %}
     <label for="sort-select" class="text-xs font-semibold uppercase tracking-wider text-neutral-500">Sort by</label>
     <select id="sort-select" name="sort"
             onchange="this.form.submit()"

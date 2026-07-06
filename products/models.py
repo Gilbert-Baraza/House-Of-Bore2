@@ -45,6 +45,7 @@ class Category(models.Model):
     )
     is_active = models.BooleanField(
         default=True,
+        db_index=True,
         help_text="Designates whether this category is visible in the store catalog."
     )
     sort_order = models.PositiveIntegerField(
@@ -152,6 +153,7 @@ class Brand(models.Model):
     )
     is_active = models.BooleanField(
         default=True,
+        db_index=True,
         help_text="Designates whether this brand is active and visible in the store."
     )
     created_at = models.DateTimeField(auto_now_add=True)
@@ -260,6 +262,7 @@ class Product(models.Model):
     )
     is_active = models.BooleanField(
         default=True,
+        db_index=True,
         help_text="Designates whether this product is published and visible in the store."
     )
 
@@ -303,6 +306,11 @@ class Product(models.Model):
         ordering = ["-created_at", "name"]
         verbose_name = "product"
         verbose_name_plural = "products"
+        indexes = [
+            models.Index(fields=["is_active", "-created_at"]),
+            models.Index(fields=["is_active", "price"]),
+            models.Index(fields=["is_active", "is_featured"]),
+        ]
 
     def __str__(self) -> str:
         return self.name

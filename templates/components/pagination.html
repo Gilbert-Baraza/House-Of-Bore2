@@ -24,13 +24,14 @@
   parameters (search, filters, sort) when navigating between pages.
   ─────────────────────────────────────────────────────────────────────────────
 {% endcomment %}
+{% load query_helpers %}
 {% if page_obj and page_obj.paginator.num_pages > 1 %}
 <nav class="flex items-center justify-center gap-1 py-8"
      aria-label="Pagination">
 
   {# ── Previous ─────────────────────────────────────────────────────────── #}
   {% if page_obj.has_previous %}
-    <a href="?page={{ page_obj.previous_page_number }}{% if request.GET.urlencode %}&{{ request.GET.urlencode }}{% endif %}"
+    <a href="?{% url_replace page=page_obj.previous_page_number %}"
        class="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium
               text-neutral-600 hover:text-primary-900 hover:bg-neutral-100
               rounded-btn transition-colors border border-neutral-200"
@@ -67,7 +68,7 @@
 
     {% elif num == 1 or num == page_obj.paginator.num_pages %}
       {# Always show first and last page #}
-      <a href="?page={{ num }}"
+      <a href="?{% url_replace page=num %}"
          class="w-9 h-9 flex items-center justify-center text-sm font-medium
                 text-neutral-600 hover:text-primary-900 hover:bg-neutral-100
                 rounded-btn transition-colors border border-neutral-200"
@@ -77,7 +78,7 @@
 
     {% elif num >= page_obj.number|add:"-2" and num <= page_obj.number|add:"2" %}
       {# Pages within ±2 of current #}
-      <a href="?page={{ num }}"
+      <a href="?{% url_replace page=num %}"
          class="w-9 h-9 flex items-center justify-center text-sm font-medium
                 text-neutral-600 hover:text-primary-900 hover:bg-neutral-100
                 rounded-btn transition-colors border border-neutral-200"
@@ -98,7 +99,7 @@
 
   {# ── Next ─────────────────────────────────────────────────────────────── #}
   {% if page_obj.has_next %}
-    <a href="?page={{ page_obj.next_page_number }}{% if request.GET.urlencode %}&{{ request.GET.urlencode }}{% endif %}"
+    <a href="?{% url_replace page=page_obj.next_page_number %}"
        class="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium
               text-neutral-600 hover:text-primary-900 hover:bg-neutral-100
               rounded-btn transition-colors border border-neutral-200"
