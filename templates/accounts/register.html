@@ -1,0 +1,290 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Create an Account | House of Bore{% endblock %}
+
+{% block meta_description %}
+  Join the House of Bore circle of patrons. Register for exclusive access to bespoke footwear, timeless Horology, and private luxury collections.
+{% endblock %}
+
+{% block content %}
+<div class="bg-neutral-50 min-h-screen py-12 lg:py-20 flex items-center">
+  <div class="container-site max-w-6xl">
+    
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-stretch bg-white border border-neutral-200/80 rounded-2xl shadow-xl overflow-hidden">
+      
+      {# ── Left Column: Brand & Patron Benefits (Desktop: 5 cols) ─────────── #}
+      <div class="lg:col-span-5 bg-primary-900 text-secondary-50 p-8 sm:p-12 flex flex-col justify-between relative overflow-hidden">
+        {# Subtle background decoration #}
+        <div class="absolute -right-16 -bottom-16 w-64 h-64 bg-primary-800/30 rounded-full blur-3xl pointer-events-none" aria-hidden="true"></div>
+        <div class="absolute -left-12 -top-12 w-48 h-48 bg-primary-800/20 rounded-full blur-2xl pointer-events-none" aria-hidden="true"></div>
+
+        <div class="relative z-10">
+          <span class="inline-block px-3 py-1 bg-primary-800 text-secondary-300 text-xs font-semibold tracking-widest uppercase rounded-full mb-6">
+            Patron Membership
+          </span>
+          <h1 class="font-serif text-3xl sm:text-4xl font-bold tracking-tight text-white mb-4">
+            Enter the Circle of Excellence
+          </h1>
+          <p class="text-secondary-200 text-sm leading-relaxed mb-8">
+            Registration unlocks a world of uncompromising craftsmanship, priority access to numbered horology editions, and bespoke concierge services tailored to your lifestyle.
+          </p>
+
+          {# Trust & Benefit Badges #}
+          <div class="space-y-6 border-t border-primary-800/80 pt-8">
+            <div class="flex items-start gap-4">
+              <div class="w-10 h-10 rounded-full bg-primary-800 flex items-center justify-center shrink-0 text-secondary-300">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                </svg>
+              </div>
+              <div>
+                <h3 class="font-semibold text-white text-sm">Private Concierge Access</h3>
+                <p class="text-xs text-secondary-300 mt-0.5">Direct consultation with master horologists and bespoke tailors.</p>
+              </div>
+            </div>
+
+            <div class="flex items-start gap-4">
+              <div class="w-10 h-10 rounded-full bg-primary-800 flex items-center justify-center shrink-0 text-secondary-300">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="m3.75 13.5 10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75Z" />
+                </svg>
+              </div>
+              <div>
+                <h3 class="font-semibold text-white text-sm">Priority Allocation</h3>
+                <p class="text-xs text-secondary-300 mt-0.5">48-hour advance notice before new bench-made releases go public.</p>
+              </div>
+            </div>
+
+            <div class="flex items-start gap-4">
+              <div class="w-10 h-10 rounded-full bg-primary-800 flex items-center justify-center shrink-0 text-secondary-300">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                </svg>
+              </div>
+              <div>
+                <h3 class="font-semibold text-white text-sm">Lifetime Craftsmanship Warranty</h3>
+                <p class="text-xs text-secondary-300 mt-0.5">Complimentary servicing and restoration support across all purchases.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="relative z-10 mt-12 pt-6 border-t border-primary-800/60 flex items-center justify-between text-xs text-secondary-400">
+          <span>&copy; {% now "Y" %} House of Bore</span>
+          <span>Bench-Made Heritage</span>
+        </div>
+      </div>
+
+      {# ── Right Column: Registration Form (Desktop: 7 cols) ──────────────── #}
+      <div class="lg:col-span-7 p-8 sm:p-12 flex flex-col justify-center">
+        <div class="max-w-md mx-auto w-full">
+          
+          <div class="mb-8">
+            <h2 class="font-serif text-2xl sm:text-3xl font-bold text-primary-900 tracking-tight">
+              Create Your Account
+            </h2>
+            <p class="text-sm text-neutral-600 mt-1.5">
+              Please provide your details below to begin your membership.
+            </p>
+          </div>
+
+          {# General Form Errors #}
+          {% if form.non_field_errors %}
+            <div class="mb-6 p-4 rounded-btn bg-red-50 border border-red-200 text-red-700 text-sm" role="alert">
+              <div class="flex items-center gap-2 font-semibold mb-1">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4 shrink-0">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
+                </svg>
+                <span>Please correct the error below:</span>
+              </div>
+              <ul class="list-disc list-inside space-y-0.5">
+                {% for error in form.non_field_errors %}
+                  <li>{{ error }}</li>
+                {% endfor %}
+              </ul>
+            </div>
+          {% endif %}
+
+          <form action="{% url 'accounts:register' %}" method="post" novalidate class="space-y-5" id="registration-form">
+            {% csrf_token %}
+
+            {# Adaptive Username Field (if present on form) #}
+            {% if form.username %}
+              <div>
+                <label for="{{ form.username.id_for_label }}" class="block text-xs font-semibold uppercase tracking-wider text-neutral-700 mb-1.5">
+                  {{ form.username.label }} <span class="text-red-600" aria-hidden="true">*</span>
+                </label>
+                {{ form.username }}
+                {% if form.username.errors %}
+                  <p class="mt-1.5 text-xs text-red-600 font-medium flex items-center gap-1" id="{{ form.username.id_for_label }}_error" role="alert">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-3.5 h-3.5 shrink-0">
+                      <path fill-rule="evenodd" d="M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Zm-8-5a.75.75 0 0 1 .75.75v4.5a.75.75 0 0 1-1.5 0v-4.5A.75.75 0 0 1 10 5Zm0 10a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clip-rule="evenodd" />
+                    </svg>
+                    <span>{{ form.username.errors.0 }}</span>
+                  </p>
+                {% endif %}
+              </div>
+            {% endif %}
+
+            {# Email Field #}
+            <div>
+              <label for="{{ form.email.id_for_label }}" class="block text-xs font-semibold uppercase tracking-wider text-neutral-700 mb-1.5">
+                {{ form.email.label }} <span class="text-red-600" aria-hidden="true">*</span>
+              </label>
+              {{ form.email }}
+              {% if form.email.errors %}
+                <p class="mt-1.5 text-xs text-red-600 font-medium flex items-center gap-1" id="{{ form.email.id_for_label }}_error" role="alert">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-3.5 h-3.5 shrink-0">
+                    <path fill-rule="evenodd" d="M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Zm-8-5a.75.75 0 0 1 .75.75v4.5a.75.75 0 0 1-1.5 0v-4.5A.75.75 0 0 1 10 5Zm0 10a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clip-rule="evenodd" />
+                  </svg>
+                  <span>{{ form.email.errors.0 }}</span>
+                </p>
+              {% endif %}
+            </div>
+
+            {# Phone Field (Optional) #}
+            {% if form.phone %}
+              <div>
+                <label for="{{ form.phone.id_for_label }}" class="block text-xs font-semibold uppercase tracking-wider text-neutral-700 mb-1.5">
+                  {{ form.phone.label }}
+                </label>
+                {{ form.phone }}
+                {% if form.phone.errors %}
+                  <p class="mt-1.5 text-xs text-red-600 font-medium flex items-center gap-1" role="alert">
+                    <span>{{ form.phone.errors.0 }}</span>
+                  </p>
+                {% endif %}
+              </div>
+            {% endif %}
+
+            {# Password Field with Toggle #}
+            <div>
+              <label for="{{ form.password.id_for_label }}" class="block text-xs font-semibold uppercase tracking-wider text-neutral-700 mb-1.5">
+                {{ form.password.label }} <span class="text-red-600" aria-hidden="true">*</span>
+              </label>
+              <div class="relative">
+                {{ form.password }}
+                <button type="button" 
+                        class="absolute inset-y-0 right-0 pr-3 flex items-center text-neutral-400 hover:text-primary-900 focus:outline-none focus:text-primary-900 transition-colors"
+                        aria-label="Show password"
+                        aria-pressed="false"
+                        onclick="togglePasswordVisibility('{{ form.password.id_for_label }}', '{{ form.confirm_password.id_for_label }}', this)">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 eye-icon">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                  </svg>
+                </button>
+              </div>
+              {% if form.password.errors %}
+                <p class="mt-1.5 text-xs text-red-600 font-medium flex items-center gap-1" id="{{ form.password.id_for_label }}_error" role="alert">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-3.5 h-3.5 shrink-0">
+                    <path fill-rule="evenodd" d="M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Zm-8-5a.75.75 0 0 1 .75.75v4.5a.75.75 0 0 1-1.5 0v-4.5A.75.75 0 0 1 10 5Zm0 10a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clip-rule="evenodd" />
+                  </svg>
+                  <span>{{ form.password.errors.0 }}</span>
+                </p>
+              {% endif %}
+
+              {# Password Requirements Guidance #}
+              <div class="mt-2 p-3 bg-neutral-100/80 rounded border border-neutral-200/80 text-[11px] text-neutral-600 space-y-1">
+                <span class="font-semibold text-neutral-700 block">Password Requirements:</span>
+                <ul class="list-disc list-inside space-y-0.5 text-neutral-500">
+                  <li>At least 8 characters in length</li>
+                  <li>Cannot be entirely numeric or too similar to your email</li>
+                  <li>Cannot be a commonly used password</li>
+                </ul>
+              </div>
+            </div>
+
+            {# Confirm Password Field #}
+            <div>
+              <label for="{{ form.confirm_password.id_for_label }}" class="block text-xs font-semibold uppercase tracking-wider text-neutral-700 mb-1.5">
+                {{ form.confirm_password.label }} <span class="text-red-600" aria-hidden="true">*</span>
+              </label>
+              {{ form.confirm_password }}
+              {% if form.confirm_password.errors %}
+                <p class="mt-1.5 text-xs text-red-600 font-medium flex items-center gap-1" id="{{ form.confirm_password.id_for_label }}_error" role="alert">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-3.5 h-3.5 shrink-0">
+                    <path fill-rule="evenodd" d="M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Zm-8-5a.75.75 0 0 1 .75.75v4.5a.75.75 0 0 1-1.5 0v-4.5A.75.75 0 0 1 10 5Zm0 10a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clip-rule="evenodd" />
+                  </svg>
+                  <span>{{ form.confirm_password.errors.0 }}</span>
+                </p>
+              {% endif %}
+            </div>
+
+            {# Legal & Privacy Checkboxes #}
+            <div class="space-y-3 pt-2 border-t border-neutral-200">
+              <div class="flex items-start gap-3">
+                <div class="flex items-center h-5">
+                  {{ form.terms_accepted }}
+                </div>
+                <div class="text-xs">
+                  <label for="{{ form.terms_accepted.id_for_label }}" class="text-neutral-700 font-medium cursor-pointer">
+                    I agree to the <a href="#" class="text-primary-900 underline font-semibold hover:text-neutral-600 transition-colors">Terms &amp; Conditions</a> <span class="text-red-600">*</span>
+                  </label>
+                  {% if form.terms_accepted.errors %}
+                    <p class="text-red-600 text-[11px] font-semibold mt-0.5">{{ form.terms_accepted.errors.0 }}</p>
+                  {% endif %}
+                </div>
+              </div>
+
+              <div class="flex items-start gap-3">
+                <div class="flex items-center h-5">
+                  {{ form.privacy_accepted }}
+                </div>
+                <div class="text-xs">
+                  <label for="{{ form.privacy_accepted.id_for_label }}" class="text-neutral-700 font-medium cursor-pointer">
+                    I agree to the <a href="#" class="text-primary-900 underline font-semibold hover:text-neutral-600 transition-colors">Privacy Policy</a> <span class="text-red-600">*</span>
+                  </label>
+                  {% if form.privacy_accepted.errors %}
+                    <p class="text-red-600 text-[11px] font-semibold mt-0.5">{{ form.privacy_accepted.errors.0 }}</p>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+
+            {# Submit Button #}
+            <div class="pt-4">
+              <button type="submit"
+                      class="w-full py-3.5 px-6 bg-primary-900 hover:bg-neutral-800 text-white font-semibold
+                             rounded-btn shadow-md hover:shadow-lg transition-all transform active:scale-[0.99]
+                             text-sm uppercase tracking-wider focus:outline-none focus:ring-2 focus:ring-primary-900 focus:ring-offset-2">
+                Create Membership Account
+              </button>
+            </div>
+          </form>
+
+          {# Footer Link to Login #}
+          <div class="mt-8 pt-6 border-t border-neutral-200 text-center">
+            <p class="text-xs text-neutral-600">
+              Already a House of Bore patron? 
+              <a href="{% url 'accounts:login' %}" class="text-primary-900 font-bold underline hover:text-neutral-600 transition-colors ml-1">
+                Sign in to your account
+              </a>
+            </p>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
+{# Progressive Enhancement: Password Toggle Script #}
+<script>
+  function togglePasswordVisibility(passId, confirmId, btnEl) {
+    const passInput = document.getElementById(passId);
+    const confirmInput = document.getElementById(confirmId);
+    if (!passInput || !confirmInput) return;
+
+    const isPassword = passInput.type === 'password';
+    passInput.type = isPassword ? 'text' : 'password';
+    confirmInput.type = isPassword ? 'text' : 'password';
+
+    btnEl.setAttribute('aria-label', isPassword ? 'Hide password' : 'Show password');
+    btnEl.setAttribute('aria-pressed', isPassword ? 'true' : 'false');
+  }
+</script>
+{% endblock %}

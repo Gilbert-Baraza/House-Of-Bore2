@@ -1,126 +1,114 @@
 {% comment %}
-  templates/components/pagination.html
-  PAGINATION COMPONENT
-  ─────────────────────────────────────────────────────────────────────────────
-  Renders Django Paginator controls.
+templates/components/pagination.html
+PAGINATION COMPONENT
+─────────────────────────────────────────────────────────────────────────────
+Renders Django Paginator controls.
 
-  Usage:
-    In the view, pass a Django Page object as `page_obj`:
-      from django.core.paginator import Paginator
-      paginator = Paginator(queryset, 24)
-      page_obj  = paginator.get_page(request.GET.get('page'))
-      context   = {'page_obj': page_obj, ...}
+Usage:
+In the view, pass a Django Page object as `page_obj`:
+from django.core.paginator import Paginator
+paginator = Paginator(queryset, 24)
+page_obj = paginator.get_page(request.GET.get('page'))
+context = {'page_obj': page_obj, ...}
 
-    In the template:
-      {% include "components/pagination.html" %}
+In the template:
+{% include "components/pagination.html" %}
 
-  Features:
-    - Previous / Next with arrow icons
-    - Numbered pages (current ±2, with ellipsis for gaps)
-    - Page range restricted to avoid overflowing on mobile
-    - ARIA labels for screen readers
+Features:
+- Previous / Next with arrow icons
+- Numbered pages (current ±2, with ellipsis for gaps)
+- Page range restricted to avoid overflowing on mobile
+- ARIA labels for screen readers
 
-  The `request.GET.urlencode()` approach preserves existing query string
-  parameters (search, filters, sort) when navigating between pages.
-  ─────────────────────────────────────────────────────────────────────────────
+The `request.GET.urlencode()` approach preserves existing query string
+parameters (search, filters, sort) when navigating between pages.
+─────────────────────────────────────────────────────────────────────────────
 {% endcomment %}
 {% load query_helpers %}
 {% if page_obj and page_obj.paginator.num_pages > 1 %}
-<nav class="flex items-center justify-center gap-1 py-8"
-     aria-label="Pagination">
+<nav class="flex items-center justify-center gap-1 py-8" aria-label="Pagination">
 
   {# ── Previous ─────────────────────────────────────────────────────────── #}
   {% if page_obj.has_previous %}
-    <a href="?{% url_replace page=page_obj.previous_page_number %}"
-       class="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium
+  <a href="?{% url_replace page=page_obj.previous_page_number %}" class="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium
               text-neutral-600 hover:text-primary-900 hover:bg-neutral-100
-              rounded-btn transition-colors border border-neutral-200"
-       aria-label="Previous page">
-      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-           stroke-width="2" stroke="currentColor" width="14" height="14" aria-hidden="true">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5"/>
-      </svg>
-      <span class="hidden sm:inline">Prev</span>
-    </a>
+              rounded-btn transition-colors border border-neutral-200" aria-label="Previous page">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"
+      width="14" height="14" aria-hidden="true">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+    </svg>
+    <span class="hidden sm:inline">Prev</span>
+  </a>
   {% else %}
-    <span class="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium
-                 text-neutral-300 rounded-btn border border-neutral-100 cursor-not-allowed"
-          aria-disabled="true" aria-label="Previous page (unavailable)">
-      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-           stroke-width="2" stroke="currentColor" width="14" height="14" aria-hidden="true">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5"/>
-      </svg>
-      <span class="hidden sm:inline">Prev</span>
-    </span>
+  <span class="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium
+                 text-neutral-300 rounded-btn border border-neutral-100 cursor-not-allowed" aria-disabled="true"
+    aria-label="Previous page (unavailable)">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"
+      width="14" height="14" aria-hidden="true">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+    </svg>
+    <span class="hidden sm:inline">Prev</span>
+  </span>
   {% endif %}
 
   {# ── Page Numbers ─────────────────────────────────────────────────────── #}
   {% for num in page_obj.paginator.page_range %}
 
-    {% if num == page_obj.number %}
-      {# Current page — highlighted #}
-      <span class="w-9 h-9 flex items-center justify-center text-sm font-semibold
-                   bg-primary-900 text-secondary-50 rounded-btn"
-            aria-current="page"
-            aria-label="Page {{ num }}, current page">
-        {{ num }}
-      </span>
+  {% if num == page_obj.number %}
+  {# Current page — highlighted #}
+  <span class="w-9 h-9 flex items-center justify-center text-sm font-semibold
+                   bg-primary-900 text-secondary-50 rounded-btn" aria-current="page"
+    aria-label="Page {{ num }}, current page">
+    {{ num }}
+  </span>
 
-    {% elif num == 1 or num == page_obj.paginator.num_pages %}
-      {# Always show first and last page #}
-      <a href="?{% url_replace page=num %}"
-         class="w-9 h-9 flex items-center justify-center text-sm font-medium
+  {% elif num == 1 or num == page_obj.paginator.num_pages %}
+  {# Always show first and last page #}
+  <a href="?{% url_replace page=num %}" class="w-9 h-9 flex items-center justify-center text-sm font-medium
                 text-neutral-600 hover:text-primary-900 hover:bg-neutral-100
-                rounded-btn transition-colors border border-neutral-200"
-         aria-label="Page {{ num }}">
-        {{ num }}
-      </a>
+                rounded-btn transition-colors border border-neutral-200" aria-label="Page {{ num }}">
+    {{ num }}
+  </a>
 
-    {% elif num >= page_obj.number|add:"-2" and num <= page_obj.number|add:"2" %}
-      {# Pages within ±2 of current #}
-      <a href="?{% url_replace page=num %}"
-         class="w-9 h-9 flex items-center justify-center text-sm font-medium
+  {% elif num >= page_obj.number|add:"-2" and num <= page_obj.number|add:"2" %} {# Pages within ±2 of current #} <a
+    href="?{% url_replace page=num %}" class="w-9 h-9 flex items-center justify-center text-sm font-medium
                 text-neutral-600 hover:text-primary-900 hover:bg-neutral-100
-                rounded-btn transition-colors border border-neutral-200"
-         aria-label="Page {{ num }}">
-        {{ num }}
-      </a>
+                rounded-btn transition-colors border border-neutral-200" aria-label="Page {{ num }}">
+    {{ num }}
+    </a>
 
     {% elif num == page_obj.number|add:"-3" or num == page_obj.number|add:"3" %}
-      {# Ellipsis at the boundary #}
-      <span class="w-9 h-9 flex items-center justify-center text-sm text-neutral-400"
-            aria-hidden="true">
-        &hellip;
-      </span>
+    {# Ellipsis at the boundary #}
+    <span class="w-9 h-9 flex items-center justify-center text-sm text-neutral-400" aria-hidden="true">
+      &hellip;
+    </span>
 
     {% endif %}
 
-  {% endfor %}
+    {% endfor %}
 
-  {# ── Next ─────────────────────────────────────────────────────────────── #}
-  {% if page_obj.has_next %}
-    <a href="?{% url_replace page=page_obj.next_page_number %}"
-       class="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium
+    {# ── Next ─────────────────────────────────────────────────────────────── #}
+    {% if page_obj.has_next %}
+    <a href="?{% url_replace page=page_obj.next_page_number %}" class="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium
               text-neutral-600 hover:text-primary-900 hover:bg-neutral-100
-              rounded-btn transition-colors border border-neutral-200"
-       aria-label="Next page">
+              rounded-btn transition-colors border border-neutral-200" aria-label="Next page">
       <span class="hidden sm:inline">Next</span>
-      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-           stroke-width="2" stroke="currentColor" width="14" height="14" aria-hidden="true">
-        <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5"/>
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"
+        width="14" height="14" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
       </svg>
     </a>
-  {% else %}
+    {% else %}
     <span class="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium
-                 text-neutral-300 rounded-btn border border-neutral-100 cursor-not-allowed"
-          aria-disabled="true" aria-label="Next page (unavailable)">
+                 text-neutral-300 rounded-btn border border-neutral-100 cursor-not-allowed" aria-disabled="true"
+      aria-label="Next page (unavailable)">
       <span class="hidden sm:inline">Next</span>
-      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-           stroke-width="2" stroke="currentColor" width="14" height="14" aria-hidden="true">
-        <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5"/>
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"
+        width="14" height="14" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
       </svg>
     </span>
-  {% endif %}
+    {% endif %}
 
 </nav>
 {% endif %}

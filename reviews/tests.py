@@ -281,7 +281,7 @@ class ReviewViewTests(ReviewBaseTestCase):
             "comment": "Awesome coat.",
         })
         self.assertEqual(response.status_code, 302)
-        self.assertIn("/accounts/login/", response.url)
+        self.assertIn("/login/", response.url)
 
     def test_create_review_authenticated_success(self):
         self.client.login(email="alice@example.com", password="testpassword123")

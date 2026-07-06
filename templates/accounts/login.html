@@ -1,0 +1,204 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Patron Sign In | House of Bore{% endblock %}
+
+{% block meta_description %}
+  Sign in to your House of Bore patron account to manage your bespoke footwear orders, access numbered horology allocations, and consult your private concierge.
+{% endblock %}
+
+{% block content %}
+<div class="bg-neutral-50 min-h-screen py-12 lg:py-20 flex items-center">
+  <div class="container-site max-w-6xl">
+    
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-stretch bg-white border border-neutral-200/80 rounded-2xl shadow-xl overflow-hidden">
+      
+      {# ── Left Column: Brand & Patron Benefits (Desktop: 5 cols) ─────────── #}
+      <div class="lg:col-span-5 bg-primary-900 text-secondary-50 p-8 sm:p-12 flex flex-col justify-between relative overflow-hidden">
+        {# Subtle background decoration #}
+        <div class="absolute -right-16 -bottom-16 w-64 h-64 bg-primary-800/30 rounded-full blur-3xl pointer-events-none" aria-hidden="true"></div>
+        <div class="absolute -left-12 -top-12 w-48 h-48 bg-primary-800/20 rounded-full blur-2xl pointer-events-none" aria-hidden="true"></div>
+
+        <div class="relative z-10">
+          <span class="inline-block px-3 py-1 bg-primary-800 text-secondary-300 text-xs font-semibold tracking-widest uppercase rounded-full mb-6">
+            Patron Portal
+          </span>
+          <h1 class="font-serif text-3xl sm:text-4xl font-bold tracking-tight text-white mb-4">
+            Welcome Back to the Circle
+          </h1>
+          <p class="text-secondary-200 text-sm leading-relaxed mb-8">
+            Sign in to access your curated wishlist, track bench-made commissions, and consult directly with your dedicated House of Bore concierge.
+          </p>
+
+          {# Trust & Benefit Badges #}
+          <div class="space-y-6 border-t border-primary-800/80 pt-8">
+            <div class="flex items-start gap-4">
+              <div class="w-10 h-10 rounded-full bg-primary-800 flex items-center justify-center shrink-0 text-secondary-300">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                </svg>
+              </div>
+              <div>
+                <h3 class="font-semibold text-white text-sm">Bespoke Footwear & Horology</h3>
+                <p class="text-xs text-secondary-300 mt-0.5">Manage custom last measurements and numbered edition allocations.</p>
+              </div>
+            </div>
+
+            <div class="flex items-start gap-4">
+              <div class="w-10 h-10 rounded-full bg-primary-800 flex items-center justify-center shrink-0 text-secondary-300">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z" />
+                </svg>
+              </div>
+              <div>
+                <h3 class="font-semibold text-white text-sm">Encrypted & Confidential</h3>
+                <p class="text-xs text-secondary-300 mt-0.5">Your personal measurements and collection records remain strictly private.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="relative z-10 mt-12 pt-6 border-t border-primary-800/60 flex items-center justify-between text-xs text-secondary-400">
+          <span>&copy; House of Bore</span>
+          <span>Bespoke Luxury &bull; Est. 2026</span>
+        </div>
+      </div>
+
+      {# ── Right Column: Login Form Card (Desktop: 7 cols) ────────────────── #}
+      <div class="lg:col-span-7 p-8 sm:p-12 lg:p-16 flex flex-col justify-center">
+        <div class="max-w-md mx-auto w-full">
+          
+          <div class="mb-8">
+            <h2 class="font-serif text-2xl sm:text-3xl font-bold text-primary-900 tracking-tight">
+              Sign In
+            </h2>
+            <p class="text-xs text-neutral-500 mt-1.5">
+              Enter your credentials to access your private patron portal.
+            </p>
+          </div>
+
+          {# Form-level / Non-field Errors #}
+          {% if form.non_field_errors %}
+            <div class="mb-6 p-4 bg-red-50 border border-red-300 rounded-lg text-red-900 text-xs leading-relaxed space-y-1" role="alert" aria-live="assertive">
+              <div class="font-bold flex items-center gap-1.5">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4 text-red-600 shrink-0">
+                  <path fill-rule="evenodd" d="M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Zm-8-5a.75.75 0 0 1 .75.75v4.5a.75.75 0 0 1-1.5 0v-4.5A.75.75 0 0 1 10 5Zm0 10a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clip-rule="evenodd" />
+                </svg>
+                <span>Authentication Error</span>
+              </div>
+              {% for error in form.non_field_errors %}
+                <p class="ml-5">{{ error }}</p>
+              {% endfor %}
+            </div>
+          {% endif %}
+
+          <form method="post" action="{% url 'accounts:login' %}{% if request.GET.next %}?next={{ request.GET.next }}{% endif %}" class="space-y-6" novalidate>
+            {% csrf_token %}
+
+            {# Hidden next parameter if passed in POST/GET #}
+            {% if request.GET.next %}
+              <input type="hidden" name="next" value="{{ request.GET.next }}">
+            {% endif %}
+
+            {# Email Field #}
+            <div>
+              <label for="{{ form.email.id_for_label }}" class="block text-xs font-semibold uppercase tracking-wider text-neutral-700 mb-1.5">
+                {{ form.email.label }} <span class="text-red-600" aria-hidden="true">*</span>
+              </label>
+              {{ form.email }}
+              {% if form.email.errors %}
+                <p class="mt-1.5 text-xs text-red-600 font-medium flex items-center gap-1" id="{{ form.email.id_for_label }}_error" role="alert">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-3.5 h-3.5 shrink-0">
+                    <path fill-rule="evenodd" d="M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Zm-8-5a.75.75 0 0 1 .75.75v4.5a.75.75 0 0 1-1.5 0v-4.5A.75.75 0 0 1 10 5Zm0 10a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clip-rule="evenodd" />
+                  </svg>
+                  <span>{{ form.email.errors.0 }}</span>
+                </p>
+              {% endif %}
+            </div>
+
+            {# Password Field with Toggle & Forgot Link #}
+            <div>
+              <div class="flex items-center justify-between mb-1.5">
+                <label for="{{ form.password.id_for_label }}" class="block text-xs font-semibold uppercase tracking-wider text-neutral-700">
+                  {{ form.password.label }} <span class="text-red-600" aria-hidden="true">*</span>
+                </label>
+                <a href="#" class="text-xs text-primary-900 hover:text-neutral-600 font-medium transition-colors" aria-label="Forgot password? (Placeholder)">
+                  Forgot Password?
+                </a>
+              </div>
+              <div class="relative">
+                {{ form.password }}
+                <button type="button" 
+                        class="absolute inset-y-0 right-0 pr-3 flex items-center text-neutral-400 hover:text-primary-900 focus:outline-none focus:text-primary-900 transition-colors"
+                        aria-label="Show password"
+                        aria-pressed="false"
+                        onclick="toggleLoginPasswordVisibility('{{ form.password.id_for_label }}', this)">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 eye-icon">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                  </svg>
+                </button>
+              </div>
+              {% if form.password.errors %}
+                <p class="mt-1.5 text-xs text-red-600 font-medium flex items-center gap-1" id="{{ form.password.id_for_label }}_error" role="alert">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-3.5 h-3.5 shrink-0">
+                    <path fill-rule="evenodd" d="M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Zm-8-5a.75.75 0 0 1 .75.75v4.5a.75.75 0 0 1-1.5 0v-4.5A.75.75 0 0 1 10 5Zm0 10a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clip-rule="evenodd" />
+                  </svg>
+                  <span>{{ form.password.errors.0 }}</span>
+                </p>
+              {% endif %}
+            </div>
+
+            {# Remember Me Checkbox #}
+            <div class="flex items-center">
+              {{ form.remember_me }}
+              <label for="{{ form.remember_me.id_for_label }}" class="ml-2.5 text-xs font-medium text-neutral-700 select-none cursor-pointer">
+                {{ form.remember_me.label }}
+              </label>
+            </div>
+
+            {# Submit Button #}
+            <div class="pt-2">
+              <button type="submit" 
+                      class="w-full py-3.5 px-6 bg-primary-900 hover:bg-neutral-800 text-white font-semibold rounded-btn shadow-md hover:shadow-lg transition-all text-sm uppercase tracking-wider flex items-center justify-center gap-2">
+                <span>Sign In</span>
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
+                </svg>
+              </button>
+            </div>
+
+          </form>
+
+          {# Footer Link to Registration #}
+          <div class="mt-8 pt-6 border-t border-neutral-200 text-center">
+            <p class="text-xs text-neutral-600">
+              Not yet a House of Bore patron? 
+              <a href="{% url 'accounts:register' %}" class="text-primary-900 font-bold underline hover:text-neutral-600 transition-colors ml-1">
+                Create an account
+              </a>
+            </p>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
+{# Progressive Enhancement: Password Toggle Script #}
+<script>
+  function toggleLoginPasswordVisibility(passId, btnEl) {
+    const passInput = document.getElementById(passId);
+    if (!passInput) return;
+
+    const isPassword = passInput.type === 'password';
+    passInput.type = isPassword ? 'text' : 'password';
+
+    btnEl.setAttribute('aria-label', isPassword ? 'Hide password' : 'Show password');
+    btnEl.setAttribute('aria-pressed', isPassword ? 'true' : 'false');
+  }
+</script>
+{% endblock %}

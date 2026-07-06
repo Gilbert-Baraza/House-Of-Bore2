@@ -1,0 +1,17 @@
+VERIFY YOUR EMAIL ADDRESS — HOUSE OF BORE
+──────────────────────────────────────────────────────────────────────────────
+
+Dear {{ user.full_name|default:user.email }},
+
+To ensure the security of your House of Bore account and activate your member benefits, please verify your email address by visiting the link below:
+
+{{ verification_url }}
+
+If you did not create an account with House of Bore, please disregard this email.
+
+Warm regards,
+The House of Bore Concierge Team
+
+──────────────────────────────────────────────────────────────────────────────
+© {% now "Y" %} House of Bore. All rights reserved.
+Exceptional Luxury • Bench-Made Heritage

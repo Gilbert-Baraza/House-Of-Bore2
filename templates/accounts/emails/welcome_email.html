@@ -1,0 +1,22 @@
+{% extends "accounts/emails/base_email.html" %}
+
+{% block title %}Welcome to House of Bore{% endblock %}
+
+{% block content %}
+<h2>Welcome to House of Bore, {{ user.full_name|default:user.email }}</h2>
+
+<p>We are delighted to welcome you to our distinguished circle of patrons. Your account has been created successfully, granting you access to our exclusive catalog of luxury timepieces, bespoke footwear, and fine apparel.</p>
+
+<p>At House of Bore, every creation is a testament to uncompromising craftsmanship and timeless elegance. We invite you to explore our collections and discover pieces crafted to last generations.</p>
+
+<div style="text-align: center; margin: 30px 0;">
+  <a href="{{ login_url }}" class="btn">Sign In to Your Account</a>
+</div>
+
+<p>If you have any questions or require bespoke assistance, our dedicated concierge team is always at your service.</p>
+
+<p style="margin-top: 30px;">
+  Warm regards,<br>
+  <strong>The House of Bore Concierge Team</strong>
+</p>
+{% endblock %}

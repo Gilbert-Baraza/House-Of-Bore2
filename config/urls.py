@@ -20,8 +20,8 @@ urlpatterns = [
     path("", include("core.urls", namespace="core")),
     path("", include("products.urls", namespace="products")),
     path("reviews/", include("reviews.urls", namespace="reviews")),
-    # e.g.:
-    #   path("accounts/", include("accounts.urls", namespace="accounts")),
+    path("wishlist/", include("wishlist.urls", namespace="wishlist")),
+    path("", include("accounts.urls", namespace="accounts")),
 ]
 
 # ─── Development-only URLs ────────────────────────────────────────────────────

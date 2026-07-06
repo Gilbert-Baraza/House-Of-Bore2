@@ -76,16 +76,64 @@
           </svg>
         </a>
 
-        {# Account — links to login/profile #}
-        <a href="#"
-           class="hidden sm:inline-flex icon-btn"
-           aria-label="My account">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-               stroke-width="1.5" stroke="currentColor" width="20" height="20" aria-hidden="true">
-            <path stroke-linecap="round" stroke-linejoin="round"
-                  d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z"/>
-          </svg>
-        </a>
+        {% if user.is_authenticated %}
+          {# Profile (placeholder) #}
+          <a href="#"
+             class="hidden sm:inline-flex icon-btn"
+             aria-label="Profile ({{ user.full_name|default:user.email }})">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                 stroke-width="1.5" stroke="currentColor" width="20" height="20" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                    d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z"/>
+            </svg>
+          </a>
+
+          {# Wishlist — with item count badge #}
+          <a href="{% url 'wishlist:wishlist' %}"
+             class="icon-btn relative"
+             aria-label="Wishlist, {{ wishlist_count|default:0 }} items">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                 stroke-width="1.5" stroke="currentColor" width="20" height="20" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                    d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z"/>
+            </svg>
+            {% if wishlist_count and wishlist_count > 0 %}
+              <span class="absolute -top-0.5 -right-0.5 min-w-[1.1rem] h-[1.1rem] px-0.5
+                            bg-red-600 text-white text-[10px] font-bold
+                            rounded-full flex items-center justify-center leading-none"
+                    aria-hidden="true">
+                {{ wishlist_count }}
+              </span>
+            {% endif %}
+          </a>
+
+          {# Logout Button (POST) #}
+          <form method="post" action="{% url 'accounts:logout' %}" class="inline-flex m-0 p-0">
+            {% csrf_token %}
+            <button type="submit"
+                    class="icon-btn text-neutral-600 hover:text-red-700 transition-colors"
+                    aria-label="Log out of account"
+                    title="Log Out">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                   stroke-width="1.5" stroke="currentColor" width="20" height="20" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                      d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15M12 9l-3 3m0 0 3 3m-3-3h12.75"/>
+              </svg>
+            </button>
+          </form>
+        {% else %}
+          {# Anonymous: Login / Register #}
+          <div class="hidden sm:flex items-center gap-2 text-sm font-medium">
+            <a href="{% url 'accounts:login' %}"
+               class="px-3 py-2 text-neutral-700 hover:text-primary-900 transition-colors rounded-btn">
+              Sign In
+            </a>
+            <a href="{% url 'accounts:register' %}"
+               class="px-4 py-2 bg-primary-900 text-white hover:bg-neutral-800 transition-colors rounded-btn shadow-sm text-xs font-semibold uppercase tracking-wider">
+              Register
+            </a>
+          </div>
+        {% endif %}
 
         {# Cart — with item count badge #}
         <a href="#"
@@ -162,16 +210,69 @@
         </svg>
         Search
       </a>
-      <a href="#"
-         class="flex items-center gap-2.5 px-3 py-2.5 rounded-btn text-sm font-medium
-                text-neutral-700 hover:text-primary-900 hover:bg-neutral-50 transition-colors">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-             stroke-width="1.5" stroke="currentColor" width="18" height="18" aria-hidden="true">
-          <path stroke-linecap="round" stroke-linejoin="round"
-                d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z"/>
-        </svg>
-        My Account
-      </a>
+      {% if user.is_authenticated %}
+        <a href="#"
+           class="flex items-center gap-2.5 px-3 py-2.5 rounded-btn text-sm font-medium
+                  text-neutral-700 hover:text-primary-900 hover:bg-neutral-50 transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+               stroke-width="1.5" stroke="currentColor" width="18" height="18" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z"/>
+          </svg>
+          Profile ({{ user.full_name|default:user.email }})
+        </a>
+        <a href="{% url 'wishlist:wishlist' %}"
+           class="flex items-center justify-between px-3 py-2.5 rounded-btn text-sm font-medium
+                  text-neutral-700 hover:text-primary-900 hover:bg-neutral-50 transition-colors">
+          <div class="flex items-center gap-2.5">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                 stroke-width="1.5" stroke="currentColor" width="18" height="18" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                    d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z"/>
+            </svg>
+            <span>Wishlist</span>
+          </div>
+          {% if wishlist_count and wishlist_count > 0 %}
+            <span class="px-1.5 py-0.5 bg-red-600 text-white text-[10px] font-bold rounded-full">
+              {{ wishlist_count }}
+            </span>
+          {% endif %}
+        </a>
+        <form method="post" action="{% url 'accounts:logout' %}" class="block m-0 p-0">
+          {% csrf_token %}
+          <button type="submit"
+                  class="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-btn text-sm font-medium
+                         text-red-600 hover:text-red-800 hover:bg-red-50 transition-colors text-left">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                 stroke-width="1.5" stroke="currentColor" width="18" height="18" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                    d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15M12 9l-3 3m0 0 3 3m-3-3h12.75"/>
+            </svg>
+            <span>Log Out</span>
+          </button>
+        </form>
+      {% else %}
+        <a href="{% url 'accounts:login' %}"
+           class="flex items-center gap-2.5 px-3 py-2.5 rounded-btn text-sm font-medium
+                  text-neutral-700 hover:text-primary-900 hover:bg-neutral-50 transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+               stroke-width="1.5" stroke="currentColor" width="18" height="18" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15M12 9l-3 3m0 0 3 3m-3-3h12.75"/>
+          </svg>
+          Sign In
+        </a>
+        <a href="{% url 'accounts:register' %}"
+           class="flex items-center gap-2.5 px-3 py-2.5 rounded-btn text-sm font-semibold
+                  bg-primary-900 text-white hover:bg-neutral-800 transition-colors mt-1">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+               stroke-width="1.5" stroke="currentColor" width="18" height="18" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M18 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0ZM3 19.235v-.11a6.375 6.375 0 0 1 12.75 0v.109A12.318 12.318 0 0 1 9.374 21c-2.331 0-4.512-.645-6.374-1.766Z"/>
+          </svg>
+          Register Account
+        </a>
+      {% endif %}
 
       <div class="pb-2"></div>
 

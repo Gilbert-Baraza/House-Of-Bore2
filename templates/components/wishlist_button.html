@@ -1,0 +1,93 @@
+{% comment %}
+  templates/components/wishlist_button.html
+  WISHLIST BUTTON COMPONENT
+  ─────────────────────────────────────────────────────────────────────────────
+  Renders a toggleable Wishlist action (Add / Remove) with two visual styles:
+    - style="card": Compact circular icon button for product grid cards.
+    - style="full": Full width or button with text label for product detail page.
+
+  Context parameters:
+    product — The Product model instance.
+    style   — "card" | "full" (defaults to "full").
+
+  Uses `user_wishlist_ids` (provided by wishlist_status context processor) for
+  instant O(1) in-memory status checking without executing DB queries.
+  ─────────────────────────────────────────────────────────────────────────────
+{% endcomment %}
+
+{% if product.id in user_wishlist_ids %}
+  {# ── Item is already in Wishlist → Remove Button ────────────────────── #}
+  {% if style == "card" %}
+    <form action="{% url 'wishlist:remove' product.id %}" method="post" class="inline relative z-20">
+      {% csrf_token %}
+      <button type="submit"
+              class="w-9 h-9 rounded-full bg-white/90 backdrop-blur-sm shadow-md
+                     flex items-center justify-center text-red-600 hover:bg-red-50 hover:scale-110
+                     transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-red-500"
+              aria-label="Remove {{ product.name }} from wishlist"
+              title="Remove from Wishlist">
+        {# Filled heart icon #}
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"
+             class="w-5 h-5 transition-transform duration-200" aria-hidden="true">
+          <path d="m11.645 20.91-.007-.003-.022-.012a15.247 15.247 0 0 1-.383-.218 25.18 25.18 0 0 1-4.244-3.17C4.688 15.36 2.25 12.174 2.25 8.25 2.25 5.322 4.714 3 7.688 3A5.5 5.5 0 0 1 12 5.052 5.5 5.5 0 0 1 16.313 3c2.973 0 5.437 2.322 5.437 5.25 0 3.925-2.438 7.111-4.739 9.256a25.175 25.175 0 0 1-4.244 3.17 15.247 15.247 0 0 1-.383.219l-.022.012-.007.004-.003.001a.752.752 0 0 1-.704 0l-.003-.001Z"/>
+        </svg>
+      </button>
+    </form>
+  {% else %}
+    {# Full button style for Product Detail page #}
+    <form action="{% url 'wishlist:remove' product.id %}" method="post" class="inline-block w-full sm:w-auto">
+      {% csrf_token %}
+      <button type="submit"
+              class="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-6 py-3.5
+                     border-2 border-red-200 bg-red-50/80 text-red-700 font-medium text-sm rounded-btn
+                     hover:bg-red-100 hover:border-red-300 transition-all duration-200 shadow-sm
+                     focus:outline-none focus:ring-2 focus:ring-red-500"
+              aria-label="Remove {{ product.name }} from wishlist">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"
+             class="w-5 h-5 text-red-600 flex-shrink-0 animate-pulse" aria-hidden="true">
+          <path d="m11.645 20.91-.007-.003-.022-.012a15.247 15.247 0 0 1-.383-.218 25.18 25.18 0 0 1-4.244-3.17C4.688 15.36 2.25 12.174 2.25 8.25 2.25 5.322 4.714 3 7.688 3A5.5 5.5 0 0 1 12 5.052 5.5 5.5 0 0 1 16.313 3c2.973 0 5.437 2.322 5.437 5.25 0 3.925-2.438 7.111-4.739 9.256a25.175 25.175 0 0 1-4.244 3.17 15.247 15.247 0 0 1-.383.219l-.022.012-.007.004-.003.001a.752.752 0 0 1-.704 0l-.003-.001Z"/>
+        </svg>
+        <span>Saved to Wishlist</span>
+      </button>
+    </form>
+  {% endif %}
+
+{% else %}
+  {# ── Item NOT in Wishlist → Add Button ────────────────────────────── #}
+  {% if style == "card" %}
+    <form action="{% url 'wishlist:add' product.id %}" method="post" class="inline relative z-20">
+      {% csrf_token %}
+      <button type="submit"
+              class="w-9 h-9 rounded-full bg-white/90 backdrop-blur-sm shadow-md
+                     flex items-center justify-center text-neutral-600 hover:text-red-600 hover:bg-white hover:scale-110
+                     transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary-900"
+              aria-label="Add {{ product.name }} to wishlist"
+              title="Add to Wishlist">
+        {# Outline heart icon #}
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor"
+             class="w-5 h-5 transition-transform duration-200" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round"
+                d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z"/>
+        </svg>
+      </button>
+    </form>
+  {% else %}
+    {# Full button style for Product Detail page #}
+    <form action="{% url 'wishlist:add' product.id %}" method="post" class="inline-block w-full sm:w-auto">
+      {% csrf_token %}
+      <button type="submit"
+              class="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-6 py-3.5
+                     border-2 border-neutral-300 bg-white text-neutral-800 font-medium text-sm rounded-btn
+                     hover:border-primary-900 hover:text-primary-900 hover:bg-neutral-50 transition-all duration-200 shadow-sm
+                     focus:outline-none focus:ring-2 focus:ring-primary-900"
+              aria-label="Add {{ product.name }} to wishlist">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor"
+             class="w-5 h-5 text-neutral-500 flex-shrink-0" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round"
+                d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z"/>
+        </svg>
+        <span>Add to Wishlist</span>
+      </button>
+    </form>
+  {% endif %}
+{% endif %}

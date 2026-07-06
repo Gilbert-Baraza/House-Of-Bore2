@@ -55,6 +55,7 @@ LOCAL_APPS = [
     "orders",     # Order management and history
     "payments",   # Payment gateway integration
     "reviews",    # Product reviews and ratings
+    "wishlist",   # User product wishlists
     "dashboard",  # Staff/seller or customer account dashboard
 ]
 
@@ -96,6 +97,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 # Makes Django messages (flash alerts) available in templates.
                 "django.contrib.messages.context_processors.messages",
+                "wishlist.context_processors.wishlist_status",
                 # Cart context processor will be added here in Phase 1.4.
                 # 'cart.context_processors.cart',
             ],
@@ -116,13 +118,19 @@ WSGI_APPLICATION = "config.wsgi.application"
 AUTH_USER_MODEL = "accounts.User"
 
 # Where to redirect unauthenticated users who try to access a protected view.
-LOGIN_URL = "/accounts/login/"
+LOGIN_URL = "/login/"
 
 # Where to redirect users after a successful login (if no 'next' param present).
 LOGIN_REDIRECT_URL = "/"
 
 # Where to redirect users after they log out.
 LOGOUT_REDIRECT_URL = "/"
+
+# Authentication backends supporting case-insensitive email login and default ModelBackend
+AUTHENTICATION_BACKENDS = [
+    "accounts.backends.EmailAuthenticationBackend",
+    "django.contrib.auth.backends.ModelBackend",
+]
 
 
 # ─── Password Validation ────────────────────────────────────────────────────────

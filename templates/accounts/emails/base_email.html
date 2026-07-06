@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}House of Bore{% endblock %}</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #f8f8f8;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: #1c1c1c;
+      line-height: 1.6;
+    }
+    .email-wrapper {
+      width: 100%;
+      background-color: #f8f8f8;
+      padding: 40px 0;
+    }
+    .email-container {
+      max-width: 600px;
+      margin: 0 auto;
+      background-color: #ffffff;
+      border: 1px solid #e5e5e5;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .email-header {
+      background-color: #111111;
+      padding: 30px 40px;
+      text-align: center;
+    }
+    .email-header h1 {
+      margin: 0;
+      color: #ffffff;
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+    }
+    .email-body {
+      padding: 40px;
+      font-size: 15px;
+      color: #333333;
+    }
+    .email-body h2 {
+      margin-top: 0;
+      color: #111111;
+      font-size: 20px;
+      font-weight: 600;
+    }
+    .btn {
+      display: inline-block;
+      padding: 14px 28px;
+      background-color: #111111;
+      color: #ffffff !important;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 14px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin: 20px 0;
+    }
+    .email-footer {
+      background-color: #f1f1f1;
+      padding: 24px 40px;
+      text-align: center;
+      font-size: 12px;
+      color: #777777;
+      border-top: 1px solid #e5e5e5;
+    }
+    @media only screen and (max-width: 620px) {
+      .email-container {
+        width: 100% !important;
+        border-radius: 0 !important;
+        border: none !important;
+      }
+      .email-body, .email-header, .email-footer {
+        padding: 24px !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="email-wrapper">
+    <div class="email-container">
+      <div class="email-header">
+        <h1>House of Bore</h1>
+      </div>
+      <div class="email-body">
+        {% block content %}{% endblock %}
+      </div>
+      <div class="email-footer">
+        <p>&copy; {% now "Y" %} House of Bore. All rights reserved.</p>
+        <p>Exceptional Luxury &bull; Bench-Made Heritage</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

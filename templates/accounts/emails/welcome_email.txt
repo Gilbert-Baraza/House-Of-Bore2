@@ -1,0 +1,20 @@
+WELCOME TO HOUSE OF BORE
+──────────────────────────────────────────────────────────────────────────────
+
+Dear {{ user.full_name|default:user.email }},
+
+We are delighted to welcome you to our distinguished circle of patrons. Your account has been created successfully, granting you access to our exclusive catalog of luxury timepieces, bespoke footwear, and fine apparel.
+
+At House of Bore, every creation is a testament to uncompromising craftsmanship and timeless elegance. We invite you to explore our collections and discover pieces crafted to last generations.
+
+You may access your account at any time by visiting:
+{{ login_url }}
+
+If you have any questions or require bespoke assistance, our dedicated concierge team is always at your service.
+
+Warm regards,
+The House of Bore Concierge Team
+
+──────────────────────────────────────────────────────────────────────────────
+© {% now "Y" %} House of Bore. All rights reserved.
+Exceptional Luxury • Bench-Made Heritage

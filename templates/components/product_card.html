@@ -70,18 +70,21 @@
       {% endif %}
     </div>
 
-    {# Stock status badge (top-right) #}
-    {% if not product.in_stock %}
-      <span class="absolute top-3 right-3 inline-flex items-center px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider
-                   bg-neutral-800 text-white rounded-btn shadow-sm z-10">
-        Sold Out
-      </span>
-    {% elif product.low_stock %}
-      <span class="absolute top-3 right-3 inline-flex items-center px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider
-                   bg-amber-500 text-white rounded-btn shadow-sm z-10">
-        Low Stock
-      </span>
-    {% endif %}
+    {# Top-Right Badges and Actions #}
+    <div class="absolute top-3 right-3 flex items-center gap-2 z-20">
+      {% if not product.in_stock %}
+        <span class="inline-flex items-center px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider
+                     bg-neutral-800 text-white rounded-btn shadow-sm">
+          Sold Out
+        </span>
+      {% elif product.low_stock %}
+        <span class="inline-flex items-center px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider
+                     bg-amber-500 text-white rounded-btn shadow-sm">
+          Low Stock
+        </span>
+      {% endif %}
+      {% include "components/wishlist_button.html" with product=product style="card" %}
+    </div>
   </div>
 
   {# ── Card Body ─────────────────────────────────────────────────────── #}

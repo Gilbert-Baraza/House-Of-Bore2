@@ -1,0 +1,27 @@
+{% extends "accounts/emails/base_email.html" %}
+
+{% block title %}Verify Your Email — House of Bore{% endblock %}
+
+{% block content %}
+<h2>Please Verify Your Email Address</h2>
+
+<p>Dear {{ user.full_name|default:user.email }},</p>
+
+<p>To ensure the security of your House of Bore account and activate your member benefits, please verify your email address by clicking the button below:</p>
+
+<div style="text-align: center; margin: 30px 0;">
+  <a href="{{ verification_url }}" class="btn">Verify Email Address</a>
+</div>
+
+<p>If the button above does not work, you can also copy and paste the following URL into your web browser:</p>
+<p style="word-break: break-all; font-size: 13px; color: #555555; background-color: #f5f5f5; padding: 12px; border-radius: 4px;">
+  {{ verification_url }}
+</p>
+
+<p>If you did not create an account with House of Bore, please disregard this email.</p>
+
+<p style="margin-top: 30px;">
+  Warm regards,<br>
+  <strong>The House of Bore Concierge Team</strong>
+</p>
+{% endblock %}
