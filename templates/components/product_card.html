@@ -1,0 +1,124 @@
+{% comment %}
+  templates/components/product_card.html
+  PRODUCT CARD COMPONENT (Database-Connected)
+  ─────────────────────────────────────────────────────────────────────────────
+  Renders a single product card for use in grids across the catalog.
+  Expects a `product` context variable — a Product model instance.
+
+  Context:
+    product  — Product model instance with category, brand, and images prefetched
+
+  Features:
+    - Primary image with lazy loading
+    - Sale badge with discount percentage
+    - Featured badge
+    - Stock status indicator
+    - Brand and category labels
+    - Clickable card linking to product detail
+    - Hover micro-animations
+  ─────────────────────────────────────────────────────────────────────────────
+{% endcomment %}
+
+<article class="card group flex flex-col h-full bg-white relative" id="product-card-{{ product.pk }}">
+
+  {# ── Image Zone ──────────────────────────────────────────────────────── #}
+  <div class="relative w-full aspect-[3/4] bg-neutral-100 overflow-hidden">
+
+    {# Product Image or Placeholder #}
+    {% with primary=product.get_primary_image %}
+      {% if primary and primary.image %}
+        <img src="{{ primary.image.url }}"
+             alt="{{ primary.alt_text|default:product.name }}"
+             class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+             loading="lazy"
+             width="400" height="533">
+      {% else %}
+        {# SVG placeholder when no image is uploaded #}
+        <div class="absolute inset-0 bg-gradient-to-b from-transparent via-neutral-100/50 to-neutral-200/80
+                    flex items-center justify-center
+                    transition-transform duration-500 group-hover:scale-105" aria-hidden="true">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+               stroke-width="0.75" stroke="currentColor"
+               class="w-16 h-16 text-neutral-300"
+               role="img" aria-label="{{ product.name }} placeholder image">
+            <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M15.75 10.5V6a3.75 3.75 0 1 0-7.5 0v4.5m11.356-1.993 1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 0 1-1.12-1.243l1.264-12A1.125 1.125 0 0 1 5.513 7.5h12.974c.576 0 1.059.435 1.119 1.007ZM8.625 10.5a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm7.5 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z"/>
+          </svg>
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    {# ── Badges ──────────────────────────────────────────────────────────── #}
+    <div class="absolute top-3 left-3 flex flex-col gap-1.5 z-10">
+      {% if product.is_on_sale %}
+        <span class="inline-flex items-center px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider
+                     bg-red-600 text-white rounded-btn shadow-sm">
+          -{{ product.discount_percentage }}%
+        </span>
+      {% endif %}
+      {% if product.is_featured %}
+        <span class="inline-flex items-center px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider
+                     bg-accent-600 text-white rounded-btn shadow-sm">
+          Featured
+        </span>
+      {% endif %}
+      {% if product.is_new_arrival %}
+        <span class="inline-flex items-center px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider
+                     bg-primary-900 text-secondary-50 rounded-btn shadow-sm">
+          New
+        </span>
+      {% endif %}
+    </div>
+
+    {# Stock status badge (top-right) #}
+    {% if not product.in_stock %}
+      <span class="absolute top-3 right-3 inline-flex items-center px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider
+                   bg-neutral-800 text-white rounded-btn shadow-sm z-10">
+        Sold Out
+      </span>
+    {% elif product.low_stock %}
+      <span class="absolute top-3 right-3 inline-flex items-center px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider
+                   bg-amber-500 text-white rounded-btn shadow-sm z-10">
+        Low Stock
+      </span>
+    {% endif %}
+  </div>
+
+  {# ── Card Body ─────────────────────────────────────────────────────── #}
+  <div class="card-body flex-1 flex flex-col justify-between">
+    <div>
+      {# Brand #}
+      {% if product.brand %}
+        <p class="text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-1.5">
+          {{ product.brand.name }}
+        </p>
+      {% endif %}
+
+      {# Product Name (clickable) #}
+      <h3 class="font-serif text-lg font-semibold text-primary-900 mb-1.5
+                 group-hover:text-accent-600 transition-colors leading-snug">
+        <a href="{{ product.get_absolute_url }}" class="after:absolute after:inset-0 focus:outline-none">
+          {{ product.name }}
+        </a>
+      </h3>
+
+      {# Category #}
+      {% if product.category %}
+        <p class="text-xs text-neutral-500 mb-3">
+          {{ product.category.name }}
+        </p>
+      {% endif %}
+
+      {# Price #}
+      <div class="flex items-baseline gap-2 mb-4">
+        {% if product.is_on_sale %}
+          <span class="text-base font-bold text-red-600 tabular-nums">${{ product.price }}</span>
+          <del class="text-sm text-neutral-400 tabular-nums">${{ product.compare_at_price }}</del>
+        {% else %}
+          <span class="text-base font-semibold text-primary-900 tabular-nums">${{ product.price }}</span>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+</article>

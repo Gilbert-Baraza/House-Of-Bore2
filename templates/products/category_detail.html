@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% comment %}
+  templates/products/category_detail.html
+  CATEGORY DETAIL PAGE
+  ─────────────────────────────────────────────────────────────────────────────
+  Displays a single category with its products in a sortable, paginated grid.
+  Shows child subcategories for hierarchical navigation.
+  ─────────────────────────────────────────────────────────────────────────────
+{% endcomment %}
+
+{% block title %}{{ category.name }}{% endblock %}
+{% block meta_description %}
+<meta name="description" content="Shop {{ category.name }} at House of Bore. {{ category.description|default:'Discover curated premium products in this collection.' }}">
+{% endblock meta_description %}
+{% block og_title %}
+<meta property="og:title" content="{{ category.name }} — House of Bore">
+{% endblock og_title %}
+{% block og_description %}
+<meta property="og:description" content="{{ category.description|default:'Explore our curated collection.' }}">
+{% endblock og_description %}
+
+{% block content %}
+
+  {# ── Breadcrumbs ───────────────────────────────────────────────────────── #}
+  {% include "components/breadcrumbs.html" with breadcrumbs=breadcrumbs %}
+
+  {# ── Category Header ──────────────────────────────────────────────────── #}
+  <header class="bg-primary-900 text-secondary-50 py-16 lg:py-20 border-b border-primary-800">
+    <div class="container-site text-center max-w-3xl mx-auto">
+      <span class="badge badge-accent mb-4">Collection</span>
+      <h1 class="font-serif text-4xl sm:text-5xl font-bold text-secondary-50 tracking-tight mb-4">
+        {{ category.name }}
+      </h1>
+      {% if category.description %}
+        <p class="text-base sm:text-lg text-secondary-300 leading-relaxed">
+          {{ category.description }}
+        </p>
+      {% endif %}
+    </div>
+  </header>
+
+  {# ── Child Subcategories ───────────────────────────────────────────────── #}
+  {% if child_categories %}
+    <section class="py-8 border-b border-neutral-200 bg-secondary-50" aria-label="Subcategories">
+      <div class="container-site">
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="text-xs font-semibold uppercase tracking-wider text-neutral-500 mr-2">Browse:</span>
+          {% for child in child_categories %}
+            <a href="{% url 'products:category_detail' child.slug %}"
+               class="inline-flex items-center px-3 py-1.5 text-sm font-medium
+                      bg-white border border-neutral-200 rounded-btn text-primary-900
+                      hover:bg-accent-50 hover:border-accent-300 hover:text-accent-700
+                      transition-colors">
+              {{ child.name }}
+            </a>
+          {% endfor %}
+        </div>
+      </div>
+    </section>
+  {% endif %}
+
+  {# ── Product Grid ──────────────────────────────────────────────────────── #}
+  <section class="py-12 lg:py-16" aria-labelledby="category-products-heading">
+    <div class="container-site">
+
+      <h2 id="category-products-heading" class="sr-only">Products in {{ category.name }}</h2>
+
+      {% if products %}
+
+        {# Sort Bar #}
+        {% include "components/sort_bar.html" with current_sort=current_sort page_obj=page_obj %}
+
+        {# Responsive Product Grid #}
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+          {% for product in products %}
+            {% include "components/product_card.html" with product=product %}
+          {% endfor %}
+        </div>
+
+        {# Pagination #}
+        {% include "components/pagination.html" %}
+
+      {% else %}
+        {% include "components/empty_state.html" with title="No Products Yet" description="This collection is being curated. Products will appear here soon." action_url="/categories/" action_text="Browse Collections" %}
+      {% endif %}
+
+    </div>
+  </section>
+
+{% endblock %}

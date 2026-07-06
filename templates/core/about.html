@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+
+{% comment %}
+  templates/core/about.html
+  ABOUT PAGE TEMPLATE — House of Bore
+  ─────────────────────────────────────────────────────────────────────────────
+  Brand story and heritage page.
+  Sections:
+    1. Hero Banner
+    2. Our Heritage & Architectural Roots
+    3. Ethical Supply Chain & Full-Grain Leather
+    4. Core Values (3 pillars)
+    5. Call to Action / Shop Link
+  ─────────────────────────────────────────────────────────────────────────────
+{% endcomment %}
+
+{% block title %}Our Story &amp; Heritage{% endblock %}
+{% block meta_description %}
+<meta name="description" content="Learn about House of Bore's architectural heritage, ethical supply chain, and our mission to create enduring artifacts for modern living.">
+{% endblock meta_description %}
+{% block og_title %}
+<meta property="og:title" content="Our Story &amp; Heritage — House of Bore">
+{% endblock og_title %}
+{% block og_description %}
+<meta property="og:description" content="Learn about House of Bore's architectural heritage, ethical supply chain, and our mission to create enduring artifacts.">
+{% endblock og_description %}
+
+{% block content %}
+
+  {# ── Hero Header ──────────────────────────────────────────────────────── #}
+  <header class="bg-primary-900 text-secondary-50 py-20 lg:py-28 border-b border-primary-800">
+    <div class="container-site text-center max-w-3xl mx-auto">
+      <span class="badge badge-accent mb-4">Our Heritage</span>
+      <h1 class="font-serif text-4xl sm:text-5xl lg:text-6xl font-bold text-secondary-50 tracking-tight mb-6">
+        Intention Over Trend.
+      </h1>
+      <p class="text-base sm:text-lg text-secondary-300 leading-relaxed">
+        Founded in 2011 between Paris and London, House of Bore was born from a simple conviction: the objects we live with should become more beautiful with age, not obsolete after a season.
+      </p>
+    </div>
+  </header>
+
+  {# ── Statistics Bar ───────────────────────────────────────────────────── #}
+  <section class="bg-secondary-100/70 border-b border-neutral-200 py-12" aria-label="Key company figures">
+    <div class="container-site">
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+        {% for stat in stats %}
+          <div>
+            <p class="font-serif text-3xl sm:text-4xl font-bold text-primary-900 tabular-nums mb-1">{{ stat.value }}</p>
+            <p class="text-xs font-semibold uppercase tracking-widest text-neutral-500">{{ stat.label }}</p>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+
+  {# ── Company Story & Mission/Vision ──────────────────────────────────── #}
+  <section class="py-20 lg:py-28 border-b border-neutral-200" aria-labelledby="story-headline">
+    <div class="container-site">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
+        
+        {# Left: Story Copy #}
+        <div class="lg:col-span-7 space-y-6 text-base text-neutral-600 leading-relaxed">
+          <h2 id="story-headline"
+              class="font-serif text-3xl sm:text-4xl font-bold text-primary-900 tracking-tight mb-4">
+            The Philosophy of Enduring Craft
+          </h2>
+          <p>
+            In an era dominated by hyper-accelerated production and synthetic obsolescence, House of Bore operates as an antidote. We partner exclusively with multi-generational family workshops across Biella, Florence, and the Scottish Highlands—artisans who have spent decades perfecting single weaves and vegetable tanning formulas.
+          </p>
+          <p>
+            Our design process begins not with mood boards or seasonal palettes, but with raw fiber analysis. We test tensile strength, abrasion resistance, and aging characteristics before drafting a single pattern. If an artifact cannot survive ten years of daily wear and graceful aging, it does not enter our collection.
+          </p>
+          
+          {# Mission & Vision Box #}
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-6 border-t border-neutral-200">
+            <div class="p-6 rounded-card bg-secondary-100/60 border border-neutral-200/80">
+              <h3 class="font-serif text-lg font-semibold text-primary-900 mb-2">Our Mission</h3>
+              <p class="text-sm text-neutral-600">To equip discerning individuals with architectural wardrobe staples and artifacts that elevate everyday rituals while respecting ecological balance.</p>
+            </div>
+            <div class="p-6 rounded-card bg-secondary-100/60 border border-neutral-200/80">
+              <h3 class="font-serif text-lg font-semibold text-primary-900 mb-2">Our Vision</h3>
+              <p class="text-sm text-neutral-600">To establish a global benchmark for radical supply chain transparency and circular design, proving that luxury and sustainability are identical.</p>
+            </div>
+          </div>
+
+        </div>
+
+        {# Right: Editorial Image Placeholder #}
+        <div class="lg:col-span-5">
+          <div class="aspect-[3/4] rounded-card bg-neutral-200 overflow-hidden relative shadow-card flex items-center justify-center">
+            <div class="absolute inset-0 bg-gradient-to-tr from-primary-900/40 via-transparent to-accent-500/20" aria-hidden="true"></div>
+            <div class="text-center p-8 z-10">
+              <span class="w-16 h-16 rounded-full bg-white/90 shadow-md flex items-center justify-center mx-auto mb-4 text-primary-900">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0 0 12 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75Z"/>
+                </svg>
+              </span>
+              <p class="font-serif font-semibold text-lg text-primary-900">The Florentine Atelier</p>
+              <p class="text-xs text-neutral-700">Where our leather artifacts take shape</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  {# ── Core Values ──────────────────────────────────────────────────────── #}
+  <section class="py-20 lg:py-28 bg-secondary-100/40 border-b border-neutral-200" aria-labelledby="values-headline">
+    <div class="container-site">
+      <div class="max-w-2xl mx-auto text-center mb-16">
+        <span class="badge badge-neutral mb-3">Our Principles</span>
+        <h2 id="values-headline" class="font-serif text-3xl sm:text-4xl font-bold text-primary-900 tracking-tight mb-4">
+          The Four Pillars of the House
+        </h2>
+        <p class="text-base text-neutral-500">Every design decision we make is evaluated against these unchanging standards.</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+        {% for val in values %}
+          <div class="card card-body bg-white flex flex-col justify-between">
+            <div>
+              <span class="font-mono text-xs font-bold text-accent-500 block mb-3">0{{ forloop.counter }}</span>
+              <h3 class="font-serif text-xl font-semibold text-primary-900 mb-3">{{ val.title }}</h3>
+              <p class="text-sm text-neutral-500 leading-relaxed">{{ val.description }}</p>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+
+  {# ── Team Placeholders ────────────────────────────────────────────────── #}
+  <section class="py-20 lg:py-28" aria-labelledby="team-headline">
+    <div class="container-site">
+      <div class="max-w-2xl mx-auto text-center mb-16">
+        <span class="badge badge-neutral mb-3">Leadership</span>
+        <h2 id="team-headline" class="font-serif text-3xl sm:text-4xl font-bold text-primary-900 tracking-tight mb-4">
+          The Curators &amp; Artisans
+        </h2>
+        <p class="text-base text-neutral-500">Meet the individuals guiding our textile innovation and creative direction.</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        {% for member in team %}
+          <div class="card bg-white text-center p-6 flex flex-col items-center">
+            {# Avatar Placeholder #}
+            <div class="w-24 h-24 rounded-full bg-primary-900 text-secondary-50 font-serif font-bold text-2xl flex items-center justify-center mb-5 shadow-md">
+              {{ member.name|slice:":1" }}
+            </div>
+            <h3 class="font-serif text-xl font-semibold text-primary-900 mb-1">{{ member.name }}</h3>
+            <p class="text-xs font-semibold uppercase tracking-widest text-accent-600 mb-4">{{ member.role }}</p>
+            <p class="text-sm text-neutral-500 leading-relaxed">{{ member.bio }}</p>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+
+{% endblock %}

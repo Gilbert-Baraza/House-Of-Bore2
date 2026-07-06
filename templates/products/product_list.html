@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% comment %}
+  templates/products/product_list.html
+  PRODUCT LISTING PAGE
+  ─────────────────────────────────────────────────────────────────────────────
+  Displays a paginated, sortable grid of all active products.
+  Supports server-side sorting via query parameters.
+  ─────────────────────────────────────────────────────────────────────────────
+{% endcomment %}
+
+{% block title %}Shop All Products{% endblock %}
+{% block meta_description %}
+<meta name="description" content="Browse the full House of Bore catalog. Premium clothing, footwear, and accessories crafted from the finest European materials.">
+{% endblock meta_description %}
+{% block og_title %}
+<meta property="og:title" content="Shop All Products — House of Bore">
+{% endblock og_title %}
+{% block og_description %}
+<meta property="og:description" content="Discover our curated collection of premium menswear, womenswear, footwear, and accessories.">
+{% endblock og_description %}
+
+{% block content %}
+
+  {# ── Breadcrumbs ───────────────────────────────────────────────────────── #}
+  {% include "components/breadcrumbs.html" with breadcrumbs=breadcrumbs %}
+
+  {# ── Page Header ───────────────────────────────────────────────────────── #}
+  <header class="bg-primary-900 text-secondary-50 py-16 lg:py-20 border-b border-primary-800">
+    <div class="container-site text-center max-w-3xl mx-auto">
+      <span class="badge badge-accent mb-4">Full Catalog</span>
+      <h1 class="font-serif text-4xl sm:text-5xl font-bold text-secondary-50 tracking-tight mb-4">
+        Shop All Products
+      </h1>
+      <p class="text-base sm:text-lg text-secondary-300 leading-relaxed">
+        Every garment, accessory, and artifact in our permanent collection — designed for longevity and crafted without compromise.
+      </p>
+    </div>
+  </header>
+
+  {# ── Product Grid Section ──────────────────────────────────────────────── #}
+  <section class="py-12 lg:py-16" aria-labelledby="product-grid-heading">
+    <div class="container-site">
+
+      <h2 id="product-grid-heading" class="sr-only">Product Grid</h2>
+
+      {% if products %}
+
+        {# Sort Bar #}
+        {% include "components/sort_bar.html" with current_sort=current_sort page_obj=page_obj %}
+
+        {# Responsive Product Grid #}
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+          {% for product in products %}
+            {% include "components/product_card.html" with product=product %}
+          {% endfor %}
+        </div>
+
+        {# Pagination #}
+        {% include "components/pagination.html" %}
+
+      {% else %}
+        {% include "components/empty_state.html" with title="No Products Available" description="Our catalog is currently being curated. Check back soon for new arrivals." action_url="/" action_text="Return Home" %}
+      {% endif %}
+
+    </div>
+  </section>
+
+{% endblock %}

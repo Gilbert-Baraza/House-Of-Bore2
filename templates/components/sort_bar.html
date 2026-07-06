@@ -1,0 +1,43 @@
+{% comment %}
+  templates/components/sort_bar.html
+  SORT BAR COMPONENT
+  ─────────────────────────────────────────────────────────────────────────────
+  Renders a sorting dropdown and product count indicator.
+  Preserves existing query parameters when changing sort order.
+
+  Context:
+    current_sort    — currently selected sort key (str)
+    page_obj        — Django Page object (for total count)
+    product_count   — fallback total count if page_obj not available
+  ─────────────────────────────────────────────────────────────────────────────
+{% endcomment %}
+
+<div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-8 pb-6 border-b border-neutral-200">
+
+  {# Product Count #}
+  <p class="text-sm text-neutral-500">
+    {% if page_obj %}
+      <span class="font-semibold text-primary-900">{{ page_obj.paginator.count }}</span>
+      product{{ page_obj.paginator.count|pluralize }}
+    {% elif product_count is not None %}
+      <span class="font-semibold text-primary-900">{{ product_count }}</span>
+      product{{ product_count|pluralize }}
+    {% endif %}
+  </p>
+
+  {# Sort Dropdown #}
+  <form method="get" class="flex items-center gap-2" id="sort-form">
+    <label for="sort-select" class="text-xs font-semibold uppercase tracking-wider text-neutral-500">Sort by</label>
+    <select id="sort-select" name="sort"
+            onchange="this.form.submit()"
+            class="text-sm bg-white border border-neutral-200 rounded-btn px-3 py-2
+                   text-primary-900 font-medium focus:outline-none focus:ring-2 focus:ring-accent-500/30
+                   focus:border-accent-500 transition-colors cursor-pointer">
+      <option value="newest" {% if current_sort == "newest" %}selected{% endif %}>Newest</option>
+      <option value="price_asc" {% if current_sort == "price_asc" %}selected{% endif %}>Price: Low to High</option>
+      <option value="price_desc" {% if current_sort == "price_desc" %}selected{% endif %}>Price: High to Low</option>
+      <option value="featured" {% if current_sort == "featured" %}selected{% endif %}>Featured</option>
+    </select>
+  </form>
+
+</div>

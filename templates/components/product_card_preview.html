@@ -1,0 +1,87 @@
+{% comment %}
+  templates/components/product_card_preview.html
+  PRODUCT CARD PREVIEW COMPONENT
+  ─────────────────────────────────────────────────────────────────────────────
+  Displays a placeholder product card for Phase 1.5 homepage preview.
+  No database connection. Contains disabled Add to Cart button for layout test.
+  Context variables:
+    product.name          — Product title
+    product.price         — Price string (e.g., "$680")
+    product.rating        — Rating float (e.g., 4.9)
+    product.reviews_count — Int review count
+    product.badge         — Optional badge string
+    product.image_alt     — Alt text placeholder
+  ─────────────────────────────────────────────────────────────────────────────
+{% endcomment %}
+
+<article class="card group flex flex-col h-full bg-white relative">
+
+  {# ── Image Placeholder Zone ───────────────────────────────────────────── #}
+  <div class="relative w-full aspect-[3/4] bg-neutral-100 overflow-hidden flex items-center justify-center">
+    
+    {# Editorial background gradient #}
+    <div class="absolute inset-0 bg-gradient-to-b from-transparent via-neutral-100/50 to-neutral-200/80
+                transition-transform duration-500 group-hover:scale-105" aria-hidden="true"></div>
+    
+    {# Product Coat / Item SVG Placeholder #}
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+         stroke-width="0.75" stroke="currentColor"
+         class="w-16 h-16 text-neutral-400 transition-transform duration-500 group-hover:scale-110 group-hover:text-primary-800"
+         aria-label="{{ product.image_alt|default:'Product preview image' }}" role="img">
+      <path stroke-linecap="round" stroke-linejoin="round"
+            d="M15.75 10.5V6a3.75 3.75 0 1 0-7.5 0v4.5m11.356-1.993 1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 0 1-1.12-1.243l1.264-12A1.125 1.125 0 0 1 5.513 7.5h12.974c.576 0 1.059.435 1.119 1.007ZM8.625 10.5a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm7.5 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z"/>
+    </svg>
+
+    {# Optional Badge #}
+    {% if product.badge %}
+      <span class="absolute top-3 left-3 badge badge-primary z-10">
+        {{ product.badge }}
+      </span>
+    {% endif %}
+  </div>
+
+  {# ── Card Body ────────────────────────────────────────────────────────── #}
+  <div class="card-body flex-1 flex flex-col justify-between">
+    <div>
+      {# Rating & Reviews #}
+      <div class="flex items-center gap-1.5 mb-2 text-xs text-neutral-500">
+        <span class="flex items-center text-accent-500" aria-label="Rating: {{ product.rating }} out of 5 stars">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-3.5 h-3.5" aria-hidden="true">
+            <path fill-rule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.006 5.404.434c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.434 2.082-5.005Z" clip-rule="evenodd"/>
+          </svg>
+          <span class="font-semibold ml-1 text-primary-900">{{ product.rating|default:"4.9" }}</span>
+        </span>
+        <span aria-hidden="true">&middot;</span>
+        <span>({{ product.reviews_count|default:"24" }} reviews)</span>
+      </div>
+
+      {# Title #}
+      <h3 class="font-serif text-lg font-semibold text-primary-900 mb-1 group-hover:text-accent-600 transition-colors">
+        {# Phase 2: replace href="#" with product detail URL #}
+        <a href="#" class="after:absolute after:inset-0 focus:outline-none">
+          {{ product.name }}
+        </a>
+      </h3>
+
+      {# Tabular Price #}
+      <p class="text-base font-semibold text-primary-900 tabular-nums mb-4">
+        {{ product.price }}
+      </p>
+    </div>
+
+    {# ── Disabled Add to Cart Button (Phase 1.5 requirement) ────────────── #}
+    <button type="button"
+            disabled
+            aria-disabled="true"
+            class="btn btn-outline w-full justify-center relative z-20 cursor-not-allowed opacity-60"
+            title="Available in Phase 2">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+           stroke-width="1.5" stroke="currentColor" class="w-4 h-4" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round"
+              d="M15.75 10.5V6a3.75 3.75 0 1 0-7.5 0v4.5m11.356-1.993 1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 0 1-1.12-1.243l1.264-12A1.125 1.125 0 0 1 5.513 7.5h12.974c.576 0 1.059.435 1.119 1.007ZM8.625 10.5a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm7.5 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z"/>
+      </svg>
+      <span>Add to Bag (Preview)</span>
+    </button>
+  </div>
+
+</article>

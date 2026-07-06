@@ -1,0 +1,23 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# requirements/production.txt
+# ─────────────────────────────────────────────────────────────────────────────
+# Packages for the live production server. Extends base.txt.
+# Install with: pip install -r requirements/production.txt
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Inherit all base requirements
+-r base.txt
+
+# PostgreSQL database adapter (psycopg v3 — the modern, async-compatible driver).
+# The [binary] extra bundles pre-compiled C extensions — no libpq-dev needed.
+# Alternative: psycopg2-binary (v2) if your host requires it.
+psycopg[binary]>=3.1
+
+# WhiteNoise — serves static files directly from Django with Brotli/gzip
+# compression and content-hash fingerprinting. Eliminates the need for a
+# separate static file CDN for most small-to-medium deployments.
+whitenoise[brotli]>=6.6
+
+# Gunicorn — production-grade WSGI server. Replaces Django's built-in
+# development server, which is not suitable for production traffic.
+gunicorn>=22.0

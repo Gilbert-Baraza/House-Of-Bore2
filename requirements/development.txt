@@ -1,0 +1,21 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# requirements/development.txt
+# ─────────────────────────────────────────────────────────────────────────────
+# Packages for local development only. Extends base.txt.
+# Install with: pip install -r requirements/development.txt
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Inherit all base requirements
+-r base.txt
+
+# django-tailwind — integrates Tailwind CSS build pipeline into Django.
+# The [cookiecutter,honcho,reload] extras add:
+#   cookiecutter:            creates the theme app via manage.py tailwind init
+#   honcho:                  runs Django + Tailwind watcher simultaneously with manage.py tailwind dev
+#   django-browser-reload:   auto-refreshes the browser on file changes (dev only)
+"django-tailwind[cookiecutter,honcho,reload]>=4.5.0"
+
+# Django Debug Toolbar — adds an in-browser panel showing SQL queries,
+# request/response info, cache hits, and template context. Invaluable for
+# catching N+1 query problems during development.
+django-debug-toolbar>=4.3

@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% comment %}
+  templates/products/brand_list.html
+  BRAND LISTING PAGE
+  ─────────────────────────────────────────────────────────────────────────────
+  Displays all active brands with product counts and featured badges.
+  Each brand card links to its detail page for brand-specific browsing.
+  ─────────────────────────────────────────────────────────────────────────────
+{% endcomment %}
+
+{% block title %}Our Partner Ateliers &amp; Brands{% endblock %}
+{% block meta_description %}
+<meta name="description" content="Discover House of Bore's partner ateliers and heritage brands. Explore curated collections from independent workshops across Europe and Japan.">
+{% endblock meta_description %}
+{% block og_title %}
+<meta property="og:title" content="Our Partner Ateliers &amp; Brands — House of Bore">
+{% endblock og_title %}
+{% block og_description %}
+<meta property="og:description" content="Explore the multi-generational workshops and heritage manufacturers behind our curated wardrobe collections.">
+{% endblock og_description %}
+
+{% block content %}
+
+  {# ── Breadcrumbs ───────────────────────────────────────────────────────── #}
+  {% include "components/breadcrumbs.html" with breadcrumbs=breadcrumbs %}
+
+  {# ── Hero Header ───────────────────────────────────────────────────────── #}
+  <header class="bg-primary-900 text-secondary-50 py-16 lg:py-20 border-b border-primary-800">
+    <div class="container-site text-center max-w-3xl mx-auto">
+      <span class="badge badge-accent mb-4">Partner Houses</span>
+      <h1 class="font-serif text-4xl sm:text-5xl font-bold text-secondary-50 tracking-tight mb-4">
+        Ateliers &amp; Brands
+      </h1>
+      <p class="text-base sm:text-lg text-secondary-300 leading-relaxed">
+        We collaborate exclusively with heritage manufacturers and independent ateliers across Europe and Japan who share our commitment to radical transparency and generational craftsmanship.
+      </p>
+    </div>
+  </header>
+
+  {# ── Brands Grid ───────────────────────────────────────────────────────── #}
+  <section class="py-12 lg:py-16" aria-labelledby="brands-grid-heading">
+    <div class="container-site">
+
+      <h2 id="brands-grid-heading" class="sr-only">Partner Brands</h2>
+
+      {% if brands %}
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
+          {% for brand in brands %}
+            <a href="{% url 'products:brand_detail' brand.slug %}"
+               class="card group flex flex-col h-full bg-white border border-neutral-200/80
+                      hover:shadow-card hover:border-accent-200 transition-all duration-300">
+
+              {# Logo area #}
+              <div class="relative w-full aspect-[16/9] bg-neutral-50 overflow-hidden flex items-center justify-center p-8">
+                {% if brand.logo %}
+                  <img src="{{ brand.logo.url }}"
+                       alt="{{ brand.name }} logo"
+                       class="max-h-full max-w-full object-contain transition-transform duration-500 group-hover:scale-105"
+                       loading="lazy">
+                {% else %}
+                  <span class="font-serif text-3xl font-bold text-neutral-200 transition-colors duration-300 group-hover:text-neutral-400">
+                    {{ brand.name }}
+                  </span>
+                {% endif %}
+              </div>
+
+              {# Card body #}
+              <div class="card-body flex-1 flex flex-col justify-between">
+                <div>
+                  <div class="flex items-center justify-between mb-3">
+                    <span class="font-mono text-[11px] font-bold uppercase tracking-widest text-neutral-400">Atelier Partner</span>
+                    {% if brand.is_featured %}
+                      <span class="badge badge-accent">Featured House</span>
+                    {% endif %}
+                  </div>
+
+                  <h3 class="font-serif text-xl font-bold text-primary-900 mb-2
+                             group-hover:text-accent-600 transition-colors">
+                    {{ brand.name }}
+                  </h3>
+
+                  {% if brand.description %}
+                    <p class="text-sm text-neutral-600 leading-relaxed mb-4 line-clamp-2">
+                      {{ brand.description }}
+                    </p>
+                  {% else %}
+                    <p class="text-sm text-neutral-400 italic mb-4">
+                      Heritage craftsmanship and architectural tailoring.
+                    </p>
+                  {% endif %}
+                </div>
+
+                {# Footer #}
+                <div class="pt-4 mt-4 border-t border-neutral-100 flex items-center justify-between">
+                  <span class="text-xs font-semibold uppercase tracking-widest text-primary-900
+                               group-hover:text-accent-600 transition-colors flex items-center gap-1.5">
+                    View Collection
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                         stroke-width="2" stroke="currentColor"
+                         class="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-1" aria-hidden="true">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3"/>
+                    </svg>
+                  </span>
+
+                  {% if brand.product_count is not None %}
+                    <span class="text-xs text-neutral-500">
+                      {{ brand.product_count }} product{{ brand.product_count|pluralize }}
+                    </span>
+                  {% endif %}
+                </div>
+              </div>
+
+            </a>
+          {% endfor %}
+        </div>
+      {% else %}
+        {% include "components/empty_state.html" with title="No Brands Available" description="Our partner ateliers and brand rosters are currently being updated." action_url="/" action_text="Return Home" %}
+      {% endif %}
+
+    </div>
+  </section>
+
+{% endblock %}

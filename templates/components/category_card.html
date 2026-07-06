@@ -1,0 +1,64 @@
+{% comment %}
+  templates/components/category_card.html
+  CATEGORY CARD COMPONENT
+  ─────────────────────────────────────────────────────────────────────────────
+  Displays a placeholder category card for the marketing homepage.
+  Context variables:
+    category.name        — Category title (e.g., "Men's Apparel")
+    category.description — Short explanation
+    category.badge       — Optional badge text (e.g., "New Season")
+    category.image_alt   — Alt text placeholder
+  ─────────────────────────────────────────────────────────────────────────────
+{% endcomment %}
+
+<article class="card group flex flex-col h-full bg-white relative">
+  
+  {# ── Image Placeholder Zone (Geometric SVG Art) ──────────────────────── #}
+  <div class="relative w-full aspect-[4/3] bg-neutral-100 overflow-hidden flex items-center justify-center">
+    
+    {# Subtle background pattern / monogram placeholder #}
+    <div class="absolute inset-0 bg-gradient-to-tr from-primary-900/10 via-transparent to-accent-500/10
+                transition-transform duration-500 group-hover:scale-105" aria-hidden="true"></div>
+    
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+         stroke-width="1" stroke="currentColor"
+         class="w-12 h-12 text-neutral-300 transition-transform duration-500 group-hover:scale-110 group-hover:text-primary-800"
+         aria-label="{{ category.image_alt|default:'Category preview image' }}" role="img">
+      <path stroke-linecap="round" stroke-linejoin="round"
+            d="M15.75 10.5V6a3.75 3.75 0 1 0-7.5 0v4.5m11.356-1.993 1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 0 1-1.12-1.243l1.264-12A1.125 1.125 0 0 1 5.513 7.5h12.974c.576 0 1.059.435 1.119 1.007ZM8.625 10.5a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm7.5 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z"/>
+    </svg>
+
+    {# Optional Badge #}
+    {% if category.badge %}
+      <span class="absolute top-3 left-3 badge badge-accent z-10">
+        {{ category.badge }}
+      </span>
+    {% endif %}
+  </div>
+
+  {# ── Card Body ────────────────────────────────────────────────────────── #}
+  <div class="card-body flex-1 flex flex-col justify-between">
+    <div>
+      <h3 class="font-serif text-xl font-semibold text-primary-900 mb-2 group-hover:text-accent-600 transition-colors">
+        {# Phase 2: replace href="#" with {% url 'products:category' category.slug %} #}
+        <a href="#" class="after:absolute after:inset-0 focus:outline-none">
+          {{ category.name }}
+        </a>
+      </h3>
+      <p class="text-sm text-neutral-500 leading-relaxed line-clamp-2">
+        {{ category.description }}
+      </p>
+    </div>
+
+    {# Explore link arrow #}
+    <div class="mt-4 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-primary-900 group-hover:text-accent-600 transition-colors">
+      <span>Explore</span>
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+           stroke-width="2" stroke="currentColor"
+           class="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-1" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3"/>
+      </svg>
+    </div>
+  </div>
+
+</article>

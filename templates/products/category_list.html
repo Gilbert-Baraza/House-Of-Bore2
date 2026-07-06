@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+{% comment %}
+  templates/products/category_list.html
+  CATEGORY LISTING PAGE
+  ─────────────────────────────────────────────────────────────────────────────
+  Displays all root categories with product counts and child subcategories.
+  Each category card links to its detail page for hierarchical browsing.
+  ─────────────────────────────────────────────────────────────────────────────
+{% endcomment %}
+
+{% block title %}Explore Collections{% endblock %}
+{% block meta_description %}
+<meta name="description" content="Explore House of Bore's curated collections. Browse menswear, womenswear, footwear, accessories, and more.">
+{% endblock meta_description %}
+{% block og_title %}
+<meta property="og:title" content="Explore Collections — House of Bore">
+{% endblock og_title %}
+{% block og_description %}
+<meta property="og:description" content="Discover our permanent wardrobe collections and tactile living artifacts engineered for uncompromising quality.">
+{% endblock og_description %}
+
+{% block content %}
+
+  {# ── Breadcrumbs ───────────────────────────────────────────────────────── #}
+  {% include "components/breadcrumbs.html" with breadcrumbs=breadcrumbs %}
+
+  {# ── Hero Header ───────────────────────────────────────────────────────── #}
+  <header class="bg-primary-900 text-secondary-50 py-16 lg:py-20 border-b border-primary-800">
+    <div class="container-site text-center max-w-3xl mx-auto">
+      <span class="badge badge-accent mb-4">Curated Worlds</span>
+      <h1 class="font-serif text-4xl sm:text-5xl font-bold text-secondary-50 tracking-tight mb-4">
+        Collections &amp; Categories
+      </h1>
+      <p class="text-base sm:text-lg text-secondary-300 leading-relaxed">
+        Explore our permanent wardrobe foundations and living artifacts. Each collection is engineered from ethical European fibres and bench-made leather to endure for generations.
+      </p>
+    </div>
+  </header>
+
+  {# ── Categories Grid ───────────────────────────────────────────────────── #}
+  <section class="py-12 lg:py-16" aria-labelledby="collections-grid-heading">
+    <div class="container-site">
+
+      <h2 id="collections-grid-heading" class="sr-only">Available Collections</h2>
+
+      {% if categories %}
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
+          {% for category in categories %}
+            <a href="{% url 'products:category_detail' category.slug %}"
+               class="card group flex flex-col h-full bg-white border border-neutral-200/80
+                      hover:shadow-card hover:border-accent-200 transition-all duration-300">
+
+              {# Image area #}
+              <div class="relative w-full aspect-[16/9] bg-neutral-100 overflow-hidden">
+                {% if category.image %}
+                  <img src="{{ category.image.url }}"
+                       alt="{{ category.name }}"
+                       class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                       loading="lazy">
+                {% else %}
+                  <div class="absolute inset-0 bg-gradient-to-tr from-primary-900/10 via-transparent to-accent-500/10
+                              flex items-center justify-center
+                              transition-transform duration-500 group-hover:scale-105" aria-hidden="true">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                         stroke-width="0.75" stroke="currentColor"
+                         class="w-12 h-12 text-neutral-300">
+                      <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M15.75 10.5V6a3.75 3.75 0 1 0-7.5 0v4.5m11.356-1.993 1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 0 1-1.12-1.243l1.264-12A1.125 1.125 0 0 1 5.513 7.5h12.974c.576 0 1.059.435 1.119 1.007ZM8.625 10.5a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm7.5 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z"/>
+                    </svg>
+                  </div>
+                {% endif %}
+              </div>
+
+              {# Card body #}
+              <div class="card-body flex-1 flex flex-col justify-between">
+                <div>
+                  <div class="flex items-center justify-between mb-3">
+                    <span class="font-mono text-[11px] font-bold uppercase tracking-widest text-accent-600">Collection</span>
+                    {% if category.product_count is not None %}
+                      <span class="text-xs px-2.5 py-1 rounded-pill bg-secondary-100 text-primary-900 font-medium">
+                        {{ category.product_count }} product{{ category.product_count|pluralize }}
+                      </span>
+                    {% endif %}
+                  </div>
+
+                  <h3 class="font-serif text-xl font-bold text-primary-900 mb-2
+                             group-hover:text-accent-600 transition-colors">
+                    {{ category.name }}
+                  </h3>
+
+                  {% if category.description %}
+                    <p class="text-sm text-neutral-600 leading-relaxed mb-4 line-clamp-2">
+                      {{ category.description }}
+                    </p>
+                  {% else %}
+                    <p class="text-sm text-neutral-400 italic mb-4">
+                      Curated wardrobe staples and enduring craftsmanship.
+                    </p>
+                  {% endif %}
+
+                  {# Child categories #}
+                  {% if category.children.all %}
+                    <div class="pt-3 border-t border-neutral-100">
+                      <p class="text-[11px] font-semibold uppercase tracking-wider text-neutral-400 mb-2">Subcategories</p>
+                      <div class="flex flex-wrap gap-1.5">
+                        {% for child in category.children.all %}
+                          <span class="inline-block text-xs px-2.5 py-1 rounded-btn bg-neutral-100 text-neutral-700 font-medium">
+                            {{ child.name }}
+                          </span>
+                        {% endfor %}
+                      </div>
+                    </div>
+                  {% endif %}
+                </div>
+
+                {# Footer link #}
+                <div class="pt-4 mt-4 border-t border-neutral-100 flex items-center gap-1.5
+                            text-xs font-semibold uppercase tracking-widest text-primary-900
+                            group-hover:text-accent-600 transition-colors">
+                  <span>Explore Collection</span>
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                       stroke-width="2" stroke="currentColor"
+                       class="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-1" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3"/>
+                  </svg>
+                </div>
+              </div>
+
+            </a>
+          {% endfor %}
+        </div>
+      {% else %}
+        {% include "components/empty_state.html" with title="No Collections Available" description="Our catalog categories are currently being updated by the curation team." action_url="/" action_text="Return Home" %}
+      {% endif %}
+
+    </div>
+  </section>
+
+{% endblock %}

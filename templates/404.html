@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% comment %}
+  templates/404.html
+  404 ERROR TEMPLATE
+  ─────────────────────────────────────────────────────────────────────────────
+  Rendered when a requested page or resource is not found (HTTP 404).
+  Extends the master base.html layout to maintain brand consistency,
+  navigation, and footer.
+  ─────────────────────────────────────────────────────────────────────────────
+{% endcomment %}
+
+{% block title %}Page Not Found{% endblock %}
+
+{% block content %}
+<div class="container-site py-20 lg:py-32 flex flex-col items-center justify-center text-center">
+  
+  {# Status code badge #}
+  <span class="badge badge-accent mb-4">Error 404</span>
+  
+  {# Main headline #}
+  <h1 class="font-serif text-4xl sm:text-5xl lg:text-6xl font-bold text-primary-900 mb-4 tracking-tight">
+    Page Not Found
+  </h1>
+  
+  {# Description #}
+  <p class="text-base sm:text-lg text-neutral-500 max-w-md leading-relaxed mb-8">
+    We couldn&rsquo;t find the page you&rsquo;re looking for. It may have been moved, renamed, or no longer exists.
+  </p>
+  
+  {# Actions #}
+  <div class="flex flex-col sm:flex-row items-center justify-center gap-4 w-full sm:w-auto">
+    <a href="/" class="btn btn-primary w-full sm:w-auto">
+      Return Home
+    </a>
+    <a href="#" onclick="history.back(); return false;" class="btn btn-outline w-full sm:w-auto">
+      Go Back
+    </a>
+  </div>
+
+</div>
+{% endblock %}

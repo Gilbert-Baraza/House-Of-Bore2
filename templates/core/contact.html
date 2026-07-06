@@ -1,0 +1,268 @@
+{% extends "base.html" %}
+{% comment %}
+  templates/core/contact.html
+  CONTACT PAGE TEMPLATE — House of Bore
+  ─────────────────────────────────────────────────────────────────────────────
+  Client care and concierge inquiries page.
+  Sections:
+    1. Hero Header
+    2. Two-Column Layout (Left: Details/Hours/Showroom, Right: Contact Form)
+    3. Embedded Map Placeholder
+    4. FAQ Teaser
+  ─────────────────────────────────────────────────────────────────────────────
+{% endcomment %}
+
+
+{% block title %}Concierge &amp; Client Care{% endblock %}
+{% block meta_description %}
+<meta name="description" content="Get in touch with House of Bore's client concierge team. Inquiries regarding styling, order tracking, returns, and media relations.">
+{% endblock meta_description %}
+{% block og_title %}
+<meta property="og:title" content="Concierge &amp; Client Care — House of Bore">
+{% endblock og_title %}
+{% block og_description %}
+<meta property="og:description" content="Get in touch with House of Bore's client concierge team for personal styling and order support.">
+{% endblock og_description %}
+
+{% block content %}
+
+  {# ── Hero Header ──────────────────────────────────────────────────────── #}
+  <header class="bg-primary-900 text-secondary-50 py-16 lg:py-24 border-b border-primary-800">
+    <div class="container-site text-center max-w-2xl mx-auto">
+      <span class="badge badge-accent mb-4">Concierge Care</span>
+      <h1 class="font-serif text-4xl sm:text-5xl font-bold text-secondary-50 tracking-tight mb-4">
+        We Are Here to Assist.
+      </h1>
+      <p class="text-base sm:text-lg text-secondary-300 leading-relaxed">
+        Whether you require personal styling guidance, sizing advice, or assistance with an existing order, our dedicated concierge team is at your disposal.
+      </p>
+    </div>
+  </header>
+
+  {# ── Main Contact Content ─────────────────────────────────────────────── #}
+  <section class="py-20 lg:py-28 border-b border-neutral-200" aria-labelledby="contact-form-headline">
+    <div class="container-site">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16">
+
+        {# Left Column: Contact Details & Business Hours #}
+        <div class="lg:col-span-5 space-y-10">
+          
+          <div>
+            <h2 class="font-serif text-2xl font-bold text-primary-900 mb-4">Direct Inquiries</h2>
+            <p class="text-sm text-neutral-500 leading-relaxed mb-6">
+              For immediate support during operating hours, reach out via phone or direct email.
+            </p>
+            <dl class="space-y-4 text-sm">
+              <div class="flex items-start gap-3">
+                <dt class="font-semibold text-primary-900 w-24">Client Care:</dt>
+                <dd class="text-neutral-600"><a href="mailto:concierge@houseofbore.com" class="hover:text-primary-900 underline">concierge@houseofbore.com</a></dd>
+              </div>
+              <div class="flex items-start gap-3">
+                <dt class="font-semibold text-primary-900 w-24">Press &amp; VIP:</dt>
+                <dd class="text-neutral-600"><a href="mailto:press@houseofbore.com" class="hover:text-primary-900 underline">press@houseofbore.com</a></dd>
+              </div>
+              <div class="flex items-start gap-3">
+                <dt class="font-semibold text-primary-900 w-24">Telephone:</dt>
+                <dd class="text-neutral-600 tabular-nums">+44 (0) 20 7946 0921</dd>
+              </div>
+            </dl>
+          </div>
+
+          {# Business Hours Box #}
+          <div class="p-6 rounded-card bg-secondary-100/60 border border-neutral-200/80">
+            <h3 class="font-serif text-lg font-semibold text-primary-900 mb-3">Atelier &amp; Concierge Hours</h3>
+            <ul class="space-y-2 text-sm text-neutral-600 tabular-nums">
+              <li class="flex justify-between">
+                <span>Monday &ndash; Friday</span>
+                <span class="font-medium text-primary-900">09:00 &ndash; 19:00 GMT</span>
+              </li>
+              <li class="flex justify-between">
+                <span>Saturday</span>
+                <span class="font-medium text-primary-900">10:00 &ndash; 17:00 GMT</span>
+              </li>
+              <li class="flex justify-between">
+                <span>Sunday &amp; Holidays</span>
+                <span class="font-medium text-neutral-400">Closed</span>
+              </li>
+            </ul>
+          </div>
+
+          {# Showroom Addresses #}
+          <div>
+            <h3 class="font-serif text-lg font-semibold text-primary-900 mb-3">Showrooms</h3>
+            <div class="grid grid-cols-2 gap-4 text-xs text-neutral-500">
+              <div>
+                <p class="font-semibold text-primary-900 mb-1">London Atelier</p>
+                <p>14 Savile Row<br>Mayfair, London W1S 3JN<br>United Kingdom</p>
+              </div>
+              <div>
+                <p class="font-semibold text-primary-900 mb-1">Paris Salon</p>
+                <p>28 Rue Saint-Honoré<br>75001 Paris<br>France</p>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        {# Right Column: Contact Form #}
+        <div class="lg:col-span-7">
+          <div class="card card-body bg-white shadow-card p-8 sm:p-10">
+            <h2 id="contact-form-headline" class="font-serif text-2xl font-bold text-primary-900 mb-2">
+              Send a Message
+            </h2>
+            <p class="text-sm text-neutral-500 mb-8">
+              Please complete the form below. Our concierge team responds to all correspondence within 24 hours.
+            </p>
+
+            {# Django Form #}
+            <form method="post" action="{% url 'core:contact' %}" class="space-y-6" novalidate>
+              {% csrf_token %}
+
+              {# Form errors alert #}
+              {% if form.non_field_errors %}
+                <div class="p-4 rounded-btn bg-danger-50 border border-danger-200 text-danger-700 text-sm">
+                  {{ form.non_field_errors }}
+                </div>
+              {% endif %}
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                {# Name #}
+                <div>
+                  <label for="{{ form.name.id_for_label }}" class="block text-xs font-semibold uppercase tracking-widest text-primary-900 mb-2">
+                    {{ form.name.label }} <span class="text-danger-500">*</span>
+                  </label>
+                  {{ form.name }}
+                  {% if form.name.errors %}
+                    <p class="form-error-text">{{ form.name.errors.0 }}</p>
+                  {% endif %}
+                </div>
+
+                {# Email #}
+                <div>
+                  <label for="{{ form.email.id_for_label }}" class="block text-xs font-semibold uppercase tracking-widest text-primary-900 mb-2">
+                    {{ form.email.label }} <span class="text-danger-500">*</span>
+                  </label>
+                  {{ form.email }}
+                  {% if form.email.errors %}
+                    <p class="form-error-text">{{ form.email.errors.0 }}</p>
+                  {% endif %}
+                </div>
+              </div>
+
+              {# Subject #}
+              <div>
+                <label for="{{ form.subject.id_for_label }}" class="block text-xs font-semibold uppercase tracking-widest text-primary-900 mb-2">
+                  {{ form.subject.label }} <span class="text-danger-500">*</span>
+                </label>
+                {{ form.subject }}
+                {% if form.subject.errors %}
+                  <p class="form-error-text">{{ form.subject.errors.0 }}</p>
+                {% endif %}
+              </div>
+
+              {# Message #}
+              <div>
+                <label for="{{ form.message.id_for_label }}" class="block text-xs font-semibold uppercase tracking-widest text-primary-900 mb-2">
+                  {{ form.message.label }} <span class="text-danger-500">*</span>
+                </label>
+                {{ form.message }}
+                {% if form.message.errors %}
+                  <p class="form-error-text">{{ form.message.errors.0 }}</p>
+                {% endif %}
+              </div>
+
+              {# Submit Button #}
+              <div class="pt-2">
+                <button type="submit" class="btn btn-primary btn-lg w-full sm:w-auto">
+                  <span>Submit Inquiry</span>
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3"/>
+                  </svg>
+                </button>
+              </div>
+
+            </form>
+
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  {# ── Embedded Map Placeholder ─────────────────────────────────────────── #}
+  <section class="bg-neutral-100 border-b border-neutral-200" aria-label="London Showroom Map Location">
+    <div class="w-full h-80 bg-neutral-200/80 relative flex items-center justify-center overflow-hidden">
+      <div class="absolute inset-0 bg-[radial-gradient(#cbd5e1_1px,transparent_1px)] [background-size:16px_16px] opacity-60" aria-hidden="true"></div>
+      
+      <div class="relative z-10 text-center bg-white/95 backdrop-blur-md p-6 rounded-card shadow-card border border-neutral-200 max-w-xs">
+        <span class="w-10 h-10 rounded-full bg-accent-500 text-white flex items-center justify-center mx-auto mb-3">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z"/>
+          </svg>
+        </span>
+        <h3 class="font-serif font-semibold text-primary-900 text-base mb-1">London Flagship Showroom</h3>
+        <p class="text-xs text-neutral-500 mb-3">14 Savile Row, Mayfair, London</p>
+        <span class="text-[11px] font-semibold uppercase tracking-wider text-accent-600 block">Interactive Map in Phase 2</span>
+      </div>
+    </div>
+  </section>
+
+  {# ── FAQ Teaser ───────────────────────────────────────────────────────── #}
+  <section class="py-20 lg:py-28" aria-labelledby="faq-headline">
+    <div class="container-site max-w-3xl">
+      <div class="text-center mb-14">
+        <span class="badge badge-neutral mb-3">Quick Answers</span>
+        <h2 id="faq-headline" class="font-serif text-3xl font-bold text-primary-900 mb-3">
+          Frequently Asked Questions
+        </h2>
+        <p class="text-sm text-neutral-500">Common inquiries regarding shipping, returns, and bespoke orders.</p>
+      </div>
+
+      <div class="space-y-4">
+        <details class="group card bg-white p-5 cursor-pointer">
+          <summary class="font-serif font-semibold text-primary-900 flex items-center justify-between list-none">
+            <span>What is your return and restoration policy?</span>
+            <span class="text-neutral-400 group-open:rotate-180 transition-transform">&darr;</span>
+          </summary>
+          <p class="text-sm text-neutral-500 mt-3 leading-relaxed">We accept complimentary worldwide returns within 30 days of delivery for all unworn garments in their original packaging. Furthermore, all House of Bore leather goods carry a lifetime restoration guarantee.</p>
+        </details>
+
+        <details class="group card bg-white p-5 cursor-pointer">
+          <summary class="font-serif font-semibold text-primary-900 flex items-center justify-between list-none">
+            <span>How long does international express delivery take?</span>
+            <span class="text-neutral-400 group-open:rotate-180 transition-transform">&darr;</span>
+          </summary>
+          <p class="text-sm text-neutral-500 mt-3 leading-relaxed">Orders dispatched to North America, Europe, and East Asia arrive within 2 to 3 business days via carbon-neutral express courier. Signature is required upon delivery.</p>
+        </details>
+
+        <details class="group card bg-white p-5 cursor-pointer">
+          <summary class="font-serif font-semibold text-primary-900 flex items-center justify-between list-none">
+            <span>Do you offer bespoke tailoring or made-to-order sizing?</span>
+            <span class="text-neutral-400 group-open:rotate-180 transition-transform">&darr;</span>
+          </summary>
+          <p class="text-sm text-neutral-500 mt-3 leading-relaxed">Yes. Discerning clients visiting our London Savile Row or Paris Saint-Honoré salons can book private consultations for made-to-measure outerwear and suiting.</p>
+        </details>
+
+        <details class="group card bg-white p-5 cursor-pointer">
+          <summary class="font-serif font-semibold text-primary-900 flex items-center justify-between list-none">
+            <span>How do I care for full-grain leather goods and cashmere knitwear?</span>
+            <span class="text-neutral-400 group-open:rotate-180 transition-transform">&darr;</span>
+          </summary>
+          <p class="text-sm text-neutral-500 mt-3 leading-relaxed">We recommend storing knitwear folded in breathable cotton garment bags and applying our natural beeswax conditioner to leather artifacts twice yearly. Detailed care guides accompany every order.</p>
+        </details>
+
+        <details class="group card bg-white p-5 cursor-pointer">
+          <summary class="font-serif font-semibold text-primary-900 flex items-center justify-between list-none">
+            <span>Can I schedule a private styling appointment at your showrooms?</span>
+            <span class="text-neutral-400 group-open:rotate-180 transition-transform">&darr;</span>
+          </summary>
+          <p class="text-sm text-neutral-500 mt-3 leading-relaxed">Yes. Please contact our concierge team at concierge@houseofbore.com at least 48 hours in advance to arrange a private viewing and fitting at our London or Paris locations.</p>
+        </details>
+      </div>
+
+    </div>
+  </section>
+
+{% endblock %}

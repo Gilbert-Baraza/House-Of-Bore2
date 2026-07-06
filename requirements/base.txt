@@ -1,0 +1,14 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# requirements/base.txt
+# ─────────────────────────────────────────────────────────────────────────────
+# Packages required in ALL environments (development and production).
+# Install with: pip install -r requirements/base.txt
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Core framework — supports Django 5.x LTS (5.2) and Django 6.x.
+# Pin to a specific version in production: e.g. Django==5.2.15
+Django>=5.1
+
+# Reads .env files and maps variables to Python settings cleanly.
+# Supports casting (booleans, lists, ints) — avoids manual os.environ.get() calls.
+python-decouple>=3.8

@@ -1,0 +1,66 @@
+{% comment %}
+  templates/components/loading_spinner.html
+  LOADING SPINNER COMPONENT
+  ─────────────────────────────────────────────────────────────────────────────
+  Pure CSS animated spinner. No JavaScript, no external libraries.
+
+  Context variables (all optional):
+    size   — "sm" | "md" (default) | "lg"
+    label  — Accessible label, default "Loading…"
+    color  — "primary" (default) | "accent" | "white" | "neutral"
+{% endcomment %}
+
+  Usage examples:
+    Inline:     {% include "components/loading_spinner.html" %}
+    Custom:     {% include "components/loading_spinner.html" with size="lg" label="Loading products" %}
+    On white:   {% include "components/loading_spinner.html" with color="primary" %}
+    In button:  <button class="btn btn-primary btn-loading" aria-busy="true">...</button>
+  ─────────────────────────────────────────────────────────────────────────────
+#}
+
+{# ── Size mapping ─────────────────────────────────────────────────────────── #}
+{% if size == "sm" %}
+  {% with w="w-4 h-4" border="border-2" %}
+{% elif size == "lg" %}
+  {% with w="w-10 h-10" border="border-4" %}
+{% else %}
+  {% with w="w-6 h-6" border="border-2" %}
+{% endif %}
+
+{# ── Color mapping ─────────────────────────────────────────────────────────── #}
+{% if color == "accent" %}
+  {% with ring_color="border-accent-500" track_color="border-accent-200" %}
+{% elif color == "white" %}
+  {% with ring_color="border-white" track_color="border-white/30" %}
+{% elif color == "neutral" %}
+  {% with ring_color="border-neutral-500" track_color="border-neutral-200" %}
+{% else %}
+  {% with ring_color="border-primary-900" track_color="border-primary-200" %}
+{% endif %}
+
+<div class="flex items-center justify-center gap-3"
+     role="status"
+     aria-live="polite"
+     aria-label="{{ label|default:'Loading…' }}">
+
+  {# The spinner ring #}
+  <span class="{{ w }} {{ border }} {{ track_color }} {{ ring_color }}
+                rounded-full inline-block flex-shrink-0"
+        style="border-top-color: transparent; animation: spin 0.7s linear infinite;"
+        aria-hidden="true">
+  </span>
+
+  {# Visible label (visually hidden on sm spinners) #}
+  {% if size != "sm" %}
+    <span class="text-sm text-neutral-500 font-medium">
+      {{ label|default:"Loading…" }}
+    </span>
+  {% else %}
+    <span class="sr-only">{{ label|default:"Loading…" }}</span>
+  {% endif %}
+
+</div>
+
+{# Close the two {% with %} blocks #}
+{% endwith %}
+{% endwith %}

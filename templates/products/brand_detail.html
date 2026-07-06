@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% comment %}
+  templates/products/brand_detail.html
+  BRAND DETAIL PAGE
+  ─────────────────────────────────────────────────────────────────────────────
+  Displays a single brand with its products in a sortable, paginated grid.
+  ─────────────────────────────────────────────────────────────────────────────
+{% endcomment %}
+
+{% block title %}{{ brand.name }}{% endblock %}
+{% block meta_description %}
+<meta name="description" content="Shop {{ brand.name }} at House of Bore. {{ brand.description|default:'Discover curated premium products from this atelier.' }}">
+{% endblock meta_description %}
+{% block og_title %}
+<meta property="og:title" content="{{ brand.name }} — House of Bore">
+{% endblock og_title %}
+{% block og_description %}
+<meta property="og:description" content="{{ brand.description|default:'Explore products from this heritage atelier.' }}">
+{% endblock og_description %}
+
+{% block content %}
+
+  {# ── Breadcrumbs ───────────────────────────────────────────────────────── #}
+  {% include "components/breadcrumbs.html" with breadcrumbs=breadcrumbs %}
+
+  {# ── Brand Header ─────────────────────────────────────────────────────── #}
+  <header class="bg-primary-900 text-secondary-50 py-16 lg:py-20 border-b border-primary-800">
+    <div class="container-site text-center max-w-3xl mx-auto">
+
+      {# Brand Logo #}
+      {% if brand.logo %}
+        <div class="mx-auto mb-6 w-24 h-24 bg-white/10 rounded-full flex items-center justify-center p-4 backdrop-blur-sm">
+          <img src="{{ brand.logo.url }}"
+               alt="{{ brand.name }} logo"
+               class="max-h-full max-w-full object-contain">
+        </div>
+      {% endif %}
+
+      <span class="badge badge-accent mb-4">Atelier</span>
+      <h1 class="font-serif text-4xl sm:text-5xl font-bold text-secondary-50 tracking-tight mb-4">
+        {{ brand.name }}
+      </h1>
+      {% if brand.description %}
+        <p class="text-base sm:text-lg text-secondary-300 leading-relaxed mb-6">
+          {{ brand.description }}
+        </p>
+      {% endif %}
+
+      {% if brand.website %}
+        <a href="{{ brand.website }}" target="_blank" rel="noopener noreferrer"
+           class="inline-flex items-center gap-1.5 text-sm text-secondary-300 hover:text-white
+                  underline underline-offset-4 transition-colors">
+          Visit Official Website
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+               stroke-width="1.5" stroke="currentColor" class="w-3.5 h-3.5" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"/>
+          </svg>
+        </a>
+      {% endif %}
+    </div>
+  </header>
+
+  {# ── Product Grid ──────────────────────────────────────────────────────── #}
+  <section class="py-12 lg:py-16" aria-labelledby="brand-products-heading">
+    <div class="container-site">
+
+      <h2 id="brand-products-heading" class="sr-only">Products by {{ brand.name }}</h2>
+
+      {% if products %}
+
+        {# Sort Bar #}
+        {% include "components/sort_bar.html" with current_sort=current_sort page_obj=page_obj %}
+
+        {# Responsive Product Grid #}
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+          {% for product in products %}
+            {% include "components/product_card.html" with product=product %}
+          {% endfor %}
+        </div>
+
+        {# Pagination #}
+        {% include "components/pagination.html" %}
+
+      {% else %}
+        {% include "components/empty_state.html" with title="No Products Yet" description="Products from this atelier are being curated. Check back soon." action_url="/brands/" action_text="Browse Brands" %}
+      {% endif %}
+
+    </div>
+  </section>
+
+{% endblock %}

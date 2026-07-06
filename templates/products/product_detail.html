@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+{% comment %}
+  templates/products/product_detail.html
+  PRODUCT DETAIL PAGE (Placeholder)
+  ─────────────────────────────────────────────────────────────────────────────
+  Temporary product detail view. Will be expanded in Phase 2.4 with full
+  image gallery, tabbed content, related products, and add-to-cart.
+  ─────────────────────────────────────────────────────────────────────────────
+{% endcomment %}
+
+{% block title %}{{ product.meta_title|default:product.name }}{% endblock %}
+{% block meta_description %}
+<meta name="description" content="{{ product.meta_description|default:product.short_description }}">
+{% endblock meta_description %}
+{% block og_title %}
+<meta property="og:title" content="{{ product.meta_title|default:product.name }} — House of Bore">
+{% endblock og_title %}
+{% block og_description %}
+<meta property="og:description" content="{{ product.meta_description|default:product.short_description }}">
+{% endblock og_description %}
+
+{% block content %}
+
+  {# ── Breadcrumbs ───────────────────────────────────────────────────────── #}
+  {% include "components/breadcrumbs.html" with breadcrumbs=breadcrumbs %}
+
+  {# ── Product Detail ────────────────────────────────────────────────────── #}
+  <section class="py-12 lg:py-20" aria-labelledby="product-heading">
+    <div class="container-site">
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16">
+
+        {# ── Image Column ──────────────────────────────────────────────── #}
+        <div class="aspect-[3/4] bg-neutral-100 rounded-card overflow-hidden">
+          {% with primary=product.get_primary_image %}
+            {% if primary and primary.image %}
+              <img src="{{ primary.image.url }}"
+                   alt="{{ primary.alt_text|default:product.name }}"
+                   class="w-full h-full object-cover"
+                   width="600" height="800">
+            {% else %}
+              <div class="w-full h-full flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                     stroke-width="0.5" stroke="currentColor"
+                     class="w-24 h-24 text-neutral-300"
+                     role="img" aria-label="{{ product.name }} placeholder image">
+                  <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M15.75 10.5V6a3.75 3.75 0 1 0-7.5 0v4.5m11.356-1.993 1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 0 1-1.12-1.243l1.264-12A1.125 1.125 0 0 1 5.513 7.5h12.974c.576 0 1.059.435 1.119 1.007ZM8.625 10.5a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm7.5 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z"/>
+                </svg>
+              </div>
+            {% endif %}
+          {% endwith %}
+        </div>
+
+        {# ── Product Info Column ───────────────────────────────────────── #}
+        <div class="flex flex-col justify-center">
+
+          {# Brand #}
+          {% if product.brand %}
+            <p class="text-xs font-semibold uppercase tracking-widest text-neutral-400 mb-2">
+              <a href="{% url 'products:brand_detail' product.brand.slug %}"
+                 class="hover:text-primary-900 transition-colors relative z-10">
+                {{ product.brand.name }}
+              </a>
+            </p>
+          {% endif %}
+
+          {# Title #}
+          <h1 id="product-heading" class="font-serif text-3xl sm:text-4xl font-bold text-primary-900 mb-4 tracking-tight">
+            {{ product.name }}
+          </h1>
+
+          {# Price #}
+          <div class="flex items-baseline gap-3 mb-6">
+            {% if product.is_on_sale %}
+              <span class="text-2xl font-bold text-red-600 tabular-nums">${{ product.price }}</span>
+              <del class="text-lg text-neutral-400 tabular-nums">${{ product.compare_at_price }}</del>
+              <span class="badge badge-accent">-{{ product.discount_percentage }}% Off</span>
+            {% else %}
+              <span class="text-2xl font-bold text-primary-900 tabular-nums">${{ product.price }}</span>
+            {% endif %}
+          </div>
+
+          {# Badges #}
+          <div class="flex flex-wrap gap-2 mb-6">
+            {% if product.is_featured %}
+              <span class="inline-flex items-center px-3 py-1 text-xs font-bold uppercase tracking-wider
+                           bg-accent-100 text-accent-700 rounded-btn">Featured</span>
+            {% endif %}
+            {% if product.is_new_arrival %}
+              <span class="inline-flex items-center px-3 py-1 text-xs font-bold uppercase tracking-wider
+                           bg-primary-100 text-primary-800 rounded-btn">New Arrival</span>
+            {% endif %}
+            {% if product.in_stock %}
+              {% if product.low_stock %}
+                <span class="inline-flex items-center px-3 py-1 text-xs font-bold uppercase tracking-wider
+                             bg-amber-100 text-amber-700 rounded-btn">Low Stock — {{ product.stock_quantity }} Left</span>
+              {% else %}
+                <span class="inline-flex items-center px-3 py-1 text-xs font-bold uppercase tracking-wider
+                             bg-green-100 text-green-700 rounded-btn">In Stock</span>
+              {% endif %}
+            {% else %}
+              <span class="inline-flex items-center px-3 py-1 text-xs font-bold uppercase tracking-wider
+                           bg-neutral-200 text-neutral-600 rounded-btn">Out of Stock</span>
+            {% endif %}
+          </div>
+
+          {# Short Description #}
+          <p class="text-base text-neutral-600 leading-relaxed mb-6">
+            {{ product.short_description }}
+          </p>
+
+          {# Full Description #}
+          <div class="prose prose-sm prose-neutral max-w-none mb-8">
+            <p>{{ product.description }}</p>
+          </div>
+
+          {# Category Link #}
+          {% if product.category %}
+            <div class="pt-6 border-t border-neutral-200">
+              <p class="text-xs text-neutral-500">
+                Category:
+                <a href="{% url 'products:category_detail' product.category.slug %}"
+                   class="font-semibold text-primary-900 hover:text-accent-600 transition-colors">
+                  {{ product.category.name }}
+                </a>
+              </p>
+            </div>
+          {% endif %}
+
+          {# Phase Notice #}
+          <div class="mt-8 p-4 rounded-card bg-secondary-100/80 border border-neutral-200">
+            <p class="text-xs text-neutral-500">
+              <span class="font-semibold text-primary-900">Phase 2.3 Preview</span> —
+              Full product detail experience with image gallery, size selection, and add-to-cart will arrive in Phase 2.4.
+            </p>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+{% endblock %}

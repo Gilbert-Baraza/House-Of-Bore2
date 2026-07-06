@@ -1,0 +1,114 @@
+{# templates/base.html #}
+<!--
+  MASTER TEMPLATE — House of Bore
+  ─────────────────────────────────────────────────────────────────────────────
+  Every page in the project should begin with:
+      extends "base.html"
+
+  Available blocks (override as needed):
+    block "title"            — <title> tag (plain text, no HTML)
+    block "meta_description" — full <meta name="description" ...> tag
+    block "extra_css"        — additional <link> or <style> tags in <head>
+    block "content"          — main page body (required)
+    block "modals"           — page-level modal HTML (rendered below footer)
+    block "extra_js"         — page-level <script> tags before </body>
+
+  Includes (always present):
+    components/navbar.html   — sticky top navigation
+    components/messages.html — Django flash messages (success/error/warning/info)
+    components/footer.html   — site footer
+
+  Loaded template tag libraries:
+    load static         — for static 'path/to/file'
+    load tailwind_tags  — for tailwind_css
+  ─────────────────────────────────────────────────────────────────────────────
+-->
+{% load static tailwind_tags %}
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- ── SEO ─────────────────────────────────────────────────────────────── -->
+  {% block meta_description %}
+  <meta name="description"
+    content="House of Bore — Premium lifestyle e-commerce. Curated products, exceptional quality.">
+  {% endblock meta_description %}
+  <meta name="theme-color" content="#1a1a1a">
+
+  <!-- ── Open Graph (social sharing) ────────────────────────────────────── -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="House of Bore">
+  {% block og_title %}
+  <meta property="og:title" content="House of Bore">
+  {% endblock og_title %}
+  {% block og_description %}
+  <meta property="og:description" content="Premium lifestyle e-commerce.">
+  {% endblock og_description %}
+
+  {# ── Title ────────────────────────────────────────────────────────────── #}
+  <title>{% block title %}House of Bore{% endblock %} — House of Bore</title>
+
+  {# ── Google Fonts ─────────────────────────────────────────────────────── #}
+  {# Preconnect establishes the connection early so font files load faster. #}
+  {# Inter: primary UI/body font — superior screen legibility at all sizes. #}
+  {# Playfair Display: editorial serif for headings — premium, distinctive. #}
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&display=swap"
+    rel="stylesheet">
+
+  {# ── Tailwind CSS ─────────────────────────────────────────────────────── #}
+  {# Outputs:
+  <link rel="stylesheet" href="/static/css/dist/styles.css"> #}
+  {% tailwind_css %}
+
+  {# ── Favicon placeholder ─────────────────────────────────────────────── #}
+  {# Replace with actual favicon files in Phase 2+ #}
+  <link rel="icon" type="image/svg+xml"
+    href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='10' fill='%231a1a1a'/%3E%3C/svg%3E">
+
+  {# ── Per-page CSS ─────────────────────────────────────────────────────── #}
+  {% block extra_css %}{% endblock %}
+</head>
+
+<body class="font-sans antialiased bg-secondary-50 text-neutral-700 min-h-screen flex flex-col">
+
+  {# ── Skip Link ────────────────────────────────────────────────────────── #}
+  {# Accessibility: allows keyboard/screen reader users to bypass nav #}
+  <a href="#main-content"
+    class="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[100] btn btn-primary text-sm">
+    Skip to main content
+  </a>
+
+  {# ── Navigation ───────────────────────────────────────────────────────── #}
+  {% include "components/navbar.html" %}
+
+  {# ── Flash Messages ───────────────────────────────────────────────────── #}
+  {% include "components/messages.html" %}
+
+  {# ── Main Content ─────────────────────────────────────────────────────── #}
+  {# tabindex="-1" allows the skip link to programmatically focus <main> #}
+    <main id="main-content" tabindex="-1" class="flex-1 outline-none">
+      {% block content %}{% endblock %}
+    </main>
+
+    {# ── Footer ───────────────────────────────────────────────────────────── #}
+    {% include "components/footer.html" %}
+
+    {# ── Page-level Modals ────────────────────────────────────────────────── #}
+    {% block modals %}{% endblock %}
+
+    {# ── Global JS ────────────────────────────────────────────────────────── #}
+    {# main.js: placeholder for future Alpine.js initialisation and utilities #}
+    <script src="{% static 'js/main.js' %}" defer></script>
+
+    {# ── Per-page JS ──────────────────────────────────────────────────────── #}
+    {% block extra_js %}{% endblock %}
+
+</body>
+
+</html>

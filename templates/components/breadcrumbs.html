@@ -1,0 +1,76 @@
+{% comment %}
+  templates/components/breadcrumbs.html
+  BREADCRUMBS COMPONENT
+  ─────────────────────────────────────────────────────────────────────────────
+  Renders a navigational breadcrumb trail with Schema.org structured data
+  for search engine rich results.
+
+  Usage in a view's template:
+    {% include "components/breadcrumbs.html" with breadcrumbs=breadcrumbs %}
+
+  Where breadcrumbs is a Python list passed from the view:
+    breadcrumbs = [
+        {'label': 'Home',     'url': '/'},
+        {'label': 'Products', 'url': '/products/'},
+        {'label': 'Trainers', 'url': '/products/trainers/'},
+        {'label': 'Air Max',  'url': None},   ← current page: no link
+    ]
+
+  The last item with url=None is treated as the current (non-linked) page.
+  ─────────────────────────────────────────────────────────────────────────────
+{% endcomment %}
+{% if breadcrumbs %}
+<nav aria-label="Breadcrumb" class="py-3 border-b border-neutral-100">
+  <div class="container-site">
+
+    {# Schema.org BreadcrumbList microdata #}
+    <ol class="flex items-center flex-wrap gap-1"
+        role="list"
+        itemscope
+        itemtype="https://schema.org/BreadcrumbList">
+
+      {% for crumb in breadcrumbs %}
+        <li class="flex items-center gap-1 min-w-0"
+            itemprop="itemListElement"
+            itemscope
+            itemtype="https://schema.org/ListItem">
+
+          {# Separator arrow (not shown before first item) #}
+          {% if not forloop.first %}
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                 stroke-width="2" stroke="currentColor"
+                 width="12" height="12"
+                 class="text-neutral-400 flex-shrink-0"
+                 aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5"/>
+            </svg>
+          {% endif %}
+
+          {# Link (all except the current/last page) #}
+          {% if crumb.url %}
+            <a href="{{ crumb.url }}"
+               class="text-xs text-neutral-500 hover:text-primary-900 transition-colors
+                      whitespace-nowrap truncate max-w-[10rem] sm:max-w-none"
+               itemprop="item">
+              <span itemprop="name">{{ crumb.label }}</span>
+            </a>
+          {% else %}
+            {# Current page — not a link, aria-current #}
+            <span class="text-xs text-primary-800 font-medium whitespace-nowrap truncate
+                         max-w-[10rem] sm:max-w-none"
+                  aria-current="page"
+                  itemprop="name">
+              {{ crumb.label }}
+            </span>
+          {% endif %}
+
+          {# Hidden position for schema.org #}
+          <meta itemprop="position" content="{{ forloop.counter }}">
+
+        </li>
+      {% endfor %}
+
+    </ol>
+  </div>
+</nav>
+{% endif %}

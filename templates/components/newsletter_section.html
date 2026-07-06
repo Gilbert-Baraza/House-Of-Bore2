@@ -1,0 +1,63 @@
+{% comment %}
+  templates/components/newsletter_section.html
+  NEWSLETTER SIGNUP SECTION
+  ─────────────────────────────────────────────────────────────────────────────
+  Dedicated newsletter signup section for marketing pages.
+  No backend integration in Phase 1.5; uses non-functional form and disabled button.
+  ─────────────────────────────────────────────────────────────────────────────
+{% endcomment %}
+
+<section class="bg-secondary-100/70 border-y border-neutral-200 py-16 lg:py-24"
+         aria-labelledby="newsletter-headline">
+  <div class="container-site">
+    <div class="max-w-2xl mx-auto text-center">
+      
+      {# Icon badge #}
+      <div class="w-12 h-12 rounded-full bg-white shadow-sm border border-neutral-200 flex items-center justify-center mx-auto mb-6 text-accent-500"
+           aria-hidden="true">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+             stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+          <path stroke-linecap="round" stroke-linejoin="round"
+                d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75"/>
+        </svg>
+      </div>
+
+      {# Headline #}
+      <h2 id="newsletter-headline"
+          class="font-serif text-3xl sm:text-4xl font-bold text-primary-900 mb-3 tracking-tight">
+        Join the House of Bore Inner Circle
+      </h2>
+      
+      <p class="text-base text-neutral-600 leading-relaxed mb-8">
+        Receive curated dispatches on architectural tailoring, private lookbook previews, and invitations to intimate seasonal salon gatherings.
+      </p>
+
+      {# Placeholder Form (no backend yet) #}
+      <form class="flex flex-col sm:flex-row gap-3 max-w-md mx-auto"
+            aria-label="Newsletter subscription"
+            onsubmit="return false;">
+        <label for="newsletter-section-email" class="sr-only">Email address</label>
+        <input type="email"
+               id="newsletter-section-email"
+               name="email"
+               placeholder="Enter your email address"
+               autocomplete="email"
+               class="flex-1 form-input bg-white text-neutral-900 placeholder-neutral-400 focus:border-primary-800">
+        
+        {# Disabled button as required for Phase 1.5 placeholder #}
+        <button type="button"
+                disabled
+                aria-disabled="true"
+                class="btn btn-primary whitespace-nowrap flex-shrink-0 cursor-not-allowed opacity-70"
+                title="Subscription endpoint available in Phase 2">
+          Subscribe (Preview)
+        </button>
+      </form>
+
+      <p class="text-xs text-neutral-400 mt-4">
+        We respect your privacy. No spam or daily clutter—only meaningful dispatches. Unsubscribe anytime.
+      </p>
+
+    </div>
+  </div>
+</section>

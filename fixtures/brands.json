@@ -1,0 +1,77 @@
+[
+  {
+    "model": "products.brand",
+    "pk": 1,
+    "fields": {
+      "name": "House Of Bore",
+      "slug": "house-of-bore",
+      "description": "Our flagship in-house atelier crafting architectural outerwear, tailored suiting, and vegetable-tanned leather goods.",
+      "logo": "",
+      "website": "https://www.houseofbore.com",
+      "is_featured": true,
+      "is_active": true,
+      "created_at": "2026-07-06T00:00:00Z",
+      "updated_at": "2026-07-06T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.brand",
+    "pk": 2,
+    "fields": {
+      "name": "Urban Edge",
+      "slug": "urban-edge",
+      "description": "Technical city wear and weatherproof gabardine trench coats engineered for metropolitan resilience.",
+      "logo": "",
+      "website": "https://www.urbanedge-atelier.com",
+      "is_featured": true,
+      "is_active": true,
+      "created_at": "2026-07-06T00:00:00Z",
+      "updated_at": "2026-07-06T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.brand",
+    "pk": 3,
+    "fields": {
+      "name": "North Trail",
+      "slug": "north-trail",
+      "description": "Scottish Highland mills specializing in heavyweight merino knitwear, cashmere beanies, and tactile wool throws.",
+      "logo": "",
+      "website": "https://www.northtrail-mills.co.uk",
+      "is_featured": false,
+      "is_active": true,
+      "created_at": "2026-07-06T00:00:00Z",
+      "updated_at": "2026-07-06T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.brand",
+    "pk": 4,
+    "fields": {
+      "name": "Apex Wear",
+      "slug": "apex-wear",
+      "description": "Japanese selvedge denim looms and minimalist organic cotton shirting crafted in Okayama.",
+      "logo": "",
+      "website": "https://www.apexwear-japan.jp",
+      "is_featured": true,
+      "is_active": true,
+      "created_at": "2026-07-06T00:00:00Z",
+      "updated_at": "2026-07-06T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.brand",
+    "pk": 5,
+    "fields": {
+      "name": "Modern Essentials",
+      "slug": "modern-essentials",
+      "description": "Florentine leather craftsmen producing bench-made Chelsea boots, suede loafers, and minimalist horology.",
+      "logo": "",
+      "website": "https://www.modern-essentials.it",
+      "is_featured": false,
+      "is_active": true,
+      "created_at": "2026-07-06T00:00:00Z",
+      "updated_at": "2026-07-06T00:00:00Z"
+    }
+  }
+]

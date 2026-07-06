@@ -1,0 +1,72 @@
+{% comment %}
+  templates/components/empty_state.html
+  EMPTY STATE COMPONENT
+  ─────────────────────────────────────────────────────────────────────────────
+  Reusable centred empty-state block for zero-result views.
+
+  Context variables (all optional):
+    title        — Main heading,   default "Nothing here yet"
+    description  — Subtext,        default ""
+    action_url   — CTA button href (only shown when provided)
+    action_text  — CTA button text, default "Get started"
+    icon         — custom SVG string (passed via context)
+{% endcomment %}
+
+  Usage examples:
+    Product list, no results:
+      {% include "components/empty_state.html" with
+          title="No products found"
+          description="Try adjusting your filters or search terms."
+          action_url="/products/"
+          action_text="Clear filters"
+      %}
+
+    Order history, no orders:
+      {% include "components/empty_state.html" with
+          title="No orders yet"
+          description="Once you place an order, it will appear here."
+          action_url="/"
+          action_text="Start shopping"
+      %}
+  ─────────────────────────────────────────────────────────────────────────────
+#}
+<div class="flex flex-col items-center justify-center text-center py-16 px-4">
+
+  {# ── Icon ─────────────────────────────────────────────────────────────── #}
+  <div class="w-16 h-16 rounded-full bg-neutral-100 flex items-center justify-center mb-5 flex-shrink-0"
+       aria-hidden="true">
+    {% if icon %}
+      {{ icon }}
+    {% else %}
+      {# Default: shopping box icon #}
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+           stroke-width="1.25" stroke="currentColor"
+           width="28" height="28" class="text-neutral-400">
+        <path stroke-linecap="round" stroke-linejoin="round"
+              d="m20.25 7.5-.625 10.632a2.25 2.25 0 0 1-2.247 2.118H6.622a2.25 2.25 0 0 1-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125Z"/>
+      </svg>
+    {% endif %}
+  </div>
+
+  {# ── Heading ──────────────────────────────────────────────────────────── #}
+  <h3 class="font-serif text-xl font-semibold text-primary-900 mb-2">
+    {{ title|default:"Nothing here yet" }}
+  </h3>
+
+  {# ── Description ──────────────────────────────────────────────────────── #}
+  {% if description %}
+    <p class="text-sm text-neutral-500 max-w-xs leading-relaxed mb-6">
+      {{ description }}
+    </p>
+  {% else %}
+    <div class="mb-4"></div>
+  {% endif %}
+
+  {# ── CTA Button ───────────────────────────────────────────────────────── #}
+  {% if action_url %}
+    <a href="{{ action_url }}" class="btn btn-primary btn-sm">
+      {{ action_text|default:"Get started" }}
+    </a>
+  {% endif %}
+
+</div>

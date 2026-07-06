@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% comment %}
+  templates/500.html
+  500 ERROR TEMPLATE
+  ─────────────────────────────────────────────────────────────────────────────
+  Rendered when an unhandled server exception occurs (HTTP 500).
+  Extends the master base.html layout so the user is not greeted with an
+  unbranded browser error page. Keeps messaging polite and avoids exposing
+  sensitive technical details.
+  ─────────────────────────────────────────────────────────────────────────────
+{% endcomment %}
+
+{% block title %}Server Error{% endblock %}
+
+{% block content %}
+<div class="container-site py-20 lg:py-32 flex flex-col items-center justify-center text-center">
+  
+  {# Status code badge #}
+  <span class="badge badge-danger mb-4">Error 500</span>
+  
+  {# Main headline #}
+  <h1 class="font-serif text-4xl sm:text-5xl lg:text-6xl font-bold text-primary-900 mb-4 tracking-tight">
+    Something Went Wrong
+  </h1>
+  
+  {# Description #}
+  <p class="text-base sm:text-lg text-neutral-500 max-w-md leading-relaxed mb-8">
+    We&rsquo;re experiencing an internal server error. Our engineering team has been notified and we are working to resolve the issue as quickly as possible.
+  </p>
+  
+  {# Actions #}
+  <div class="flex flex-col sm:flex-row items-center justify-center gap-4 w-full sm:w-auto">
+    <a href="/" class="btn btn-primary w-full sm:w-auto">
+      Return Home
+    </a>
+    <button type="button" onclick="window.location.reload();" class="btn btn-outline w-full sm:w-auto">
+      Try Again
+    </button>
+  </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,122 @@
+[
+  {
+    "model": "products.category",
+    "pk": 1,
+    "fields": {
+      "name": "Men's Clothing",
+      "slug": "mens-clothing",
+      "description": "Architectural tailoring, unstructured wool blazers, and relaxed trousers engineered for modern elegance.",
+      "image": "",
+      "parent": null,
+      "is_active": true,
+      "sort_order": 10,
+      "created_at": "2026-07-06T00:00:00Z",
+      "updated_at": "2026-07-06T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.category",
+    "pk": 2,
+    "fields": {
+      "name": "Women's Clothing",
+      "slug": "womens-clothing",
+      "description": "Effortless silhouettes featuring draped silk blouses, cashmere knitwear, and structured weatherproof outerwear.",
+      "image": "",
+      "parent": null,
+      "is_active": true,
+      "sort_order": 20,
+      "created_at": "2026-07-06T00:00:00Z",
+      "updated_at": "2026-07-06T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.category",
+    "pk": 3,
+    "fields": {
+      "name": "Shoes",
+      "slug": "shoes",
+      "description": "Bench-made Chelsea boots, minimal suede loafers, and low-profile leather trainers crafted for exceptional comfort.",
+      "image": "",
+      "parent": null,
+      "is_active": true,
+      "sort_order": 30,
+      "created_at": "2026-07-06T00:00:00Z",
+      "updated_at": "2026-07-06T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.category",
+    "pk": 4,
+    "fields": {
+      "name": "Accessories",
+      "slug": "accessories",
+      "description": "Full-grain vegetable-tanned leather weekenders, precision eyewear, silk scarves, and minimal horology.",
+      "image": "",
+      "parent": null,
+      "is_active": true,
+      "sort_order": 40,
+      "created_at": "2026-07-06T00:00:00Z",
+      "updated_at": "2026-07-06T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.category",
+    "pk": 5,
+    "fields": {
+      "name": "New Arrivals",
+      "slug": "new-arrivals",
+      "description": "The latest additions to our permanent wardrobe, featuring limited-run Japanese selvedge denim and linen overshirts.",
+      "image": "",
+      "parent": null,
+      "is_active": true,
+      "sort_order": 5,
+      "created_at": "2026-07-06T00:00:00Z",
+      "updated_at": "2026-07-06T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.category",
+    "pk": 6,
+    "fields": {
+      "name": "Sale",
+      "slug": "sale",
+      "description": "Archival silhouettes and past season staples made available at considered private pricing.",
+      "image": "",
+      "parent": null,
+      "is_active": true,
+      "sort_order": 50,
+      "created_at": "2026-07-06T00:00:00Z",
+      "updated_at": "2026-07-06T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.category",
+    "pk": 7,
+    "fields": {
+      "name": "Tailored Suiting",
+      "slug": "tailored-suiting",
+      "description": "Half-canvas blazers and pleated trousers tailored in Italian Biella merino wool.",
+      "image": "",
+      "parent": 1,
+      "is_active": true,
+      "sort_order": 1,
+      "created_at": "2026-07-06T00:00:00Z",
+      "updated_at": "2026-07-06T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.category",
+    "pk": 8,
+    "fields": {
+      "name": "Cashmere Knitwear",
+      "slug": "cashmere-knitwear",
+      "description": "Heavyweight Scottish cashmere turtlenecks and cardigans engineered for exceptional warmth.",
+      "image": "",
+      "parent": 2,
+      "is_active": true,
+      "sort_order": 1,
+      "created_at": "2026-07-06T00:00:00Z",
+      "updated_at": "2026-07-06T00:00:00Z"
+    }
+  }
+]

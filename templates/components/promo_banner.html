@@ -1,0 +1,45 @@
+{% comment %}
+  templates/components/promo_banner.html
+  PROMOTIONAL BANNER COMPONENT
+  ─────────────────────────────────────────────────────────────────────────────
+  Full-width promotional banner with deep charcoal/gold editorial aesthetic.
+  ─────────────────────────────────────────────────────────────────────────────
+{% endcomment %}
+
+<section class="bg-primary-900 text-secondary-50 relative overflow-hidden my-16 lg:my-24"
+         aria-label="Seasonal Promotion">
+  
+  {# Subtle background glow #}
+  <div class="absolute -right-20 -top-20 w-96 h-96 rounded-full bg-accent-500/10 blur-3xl pointer-events-none" aria-hidden="true"></div>
+  <div class="absolute -left-20 -bottom-20 w-96 h-96 rounded-full bg-primary-800/40 blur-3xl pointer-events-none" aria-hidden="true"></div>
+
+  <div class="container-site py-16 sm:py-20 lg:py-24 relative z-10">
+    <div class="max-w-2xl mx-auto text-center flex flex-col items-center">
+      
+      {# Gold Accent Badge #}
+      <span class="badge badge-accent mb-6">Limited Release</span>
+      
+      {# Headline #}
+      <h2 class="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-secondary-50 mb-4 tracking-tight leading-tight">
+        The Autumn &amp; Winter Collection is Here.
+      </h2>
+      
+      {# Subtext #}
+      <p class="text-base sm:text-lg text-secondary-300 leading-relaxed mb-8 max-w-xl">
+        Experience tactile luxury engineered for colder climates. Featuring heavyweight Scottish cashmere, water-repellent gabardine, and full-grain Italian leather.
+      </p>
+      
+      {# CTA Actions #}
+      <div class="flex flex-col sm:flex-row items-center justify-center gap-4 w-full sm:w-auto">
+        <a href="#" class="btn btn-accent w-full sm:w-auto">
+          Explore the Lookbook
+        </a>
+        <a href="#" class="btn btn-outline border-secondary-400 text-secondary-100 hover:bg-secondary-100 hover:text-primary-900 hover:border-secondary-100 w-full sm:w-auto">
+          Read Our Fabric Story
+        </a>
+      </div>
+
+    </div>
+  </div>
+
+</section>
