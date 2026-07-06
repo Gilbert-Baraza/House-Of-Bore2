@@ -11,7 +11,9 @@ Performance notes:
 """
 
 from decimal import Decimal, InvalidOperation
+from django.core.cache import cache
 from django.db.models import Count, F, Prefetch, Q, QuerySet
+from core.templatetags.query_helpers import is_truthy
 from products.models import Brand, Category, Product, ProductImage
 
 
@@ -279,13 +281,13 @@ def filter_products(
             queryset = queryset.filter(stock_quantity=0)
 
     # Merchandising toggles
-    if featured in (True, "true", "True", "1", 1):
+    if is_truthy(featured):
         queryset = queryset.filter(is_featured=True)
 
-    if new in (True, "true", "True", "1", 1):
+    if is_truthy(new):
         queryset = queryset.filter(is_new_arrival=True)
 
-    if sale in (True, "true", "True", "1", 1):
+    if is_truthy(sale):
         queryset = queryset.filter(
             compare_at_price__isnull=False,
             compare_at_price__gt=F("price")
@@ -306,10 +308,15 @@ def sort_products(queryset: QuerySet[Product] | None = None, sort_key: str = DEF
 def get_filter_options() -> dict:
     """
     Returns available filter options (categories, brands) annotated with active product counts
-    for rendering in the filter sidebar.
+    for rendering in the filter sidebar. Cached for 15 minutes to avoid redundant aggregation queries.
     """
-    return {
-        "categories": get_categories_with_product_counts(),
-        "brands": get_brands_with_product_counts(),
-    }
+    options = cache.get("catalog_filter_options")
+    if options is None:
+        options = {
+            "categories": get_categories_with_product_counts(),
+            "brands": get_brands_with_product_counts(),
+        }
+        cache.set("catalog_filter_options", options, 900)  # 15 minutes TTL
+    return options
+
 

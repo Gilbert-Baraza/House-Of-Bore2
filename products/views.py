@@ -4,10 +4,14 @@ Class-based views for the public product catalog.
 Views are kept thin — all ORM logic is encapsulated in selectors.py.
 """
 
+from django.core.paginator import Paginator
 from django.http import Http404
 from django.views.generic import DetailView, ListView
 
+from core.templatetags.query_helpers import is_truthy
 from products.models import Brand, Category, Product
+from reviews.forms import ReviewForm
+from reviews.selectors import get_product_reviews, get_review_summary, get_user_review
 from products.selectors import (
     DEFAULT_SORT,
     SORT_OPTIONS,
@@ -87,11 +91,11 @@ class ProductListView(ListView):
             active_filters += 1
         if current_availability:
             active_filters += 1
-        if current_featured in ("true", "True", "1", 1):
+        if is_truthy(current_featured):
             active_filters += 1
-        if current_new in ("true", "True", "1", 1):
+        if is_truthy(current_new):
             active_filters += 1
-        if current_sale in ("true", "True", "1", 1):
+        if is_truthy(current_sale):
             active_filters += 1
 
         context.update({
@@ -132,13 +136,13 @@ class ProductListView(ListView):
                 meta_description = brand.description or f"Shop {brand.name} premium products at House of Bore."
             except Brand.DoesNotExist:
                 pass
-        elif current_sale in ("true", "True", "1", 1):
+        elif is_truthy(current_sale):
             page_title = "Products on Sale"
             meta_description = "Explore premium House of Bore garments and accessories currently on sale."
-        elif current_new in ("true", "True", "1", 1):
+        elif is_truthy(current_new):
             page_title = "New Arrivals"
             meta_description = "Discover the latest additions to the permanent House of Bore collection."
-        elif current_featured in ("true", "True", "1", 1):
+        elif is_truthy(current_featured):
             page_title = "Featured Collection"
             meta_description = "Explore our curated selection of featured garments and artifacts."
 
@@ -180,6 +184,24 @@ class ProductDetailView(DetailView):
         product = context["product"]
         context["related_products"] = get_related_products(product, limit=4)
         
+        # Reviews & Ratings
+        review_summary = get_review_summary(product)
+        context["review_summary"] = review_summary
+
+        reviews_qs = get_product_reviews(product, approved_only=True)
+        paginator = Paginator(reviews_qs, 5)  # 5 reviews per page
+        page_number = self.request.GET.get("review_page", 1)
+        page_obj = paginator.get_page(page_number)
+        context["reviews_page"] = page_obj
+        context["reviews"] = page_obj.object_list
+
+        user_review = get_user_review(product, self.request.user)
+        context["user_review"] = user_review
+        if self.request.user.is_authenticated and not user_review:
+            context["review_form"] = ReviewForm()
+        else:
+            context["review_form"] = None
+
         breadcrumbs = [
             {"label": "Home", "url": "/"},
             {"label": "Products", "url": "/products/"},

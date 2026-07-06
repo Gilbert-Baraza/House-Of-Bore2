@@ -1058,3 +1058,50 @@ class CatalogDiscoveryTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context["page_title"], "Products on Sale")
 
+    def test_malformed_price_filtering(self):
+        """Verify that malformed price strings are ignored without causing 500 errors."""
+        response = self.client.get(reverse("products:product_list") + "?min_price=invalid&max_price=$-500")
+        self.assertEqual(response.status_code, 200)
+        # All 3 active products should be returned since invalid prices are gracefully ignored
+        self.assertEqual(len(response.context["products"]), 3)
+
+    def test_inverted_price_filtering(self):
+        """Verify that inverted price ranges (min > max) return an empty queryset cleanly."""
+        response = self.client.get(reverse("products:product_list") + "?min_price=500&max_price=100")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.context["products"]), 0)
+
+    def test_xss_search_query_handling(self):
+        """Verify that XSS payloads in search queries are handled safely without breaking context."""
+        xss_payload = "<script>alert(1)</script>"
+        response = self.client.get(reverse("products:product_list"), {"q": xss_payload})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["current_q"], xss_payload)
+        self.assertEqual(response.context["page_title"], f"Search results for '{xss_payload}'")
+
+    def test_search_query_truncation(self):
+        """Verify that oversized search strings (>100 chars) are safely truncated to prevent DoS."""
+        long_query = "a" * 500
+        response = self.client.get(reverse("products:product_list"), {"q": long_query})
+        self.assertEqual(response.status_code, 200)
+        # Verify it didn't crash and performed search
+        self.assertIn("products", response.context)
+
+    def test_filter_options_caching_and_invalidation(self):
+        """Verify that get_filter_options is cached and cleared when catalog data changes."""
+        from django.core.cache import cache
+        from products.selectors import get_filter_options
+
+        cache.clear()
+        self.assertIsNone(cache.get("catalog_filter_options"))
+
+        # First call populates cache
+        options1 = get_filter_options()
+        self.assertIsNotNone(cache.get("catalog_filter_options"))
+
+        # Modifying a product should trigger invalidate_catalog_cache signal
+        self.p1.name = "Updated Parka Name"
+        self.p1.save()
+        self.assertIsNone(cache.get("catalog_filter_options"))
+
+

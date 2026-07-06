@@ -28,3 +28,22 @@ def url_replace(context, **kwargs):
         else:
             query[key] = str(value)
     return query.urlencode()
+
+
+def is_truthy(value) -> bool:
+    """
+    Returns True if value represents a truthy boolean string or integer.
+    Handles 'true', 'True', '1', 1, True, 'yes', 'on', etc.
+    """
+    if isinstance(value, bool):
+        return value
+    if value is None:
+        return False
+    return str(value).strip().lower() in ("true", "1", "yes", "on")
+
+
+@register.filter(name="is_truthy")
+def is_truthy_filter(value) -> bool:
+    """Template filter to check if a string or variable is truthy."""
+    return is_truthy(value)
+

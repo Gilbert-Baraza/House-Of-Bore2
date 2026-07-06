@@ -62,19 +62,19 @@
         </a>
       {% endif %}
 
-      {% if current_sale == "true" or current_sale == "True" or current_sale == "1" %}
+      {% if current_sale|is_truthy %}
         <a href="?{% url_replace sale='' page='' %}" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-accent-500/10 text-accent-700 hover:bg-accent-500/20 transition-colors">
           On Sale <span aria-hidden="true">&times;</span>
         </a>
       {% endif %}
 
-      {% if current_new == "true" or current_new == "True" or current_new == "1" %}
+      {% if current_new|is_truthy %}
         <a href="?{% url_replace new='' page='' %}" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-neutral-100 text-primary-900 hover:bg-neutral-200 transition-colors">
           New Arrivals <span aria-hidden="true">&times;</span>
         </a>
       {% endif %}
 
-      {% if current_featured == "true" or current_featured == "True" or current_featured == "1" %}
+      {% if current_featured|is_truthy %}
         <a href="?{% url_replace featured='' page='' %}" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-neutral-100 text-primary-900 hover:bg-neutral-200 transition-colors">
           Featured <span aria-hidden="true">&times;</span>
         </a>

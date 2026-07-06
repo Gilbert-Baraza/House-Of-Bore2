@@ -1,0 +1,72 @@
+{% comment %}
+  templates/components/review_card.html
+  REUSABLE REVIEW CARD COMPONENT
+  ─────────────────────────────────────────────────────────────────────────────
+  Renders an individual customer review with author info, rating stars, date,
+  headline, body text, and conditional author Edit/Delete actions.
+  
+  Expected context variables:
+    - review: Review model instance
+  ─────────────────────────────────────────────────────────────────────────────
+{% endcomment %}
+
+<article class="p-6 bg-white border border-neutral-200 rounded-lg shadow-sm transition-shadow hover:shadow-md">
+  <div class="flex items-start justify-between gap-4 mb-3">
+    
+    {# Author Info & Badge #}
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-full bg-neutral-900 text-secondary-50 flex items-center justify-center font-serif font-bold text-sm shrink-0">
+        {{ review.user.first_name|default:review.user.email|slice:":1"|upper }}
+      </div>
+      <div>
+        <div class="flex items-center gap-2">
+          <span class="font-semibold text-sm text-primary-900">
+            {% if review.user.get_full_name %}
+              {{ review.user.get_full_name }}
+            {% else %}
+              {{ review.user.email|truncatechars:20 }}
+            {% endif %}
+          </span>
+          <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-3 h-3">
+              <path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z" clip-rule="evenodd" />
+            </svg>
+            Verified Customer
+          </span>
+        </div>
+        <time datetime="{{ review.created_at|date:'c' }}" class="text-xs text-neutral-400">
+          {{ review.created_at|date:"F d, Y" }}
+          {% if review.updated_at|date:"c" != review.created_at|date:"c" %}
+            <span class="italic">(Edited)</span>
+          {% endif %}
+        </time>
+      </div>
+    </div>
+
+    {# Author Actions (Edit / Delete) #}
+    {% if request.user.is_authenticated and review.user == request.user %}
+      <div class="flex items-center gap-3 text-xs shrink-0">
+        <a href="{% url 'reviews:update_review' review.pk %}" class="font-semibold text-accent-600 hover:text-accent-700 transition-colors">
+          Edit
+        </a>
+        <a href="{% url 'reviews:delete_review' review.pk %}" class="font-semibold text-red-600 hover:text-red-700 transition-colors">
+          Delete
+        </a>
+      </div>
+    {% endif %}
+
+  </div>
+
+  {# Stars #}
+  <div class="mb-2">
+    {% include "components/rating_stars.html" with rating=review.rating star_size="w-4 h-4" %}
+  </div>
+
+  {# Title & Body #}
+  <h4 class="font-serif font-bold text-base text-primary-900 mb-1.5">
+    {{ review.title }}
+  </h4>
+  <p class="text-sm text-neutral-600 leading-relaxed whitespace-pre-line">
+    {{ review.comment }}
+  </p>
+</article>

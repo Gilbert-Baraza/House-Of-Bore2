@@ -74,7 +74,14 @@
     "price": "{{ product.price }}",
     "itemCondition": "https://schema.org/NewCondition",
     "availability": "https://schema.org/{% if product.in_stock %}InStock{% else %}OutOfStock{% endif %}"
-  }
+  }{% if review_summary.review_count > 0 %},
+  "aggregateRating": {
+    "@type": "AggregateRating",
+    "ratingValue": "{{ review_summary.average_rating }}",
+    "reviewCount": "{{ review_summary.review_count }}",
+    "bestRating": "5",
+    "worstRating": "1"
+  }{% endif %}
 }
 </script>
 -->
@@ -219,6 +226,18 @@
           <h1 id="product-heading" class="font-serif text-3xl sm:text-4xl font-bold text-primary-900 mb-4 tracking-tight leading-tight">
             {{ product.name }}
           </h1>
+
+          {# Rating Badge #}
+          <div class="flex items-center gap-2 mb-4">
+            <a href="#reviews" class="inline-flex items-center gap-1.5 hover:opacity-80 transition-opacity">
+              {% include "components/rating_stars.html" with rating=review_summary.average_rating star_size="w-4 h-4" %}
+              <span class="text-sm font-bold text-primary-900">{{ review_summary.average_rating }}</span>
+            </a>
+            <span class="text-neutral-300">&bull;</span>
+            <a href="#reviews" class="text-sm font-medium text-neutral-500 hover:text-primary-900 underline decoration-neutral-300 underline-offset-4">
+              {{ review_summary.review_count }} review{{ review_summary.review_count|pluralize }}
+            </a>
+          </div>
 
           {# Price & Discount Display #}
           <div class="flex items-baseline gap-3 mb-6 pb-6 border-b border-neutral-200">
@@ -438,6 +457,105 @@
         </div>
 
       </div>
+
+      {# ── Product Reviews & Ratings Section ─────────────────────────────── #}
+      <section id="reviews" class="mt-20 sm:mt-24 pt-16 border-t border-neutral-200" aria-labelledby="reviews-heading">
+        <div class="mb-8 sm:mb-10">
+          <h2 id="reviews-heading" class="font-serif text-2xl sm:text-3xl font-bold text-primary-900">
+            Customer Reviews &amp; Ratings
+          </h2>
+          <p class="text-sm text-neutral-500 mt-1">
+            Real feedback from verified House of Bore customers
+          </p>
+        </div>
+
+        {# 1. Rating Summary Card #}
+        <div class="mb-10">
+          {% include "components/rating_summary.html" with summary=review_summary %}
+        </div>
+
+        {# 2. Write / Edit Review Banner or Form #}
+        <div class="mb-12">
+          {% if user_review %}
+            <div class="bg-amber-50/60 border border-amber-200 p-6 rounded-lg flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div>
+                <h3 class="font-serif font-bold text-primary-900 text-base mb-1">You reviewed this product</h3>
+                <p class="text-xs text-neutral-600">You submitted a {{ user_review.rating }}★ review on {{ user_review.created_at|date:"F d, Y" }}.</p>
+              </div>
+              <div class="flex items-center gap-3 shrink-0">
+                <a href="{% url 'reviews:update_review' user_review.pk %}" class="px-4 py-2 bg-neutral-900 hover:bg-neutral-800 text-white text-xs font-bold uppercase tracking-wider rounded-btn shadow-sm transition-colors">
+                  Edit Your Review
+                </a>
+                <a href="{% url 'reviews:delete_review' user_review.pk %}" class="px-4 py-2 bg-white hover:bg-red-50 text-red-600 border border-red-200 text-xs font-bold uppercase tracking-wider rounded-btn transition-colors">
+                  Delete
+                </a>
+              </div>
+            </div>
+          {% elif request.user.is_authenticated %}
+            <div class="bg-white border border-neutral-200 rounded-lg p-6 shadow-sm">
+              <h3 class="font-serif text-lg font-bold text-primary-900 mb-2">Write a Review</h3>
+              <p class="text-xs text-neutral-500 mb-6">Share your experience with other customers. Your review will be published immediately upon submission.</p>
+              {% url 'reviews:create_review' product.slug as create_url %}
+              {% include "components/review_form.html" with form=review_form action_url=create_url submit_label="Publish Review" %}
+            </div>
+          {% else %}
+            <div class="bg-neutral-900 text-secondary-50 p-8 rounded-lg text-center shadow-md">
+              <h3 class="font-serif text-xl font-bold mb-2">Have you purchased this piece?</h3>
+              <p class="text-sm text-neutral-300 max-w-md mx-auto mb-6">
+                Please sign in to your House of Bore account to share your experience regarding fit, fabric, and craftsmanship.
+              </p>
+              <a href="/accounts/login/?next={{ request.path }}%23reviews" class="inline-block px-8 py-3 bg-white text-primary-900 hover:bg-neutral-100 font-bold text-xs uppercase tracking-widest rounded-btn shadow-sm transition-colors">
+                Sign In to Review
+              </a>
+            </div>
+          {% endif %}
+        </div>
+
+        {# 3. Reviews List #}
+        <div class="space-y-6">
+          <h3 class="font-serif text-xl font-bold text-primary-900 border-b border-neutral-200 pb-4">
+            Showing {{ reviews|length }} of {{ review_summary.review_count }} Review{{ review_summary.review_count|pluralize }}
+          </h3>
+          {% if reviews %}
+            {% for rev in reviews %}
+              {% include "components/review_card.html" with review=rev %}
+            {% endfor %}
+
+            {# Pagination for Reviews #}
+            {% if reviews_page.has_other_pages %}
+              <nav class="flex items-center justify-between border-t border-neutral-200 pt-6 mt-8" aria-label="Reviews pagination">
+                <div>
+                  {% if reviews_page.has_previous %}
+                    <a href="?review_page={{ reviews_page.previous_page_number }}#reviews" class="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-primary-900 hover:text-accent-600 transition-colors">
+                      &larr; Previous Reviews
+                    </a>
+                  {% endif %}
+                </div>
+                <div class="text-xs font-semibold text-neutral-500">
+                  Page <span class="text-primary-900 font-bold">{{ reviews_page.number }}</span> of {{ reviews_page.paginator.num_pages }}
+                </div>
+                <div>
+                  {% if reviews_page.has_next %}
+                    <a href="?review_page={{ reviews_page.next_page_number }}#reviews" class="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-primary-900 hover:text-accent-600 transition-colors">
+                      Next Reviews &rarr;
+                    </a>
+                  {% endif %}
+                </div>
+              </nav>
+            {% endif %}
+
+          {% else %}
+            <div class="text-center py-12 bg-white border border-neutral-200 rounded-lg">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-10 h-10 text-neutral-300 mx-auto mb-3">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 0 1 .865-.501 48.172 48.172 0 0 0 3.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0 0 12 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018Z" />
+              </svg>
+              <h4 class="font-serif font-bold text-base text-primary-900 mb-1">No reviews yet</h4>
+              <p class="text-xs text-neutral-500">Be the first to review this piece and share your thoughts!</p>
+            </div>
+          {% endif %}
+        </div>
+
+      </section>
 
       {# ── Related Products Section ──────────────────────────────────────── #}
       {% if related_products %}

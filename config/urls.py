@@ -19,6 +19,7 @@ urlpatterns = [
     # App URL namespaces will be added here as each phase is implemented.
     path("", include("core.urls", namespace="core")),
     path("", include("products.urls", namespace="products")),
+    path("reviews/", include("reviews.urls", namespace="reviews")),
     # e.g.:
     #   path("accounts/", include("accounts.urls", namespace="accounts")),
 ]

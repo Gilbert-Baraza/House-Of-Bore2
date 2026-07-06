@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}
+  {% if is_create %}Write a Review — {{ product.name }}{% else %}Edit Review — {{ product.name }}{% endif %} | House of Bore
+{% endblock title %}
+
+{% block content %}
+<main class="py-12 bg-secondary-50 min-h-[70vh]">
+  <div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
+    
+    {# Breadcrumb #}
+    <nav class="flex items-center gap-2 text-xs font-semibold text-neutral-500 mb-6" aria-label="Breadcrumb">
+      <a href="{% url 'core:home' %}" class="hover:text-primary-900">Home</a>
+      <span>/</span>
+      <a href="{% url 'products:product_list' %}" class="hover:text-primary-900">Catalog</a>
+      <span>/</span>
+      <a href="{{ product.get_absolute_url }}" class="hover:text-primary-900">{{ product.name }}</a>
+      <span>/</span>
+      <span class="text-primary-900">{% if is_create %}Write Review{% else %}Edit Review{% endif %}</span>
+    </nav>
+
+    {# Header #}
+    <div class="mb-8">
+      <h1 class="font-serif text-3xl font-bold text-primary-900 mb-2">
+        {% if is_create %}Write a Review{% else %}Edit Your Review{% endif %}
+      </h1>
+      <p class="text-sm text-neutral-600">
+        You are reviewing <a href="{{ product.get_absolute_url }}" class="font-semibold text-accent-600 hover:underline">{{ product.name }}</a>.
+      </p>
+    </div>
+
+    {# Form #}
+    <div class="bg-white p-8 rounded-lg border border-neutral-200 shadow-sm">
+      {% if is_create %}
+        {% url 'reviews:create_review' product.slug as action_url %}
+        {% include "components/review_form.html" with form=form action_url=action_url submit_label="Publish Review" %}
+      {% else %}
+        {% url 'reviews:update_review' review.pk as action_url %}
+        {% include "components/review_form.html" with form=form action_url=action_url submit_label="Update Review" %}
+      {% endif %}
+    </div>
+
+    {# Back link #}
+    <div class="mt-6 text-center">
+      <a href="{{ product.get_absolute_url }}#reviews" class="text-xs font-semibold text-neutral-500 hover:text-primary-900">
+        &larr; Return to {{ product.name }}
+      </a>
+    </div>
+
+  </div>
+</main>
+{% endblock content %}

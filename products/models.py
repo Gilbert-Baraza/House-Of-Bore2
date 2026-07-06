@@ -454,3 +454,21 @@ class ProductImage(models.Model):
 
         if self.is_primary:
             ProductImage.objects.filter(product=self.product, is_primary=True).exclude(pk=self.pk).update(is_primary=False)
+
+
+# ─── Cache Invalidation Signals ──────────────────────────────────────────────
+from django.core.cache import cache
+from django.db.models.signals import post_delete, post_save
+from django.dispatch import receiver
+
+
+@receiver([post_save, post_delete], sender=Product)
+@receiver([post_save, post_delete], sender=Category)
+@receiver([post_save, post_delete], sender=Brand)
+def invalidate_catalog_cache(sender, **kwargs) -> None:
+    """
+    Automatically clears cached catalog filter options when any Product,
+    Category, or Brand is created, updated, or deleted.
+    """
+    cache.delete("catalog_filter_options")
+
