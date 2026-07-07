@@ -41,10 +41,12 @@ doing it later is extremely painful.
 ──────────────────────────────────────────────────────────────────────────────
 """
 
+from datetime import timedelta
 from typing import Any
 from django.contrib.auth.models import AbstractUser
+from django.contrib.sessions.models import Session
 from django.core.exceptions import ValidationError
-from django.db import models
+from django.db import models, transaction
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
@@ -311,6 +313,21 @@ class Address(models.Model):
         verbose_name = _("address")
         verbose_name_plural = _("addresses")
         ordering = ["-is_default_shipping", "-is_default_billing", "-updated_at"]
+        indexes = [
+            models.Index(fields=["user", "-is_default_shipping", "-is_default_billing"], name="address_user_default_idx"),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user"],
+                condition=models.Q(is_default_shipping=True),
+                name="unique_default_shipping_per_user",
+            ),
+            models.UniqueConstraint(
+                fields=["user"],
+                condition=models.Q(is_default_billing=True),
+                name="unique_default_billing_per_user",
+            ),
+        ]
 
     def __str__(self) -> str:
         return f"{self.label} ({self.recipient_name}) - {self.city}, {self.country}"
@@ -336,12 +353,13 @@ class Address(models.Model):
         lines.append(str(country_display))
         return "\n".join(lines)
 
+    @transaction.atomic
     def save(self, *args: Any, **kwargs: Any) -> None:
         """
         Save the address and atomically enforce that only one default shipping
         and one default billing address exist per user.
+        Unsets existing defaults BEFORE saving to satisfy database unique constraints.
         """
-        super().save(*args, **kwargs)
         if self.is_default_shipping:
             Address.objects.filter(
                 user=self.user, is_default_shipping=True
@@ -350,4 +368,192 @@ class Address(models.Model):
             Address.objects.filter(
                 user=self.user, is_default_billing=True
             ).exclude(pk=self.pk).update(is_default_billing=False)
+        super().save(*args, **kwargs)
+
+
+class PendingEmailChange(models.Model):
+    """
+    Stores requested email updates and secure verification tokens.
+    Prevents account hijacking by requiring email verification before updating the login identifier.
+    """
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="pending_email_changes",
+        verbose_name=_("user"),
+    )
+    new_email = models.EmailField(
+        _("new email address"),
+        max_length=254,
+    )
+    token = models.CharField(
+        _("verification token"),
+        max_length=128,
+        unique=True,
+        db_index=True,
+    )
+    created_at = models.DateTimeField(_("created at"), auto_now_add=True)
+
+    class Meta:
+        verbose_name = _("pending email change")
+        verbose_name_plural = _("pending email changes")
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        return f"{self.user.email} -> {self.new_email} ({self.token[:8]}...)"
+
+    @property
+    def expires_at(self) -> Any:
+        """
+        Return the timestamp when this verification request expires.
+        """
+        return self.created_at + timedelta(hours=24)
+
+    @property
+    def is_expired(self) -> bool:
+        """
+        Check whether the email change request has expired (default: 24 hours).
+        """
+        return timezone.now() > self.expires_at
+
+
+class AccountActivity(models.Model):
+    """
+    Extensible security audit log recording critical account events.
+    Preserved for historical auditing and legal compliance.
+    """
+    EVENT_CHOICES = [
+        ("registration", _("Account Registration")),
+        ("login", _("Successful Login")),
+        ("password_change", _("Password Changed")),
+        ("password_reset", _("Password Reset Requested")),
+        ("password_reset_complete", _("Password Reset Completed")),
+        ("email_verification", _("Email Verified")),
+        ("email_change_request", _("Email Change Requested")),
+        ("email_change", _("Email Address Changed")),
+        ("address_update", _("Address Book Updated")),
+        ("session_revoked", _("Session Revoked")),
+        ("other_sessions_revoked", _("Other Sessions Revoked")),
+        ("account_deactivation", _("Account Deactivated")),
+        ("account_deletion", _("Account Deleted")),
+    ]
+
+    user = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="activity_logs",
+        verbose_name=_("user"),
+    )
+    event_type = models.CharField(
+        _("event type"),
+        max_length=50,
+        choices=EVENT_CHOICES,
+        db_index=True,
+    )
+    ip_address = models.GenericIPAddressField(
+        _("IP address"),
+        null=True,
+        blank=True,
+    )
+    user_agent = models.CharField(
+        _("user agent"),
+        max_length=500,
+        blank=True,
+    )
+    details = models.JSONField(
+        _("details"),
+        default=dict,
+        blank=True,
+    )
+    timestamp = models.DateTimeField(_("timestamp"), auto_now_add=True, db_index=True)
+
+    class Meta:
+        verbose_name = _("account activity log")
+        verbose_name_plural = _("account activity logs")
+        ordering = ["-timestamp"]
+
+    def __str__(self) -> str:
+        user_display = self.user.email if self.user else "Deleted User"
+        return f"{user_display} - {self.get_event_type_display()} ({self.timestamp:%Y-%m-%d %H:%M})"
+
+
+class UserSession(models.Model):
+    """
+    Links Django sessions directly to customer accounts for active session monitoring
+    and remote revocation.
+    """
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="user_sessions",
+        verbose_name=_("user"),
+    )
+    session = models.OneToOneField(
+        Session,
+        on_delete=models.CASCADE,
+        related_name="user_session",
+        verbose_name=_("django session"),
+    )
+    session_key = models.CharField(
+        _("session key"),
+        max_length=40,
+        unique=True,
+        db_index=True,
+    )
+    ip_address = models.GenericIPAddressField(
+        _("IP address"),
+        null=True,
+        blank=True,
+    )
+    user_agent = models.CharField(
+        _("user agent"),
+        max_length=500,
+        blank=True,
+    )
+    last_activity = models.DateTimeField(_("last activity"), default=timezone.now, db_index=True)
+    created_at = models.DateTimeField(_("created at"), auto_now_add=True)
+
+    class Meta:
+        verbose_name = _("user session")
+        verbose_name_plural = _("user sessions")
+        ordering = ["-last_activity"]
+
+    def __str__(self) -> str:
+        return f"{self.user.email} - {self.browser_name} on {self.device_type} ({self.ip_address or 'Unknown IP'})"
+
+    @property
+    def browser_name(self) -> str:
+        """
+        Parse basic browser identity from user agent string.
+        """
+        ua = self.user_agent.lower()
+        if not ua:
+            return "Unknown Browser"
+        if "edg/" in ua or "edge/" in ua:
+            return "Microsoft Edge"
+        if "chrome/" in ua and "chromium/" not in ua:
+            return "Google Chrome"
+        if "firefox/" in ua:
+            return "Mozilla Firefox"
+        if "safari/" in ua and "chrome/" not in ua:
+            return "Apple Safari"
+        if "opera/" in ua or "opr/" in ua:
+            return "Opera"
+        return "Web Browser"
+
+    @property
+    def device_type(self) -> str:
+        """
+        Parse basic device category from user agent string.
+        """
+        ua = self.user_agent.lower()
+        if not ua:
+            return "Unknown Device"
+        if "ipad" in ua or "tablet" in ua:
+            return "Tablet"
+        if "mobile" in ua or "android" in ua or "iphone" in ua:
+            return "Mobile Device"
+        return "Desktop / Laptop"
 

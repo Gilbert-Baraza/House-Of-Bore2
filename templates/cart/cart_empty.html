@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% comment %}
+  templates/cart/cart_empty.html
+  EMPTY SHOPPING BAG STATE
+  ─────────────────────────────────────────────────────────────────────────────
+  Luxury empty state displayed when a user or guest has no items in their bag.
+  Provides elegant typography and direct navigation pathways back to the catalog.
+  ─────────────────────────────────────────────────────────────────────────────
+{% endcomment %}
+
+{% block title %}Your Shopping Bag is Empty — House of Bore{% endblock %}
+
+{% block content %}
+<div class="bg-neutral-50 min-h-[75vh] flex items-center justify-center py-16 px-4">
+  <div class="max-w-md w-full bg-white rounded-card border border-neutral-200 shadow-sm p-8 sm:p-12 text-center">
+    
+    {# Bag Icon #}
+    <div class="w-20 h-20 mx-auto mb-6 rounded-full bg-neutral-100 border border-neutral-200 flex items-center justify-center text-primary-900 shadow-inner">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.25" stroke="currentColor" class="w-10 h-10">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5V6a3.75 3.75 0 1 0-7.5 0v4.5m11.356-1.993 1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 0 1-1.12-1.243l1.264-12A1.125 1.125 0 0 1 5.513 7.5h12.974c.576 0 1.059.435 1.119 1.007ZM8.625 10.5a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm7.5 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z"/>
+      </svg>
+    </div>
+
+    {# Typography #}
+    <p class="text-xs font-bold uppercase tracking-widest text-accent-700 mb-2">House of Bore Atelier</p>
+    <h1 class="font-serif text-2xl sm:text-3xl font-bold text-primary-900 mb-4 tracking-tight">
+      Your Bag is Empty
+    </h1>
+    <p class="text-sm text-neutral-500 leading-relaxed mb-8">
+      You have not selected any pieces yet. Explore our bespoke collections and discover timeless luxury garments crafted for the discerning wardrobe.
+    </p>
+
+    {# CTA Actions #}
+    <div class="flex flex-col sm:flex-row items-stretch justify-center gap-3">
+      <a href="{% url 'products:product_list' %}"
+         class="inline-flex items-center justify-center px-6 py-3.5 bg-primary-900 text-white font-bold uppercase tracking-widest text-xs rounded-btn shadow-sm hover:bg-primary-800 transition-colors">
+        Explore Catalog
+      </a>
+      <a href="{% url 'products:product_list' %}?sort=newest"
+         class="inline-flex items-center justify-center px-6 py-3.5 bg-neutral-100 text-primary-900 font-bold uppercase tracking-widest text-xs rounded-btn hover:bg-neutral-200 transition-colors border border-neutral-200">
+        New Arrivals
+      </a>
+    </div>
+
+    {# Assurance Footer #}
+    <div class="mt-10 pt-6 border-t border-neutral-100 text-[11px] text-neutral-400">
+      Complimentary worldwide shipping & atelier returns on all orders.
+    </div>
+
+  </div>
+</div>
+{% endblock content %}

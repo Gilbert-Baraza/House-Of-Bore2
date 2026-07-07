@@ -11,9 +11,10 @@ principles and clean separation of concerns.
 
 from typing import Any, Optional
 from django.contrib.auth import get_user_model
+from django.utils import timezone
 from django.utils.encoding import force_str
 from django.utils.http import urlsafe_base64_decode
-from .models import UserProfile, Address
+from .models import UserProfile, Address, PendingEmailChange, AccountActivity, UserSession
 
 User = get_user_model()
 
@@ -198,4 +199,51 @@ def get_default_billing(user: Any) -> Optional[Address]:
     if not user or not getattr(user, "is_authenticated", False):
         return None
     return Address.objects.filter(user=user, is_default_billing=True).select_related("user").first()
+
+
+def get_active_sessions(user: Any) -> Any:
+    """
+    Retrieve all valid, unexpired UserSession instances for a given user,
+    ordered by last activity.
+    """
+    if not user or not getattr(user, "is_authenticated", False):
+        return UserSession.objects.none()
+    now = timezone.now()
+    return UserSession.objects.filter(
+        user=user,
+        session__expire_date__gt=now
+    ).select_related("user", "session").order_by("-last_activity")
+
+
+def get_recent_activity(user: Any, limit: int = 20) -> Any:
+    """
+    Retrieve recent security activity logs for a given user.
+    """
+    if not user or not getattr(user, "is_authenticated", False):
+        return AccountActivity.objects.none()
+    return AccountActivity.objects.filter(user=user).order_by("-timestamp")[:limit]
+
+
+def pending_email_change(user: Any) -> Optional[PendingEmailChange]:
+    """
+    Retrieve the user's unexpired pending email change request, if any.
+    """
+    if not user or not getattr(user, "is_authenticated", False):
+        return None
+    pending = PendingEmailChange.objects.filter(user=user).order_by("-created_at").first()
+    if pending and not pending.is_expired:
+        return pending
+    return None
+
+
+def get_pending_email_change_by_token(token: str) -> Optional[PendingEmailChange]:
+    """
+    Retrieve an unexpired pending email change request by secure token.
+    """
+    if not token or not isinstance(token, str):
+        return None
+    pending = PendingEmailChange.objects.filter(token=token.strip()).select_related("user").first()
+    if pending and not pending.is_expired:
+        return pending
+    return None
 

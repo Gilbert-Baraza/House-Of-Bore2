@@ -1,0 +1,22 @@
+CONFIRM YOUR NEW EMAIL ADDRESS — HOUSE OF BORE
+──────────────────────────────────────────────────────────────────────────────
+
+Dear {{ user.full_name|default:user.email }},
+
+We received a request to update the email address associated with your House of Bore patron account to: {{ new_email }}.
+
+To confirm this change and direct all future concierge correspondence to this inbox, please visit the link below:
+
+{{ verification_url }}
+
+SECURITY NOTICE:
+If you did not request this email address change, please disregard this email or immediately contact our private concierge support to secure your account. Your current email address will remain unchanged until this link is verified.
+
+Need assistance? Contact our private concierge at {{ support_email|default:'concierge@houseofbore.com' }}.
+
+Warm regards,
+The House of Bore Concierge Team
+
+──────────────────────────────────────────────────────────────────────────────
+© {% now "Y" %} House of Bore. All rights reserved.
+Exceptional Luxury • Bench-Made Heritage

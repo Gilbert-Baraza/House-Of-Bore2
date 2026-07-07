@@ -16,13 +16,15 @@ from typing import Any
 from django.contrib import messages
 from django.contrib.auth import login as auth_login, logout as auth_logout, views as auth_views
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.http import HttpRequest, HttpResponse, HttpResponseNotAllowed
+from django.http import Http404, HttpRequest, HttpResponse, HttpResponseNotAllowed
 from django.shortcuts import redirect, render
 from django.urls import reverse, reverse_lazy
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_protect
 from django.views.generic import FormView, ListView, TemplateView, View
+
+from accounts.decorators import ThrottleAuthMixin
 
 from accounts.forms import (
     UserLoginForm,
@@ -33,6 +35,9 @@ from accounts.forms import (
     ProfileUpdateForm,
     AvatarUploadForm,
     AddressForm,
+    EmailChangeForm,
+    AccountDeactivateForm,
+    AccountDeleteForm,
 )
 from accounts.selectors import (
     is_email_verified,
@@ -40,8 +45,9 @@ from accounts.selectors import (
     profile_completion_percentage,
     get_user_addresses,
     get_user_address_by_pk,
-    get_default_shipping,
-    get_default_billing,
+    get_active_sessions,
+    get_recent_activity,
+    pending_email_change,
 )
 from accounts.services import (
     register_user,
@@ -55,10 +61,18 @@ from accounts.services import (
     delete_address,
     set_default_shipping,
     set_default_billing,
+    log_account_activity,
+    track_user_session,
+    request_email_change,
+    verify_email_change,
+    revoke_session,
+    revoke_other_sessions,
+    deactivate_account,
+    delete_account,
 )
 
 
-class RegistrationView(FormView):
+class RegistrationView(ThrottleAuthMixin, FormView):
     """
     Renders the registration form and handles new customer account creation.
     
@@ -96,6 +110,7 @@ class RegistrationView(FormView):
             self.request,
             "Your account has been created successfully. Please check your inbox for verification instructions."
         )
+        self.clear_throttle_counters(self.request)
         return super().form_valid(form)
 
 
@@ -153,7 +168,7 @@ class ResendVerificationView(LoginRequiredMixin, View):
         return redirect("accounts:resend_verification")
 
 
-class LoginView(auth_views.LoginView):
+class LoginView(ThrottleAuthMixin, auth_views.LoginView):
     """
     Class-based login view handling customer authentication, session persistence
     ('Remember Me'), safe redirection, and flash messaging.
@@ -177,10 +192,15 @@ class LoginView(auth_views.LoginView):
             self.request.session.set_expiry(0)
 
         user = form.get_user()
+        try:
+            track_user_session(self.request, user)
+        except Exception:
+            pass
         messages.success(
             self.request,
             f"Welcome back to House of Bore, {user.full_name}."
         )
+        self.clear_throttle_counters(self.request)
         return response
 
     def get_success_url(self) -> str:
@@ -254,11 +274,16 @@ class PasswordChangeView(LoginRequiredMixin, auth_views.PasswordChangeView):
     success_url = reverse_lazy("core:home")
 
     def form_valid(self, form: Any) -> HttpResponse:
+        response = super().form_valid(form)
+        try:
+            log_account_activity(self.request.user, "password_change", request=self.request)
+        except Exception:
+            pass
         messages.success(
             self.request,
             "Your password has been changed successfully. You remain securely signed in."
         )
-        return super().form_valid(form)
+        return response
 
 
 class ProfileView(LoginRequiredMixin, TemplateView):
@@ -353,9 +378,6 @@ class AddressListView(LoginRequiredMixin, ListView):
 
     def get_context_data(self, **kwargs: Any) -> dict[str, Any]:
         context = super().get_context_data(**kwargs)
-        user = self.request.user
-        context["default_shipping"] = get_default_shipping(user)
-        context["default_billing"] = get_default_billing(user)
         context["active_nav"] = "addresses"
         return context
 
@@ -436,7 +458,6 @@ class AddressDeleteView(LoginRequiredMixin, View):
     def get(self, request: HttpRequest, pk: int, *args: Any, **kwargs: Any) -> HttpResponse:
         address = get_user_address_by_pk(request.user, pk)
         if not address:
-            from django.http import Http404
             raise Http404("Address not found.")
         return render(request, self.template_name, {
             "address": address,
@@ -446,7 +467,6 @@ class AddressDeleteView(LoginRequiredMixin, View):
     def post(self, request: HttpRequest, pk: int, *args: Any, **kwargs: Any) -> HttpResponse:
         address = get_user_address_by_pk(request.user, pk)
         if not address:
-            from django.http import Http404
             raise Http404("Address not found.")
         label = address.label
         if delete_address(address):
@@ -464,7 +484,6 @@ class AddressSetDefaultView(LoginRequiredMixin, View):
     def post(self, request: HttpRequest, pk: int, address_type: str, *args: Any, **kwargs: Any) -> HttpResponse:
         address = get_user_address_by_pk(request.user, pk)
         if not address:
-            from django.http import Http404
             raise Http404("Address not found.")
 
         if address_type == "shipping":
@@ -477,4 +496,190 @@ class AddressSetDefaultView(LoginRequiredMixin, View):
             messages.error(request, "Invalid address type specified.")
 
         return redirect("accounts:address_list")
+
+
+class AccountSettingsView(LoginRequiredMixin, TemplateView):
+    """
+    Renders the account security and settings hub.
+    Displays overview of password status, email verification, active sessions, and recent activity.
+    """
+    template_name = "accounts/settings.html"
+
+    def get_context_data(self, **kwargs: Any) -> dict[str, Any]:
+        context = super().get_context_data(**kwargs)
+        user = self.request.user
+        try:
+            track_user_session(self.request, user, log_login=False)
+        except Exception:
+            pass
+        context["active_sessions"] = get_active_sessions(user)[:3]
+        context["recent_activity"] = get_recent_activity(user, limit=5)
+        context["pending_email"] = pending_email_change(user)
+        context["current_session_key"] = self.request.session.session_key
+        context["active_nav"] = "security"
+        return context
+
+
+class EmailChangeView(LoginRequiredMixin, FormView):
+    """
+    Handles email change requests.
+    Renders form on GET and dispatches verification email on valid POST.
+    """
+    template_name = "accounts/email_change.html"
+    form_class = EmailChangeForm
+    success_url = reverse_lazy("accounts:settings")
+
+    def get_form_kwargs(self) -> dict[str, Any]:
+        kwargs = super().get_form_kwargs()
+        kwargs["user"] = self.request.user
+        return kwargs
+
+    def form_valid(self, form: EmailChangeForm) -> HttpResponse:
+        new_email = form.cleaned_data["new_email"]
+        password = form.cleaned_data["password"]
+        try:
+            request_email_change(self.request.user, new_email=new_email, password=password, request=self.request)
+            messages.success(
+                self.request,
+                f"A verification link has been sent to {new_email}. Please check your inbox to complete the change."
+            )
+        except Exception as e:
+            form.add_error(None, str(e))
+            return self.form_invalid(form)
+        return super().form_valid(form)
+
+    def get_context_data(self, **kwargs: Any) -> dict[str, Any]:
+        context = super().get_context_data(**kwargs)
+        context["pending_email"] = pending_email_change(self.request.user)
+        context["active_nav"] = "security"
+        return context
+
+
+class EmailChangeVerifyView(View):
+    """
+    Validates token from email change link and updates user's email address.
+    """
+    def get(self, request: HttpRequest, token: str) -> HttpResponse:
+        success, user, message = verify_email_change(token, request=request)
+        if success:
+            messages.success(request, message)
+        else:
+            messages.error(request, message)
+        if request.user.is_authenticated:
+            return redirect("accounts:settings")
+        return render(request, "accounts/email_change_verified.html", {
+            "success": success,
+            "message": message,
+            "user": user,
+        })
+
+
+class SessionManagementView(LoginRequiredMixin, TemplateView):
+    """
+    Displays all active browser/device sessions and detailed security audit log.
+    """
+    template_name = "accounts/sessions.html"
+
+    def get_context_data(self, **kwargs: Any) -> dict[str, Any]:
+        context = super().get_context_data(**kwargs)
+        user = self.request.user
+        try:
+            track_user_session(self.request, user, log_login=False)
+        except Exception:
+            pass
+        context["active_sessions"] = get_active_sessions(user)
+        context["recent_activity"] = get_recent_activity(user, limit=50)
+        context["current_session_key"] = self.request.session.session_key
+        context["active_nav"] = "sessions"
+        return context
+
+
+class SessionRevokeView(LoginRequiredMixin, View):
+    """
+    POST-only endpoint to revoke a specific active session.
+    """
+    @method_decorator(csrf_protect)
+    def post(self, request: HttpRequest, session_key: str, *args: Any, **kwargs: Any) -> HttpResponse:
+        if session_key == request.session.session_key:
+            messages.warning(request, "You cannot revoke your current active session from here. Use Logout instead.")
+        elif revoke_session(request.user, session_key, request=request):
+            messages.success(request, "Session has been successfully revoked.")
+        else:
+            messages.error(request, "Could not revoke the specified session.")
+        return redirect("accounts:sessions")
+
+
+class SessionRevokeOthersView(LoginRequiredMixin, View):
+    """
+    POST-only endpoint to sign out of all other devices/sessions.
+    """
+    @method_decorator(csrf_protect)
+    def post(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
+        count = revoke_other_sessions(request.user, current_session_key=request.session.session_key, request=request)
+        if count > 0:
+            messages.success(request, f"Successfully signed out of {count} other device(s).")
+        else:
+            messages.info(request, "There were no other active sessions to revoke.")
+        return redirect("accounts:sessions")
+
+
+class AccountDeactivateView(LoginRequiredMixin, FormView):
+    """
+    Handles temporary account deactivation.
+    """
+    template_name = "accounts/deactivate.html"
+    form_class = AccountDeactivateForm
+    success_url = reverse_lazy("core:home")
+
+    def get_form_kwargs(self) -> dict[str, Any]:
+        kwargs = super().get_form_kwargs()
+        kwargs["user"] = self.request.user
+        return kwargs
+
+    def form_valid(self, form: AccountDeactivateForm) -> HttpResponse:
+        password = form.cleaned_data["password"]
+        try:
+            deactivate_account(self.request.user, password=password, request=self.request)
+            auth_logout(self.request)
+            messages.info(self.request, "Your account has been deactivated. All active sessions have been terminated.")
+            return super().form_valid(form)
+        except Exception as e:
+            form.add_error("password", str(e))
+            return self.form_invalid(form)
+
+    def get_context_data(self, **kwargs: Any) -> dict[str, Any]:
+        context = super().get_context_data(**kwargs)
+        context["active_nav"] = "security"
+        return context
+
+
+class AccountDeleteView(LoginRequiredMixin, FormView):
+    """
+    Handles permanent/soft account deletion.
+    """
+    template_name = "accounts/delete.html"
+    form_class = AccountDeleteForm
+    success_url = reverse_lazy("core:home")
+
+    def get_form_kwargs(self) -> dict[str, Any]:
+        kwargs = super().get_form_kwargs()
+        kwargs["user"] = self.request.user
+        return kwargs
+
+    def form_valid(self, form: AccountDeleteForm) -> HttpResponse:
+        password = form.cleaned_data["password"]
+        confirmation_phrase = form.cleaned_data["confirmation_phrase"]
+        try:
+            delete_account(self.request.user, password=password, confirmation_phrase=confirmation_phrase, request=self.request)
+            auth_logout(self.request)
+            messages.info(self.request, "Your account has been permanently closed. We are sorry to see you go.")
+            return super().form_valid(form)
+        except Exception as e:
+            form.add_error(None, str(e))
+            return self.form_invalid(form)
+
+    def get_context_data(self, **kwargs: Any) -> dict[str, Any]:
+        context = super().get_context_data(**kwargs)
+        context["active_nav"] = "security"
+        return context
 

@@ -18,11 +18,13 @@ from typing import Any, Callable, Optional
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import AccessMixin
+from django.core.cache import cache
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import redirect
 from django.urls import reverse
 
 from accounts.selectors import is_email_verified
+from accounts.services import _get_client_ip
 
 
 def verified_email_required(
@@ -122,3 +124,54 @@ class EmailVerificationMiddleware:
                 return redirect(reverse("accounts:resend_verification"))
 
         return self.get_response(request)
+
+
+class ThrottleAuthMixin:
+    """
+    Class-based view mixin to throttle POST requests on sensitive authentication endpoints
+    (such as login and registration) to prevent brute-force and credential stuffing attacks.
+    
+    Tracks failed attempts by client IP address and email address using Django's cache backend.
+    """
+    throttle_limit: int = 10  # max attempts per time window
+    throttle_timeout: int = 300  # time window in seconds (5 minutes)
+
+    def get_throttle_keys(self, request: HttpRequest) -> tuple[str, Optional[str]]:
+        ip = _get_client_ip(request) or "unknown_ip"
+        email = request.POST.get("email", "").strip().lower()
+        ip_key = f"throttle_ip_{request.path}_{ip}"
+        email_key = f"throttle_email_{request.path}_{email}" if email else None
+        return ip_key, email_key
+
+    def dispatch(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
+        if request.method == "POST":
+            ip_key, email_key = self.get_throttle_keys(request)
+            ip_count = cache.get(ip_key, 0)
+            email_count = cache.get(email_key, 0) if email_key else 0
+
+            if ip_count >= self.throttle_limit or email_count >= self.throttle_limit:
+                messages.error(
+                    request,
+                    "Too many unsuccessful attempts. For your security, please wait a few minutes before trying again."
+                )
+                if hasattr(self, "get_form") and hasattr(self, "render_to_response"):
+                    form = self.get_form()  # type: ignore[attr-defined]
+                    return self.render_to_response(self.get_context_data(form=form))  # type: ignore[attr-defined]
+                return redirect(request.path)
+
+            # Increment throttle counters
+            cache.set(ip_key, ip_count + 1, self.throttle_timeout)
+            if email_key:
+                cache.set(email_key, email_count + 1, self.throttle_timeout)
+
+        return super().dispatch(request, *args, **kwargs)  # type: ignore[misc]
+
+    def clear_throttle_counters(self, request: HttpRequest) -> None:
+        """
+        Clear throttle counters upon successful authentication or registration.
+        """
+        ip_key, email_key = self.get_throttle_keys(request)
+        cache.delete(ip_key)
+        if email_key:
+            cache.delete(email_key)
+

@@ -23,7 +23,13 @@ from django.urls import reverse
 from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
 
-from accounts.selectors import get_user_by_uidb64, is_email_verified
+from django.contrib.sessions.models import Session
+from django.core.exceptions import ValidationError
+from django.utils import timezone
+from django.utils.crypto import get_random_string
+
+from accounts.selectors import get_user_by_uidb64, is_email_verified, get_pending_email_change_by_token, email_exists
+from accounts.models import PendingEmailChange, AccountActivity, UserSession
 
 User = get_user_model()
 logger = logging.getLogger(__name__)
@@ -90,7 +96,46 @@ def register_user(
             logger.error(f"Failed to send verification email to {cleaned_email}: {e}")
 
     transaction.on_commit(_dispatch_emails)
+    try:
+        log_account_activity(user, "registration", request=request)
+    except Exception as e:
+        logger.error(f"Failed to log registration activity for {cleaned_email}: {e}")
     return user
+
+
+def _dispatch_templated_email(
+    subject: str,
+    template_name: str,
+    context: dict[str, Any],
+    recipient_list: list[str],
+    from_email: Optional[str] = None
+) -> bool:
+    """
+    Render HTML and text templates and dispatch a multipart email.
+    
+    Provides a centralized abstraction for all customer email notifications.
+    """
+    if not recipient_list:
+        return False
+    
+    if from_email is None:
+        from_email = getattr(settings, "DEFAULT_FROM_EMAIL", "concierge@houseofbore.com")
+        
+    try:
+        text_body = render_to_string(f"{template_name}.txt", context)
+        html_body = render_to_string(f"{template_name}.html", context)
+        msg = EmailMultiAlternatives(
+            subject=subject,
+            body=text_body,
+            from_email=from_email,
+            to=recipient_list
+        )
+        msg.attach_alternative(html_body, "text/html")
+        msg.send(fail_silently=False)
+        return True
+    except Exception as e:
+        logger.error(f"Failed to send email '{subject}' to {recipient_list}: {e}", exc_info=True)
+        return False
 
 
 def send_welcome_email(user: Any, request: Optional[HttpRequest] = None) -> bool:
@@ -109,24 +154,7 @@ def send_welcome_email(user: Any, request: Optional[HttpRequest] = None) -> bool
     }
 
     subject = "Welcome to House of Bore — Exceptional Luxury Awaits"
-    text_body = render_to_string("accounts/emails/welcome_email.txt", context)
-    html_body = render_to_string("accounts/emails/welcome_email.html", context)
-
-    from_email = getattr(settings, "DEFAULT_FROM_EMAIL", "concierge@houseofbore.com")
-    
-    msg = EmailMultiAlternatives(
-        subject=subject,
-        body=text_body,
-        from_email=from_email,
-        to=[user.email]
-    )
-    msg.attach_alternative(html_body, "text/html")
-    try:
-        msg.send(fail_silently=False)
-        return True
-    except Exception as e:
-        logger.error(f"Failed to send welcome email to {user.email}: {e}", exc_info=True)
-        return False
+    return _dispatch_templated_email(subject, "accounts/emails/welcome_email", context, [user.email])
 
 
 def send_verification_email(user: Any, request: Optional[HttpRequest] = None) -> bool:
@@ -155,24 +183,7 @@ def send_verification_email(user: Any, request: Optional[HttpRequest] = None) ->
     }
 
     subject = "Please Verify Your Email Address — House of Bore"
-    text_body = render_to_string("accounts/emails/verification_email.txt", context)
-    html_body = render_to_string("accounts/emails/verification_email.html", context)
-
-    from_email = getattr(settings, "DEFAULT_FROM_EMAIL", "concierge@houseofbore.com")
-
-    msg = EmailMultiAlternatives(
-        subject=subject,
-        body=text_body,
-        from_email=from_email,
-        to=[user.email]
-    )
-    msg.attach_alternative(html_body, "text/html")
-    try:
-        msg.send(fail_silently=False)
-        return True
-    except Exception as e:
-        logger.error(f"Failed to send verification email to {user.email}: {e}", exc_info=True)
-        return False
+    return _dispatch_templated_email(subject, "accounts/emails/verification_email", context, [user.email])
 
 
 def send_password_reset_email(user: Any, request: Optional[HttpRequest] = None) -> bool:
@@ -206,25 +217,10 @@ def send_password_reset_email(user: Any, request: Optional[HttpRequest] = None) 
     }
 
     subject = "Password Reset Request — House of Bore"
-    text_body = render_to_string("accounts/emails/password_reset.txt", context)
-    html_body = render_to_string("accounts/emails/password_reset.html", context)
-
-    from_email = getattr(settings, "DEFAULT_FROM_EMAIL", "concierge@houseofbore.com")
-
-    msg = EmailMultiAlternatives(
-        subject=subject,
-        body=text_body,
-        from_email=from_email,
-        to=[user.email]
-    )
-    msg.attach_alternative(html_body, "text/html")
-    try:
-        msg.send(fail_silently=False)
+    sent = _dispatch_templated_email(subject, "accounts/emails/password_reset", context, [user.email])
+    if sent:
         cache.set(cache_key, True, 60)  # 60 seconds cooldown
-        return True
-    except Exception as e:
-        logger.error(f"Failed to send password reset email to {user.email}: {e}", exc_info=True)
-        return False
+    return sent
 
 
 def verify_email_token(uidb64: str, token: str) -> Tuple[bool, str, Optional[Any]]:
@@ -247,6 +243,10 @@ def verify_email_token(uidb64: str, token: str) -> Tuple[bool, str, Optional[Any
 
     if default_token_generator.check_token(user, token):
         user.verify_email()
+        try:
+            log_account_activity(user, "email_verification")
+        except Exception as e:
+            logger.error(f"Failed to log email verification for user {user.pk}: {e}")
         return True, "success", user
 
     return False, "invalid_token", user
@@ -417,6 +417,10 @@ def create_address(user: Any, **data: Any) -> Any:
         data["is_default_billing"] = True
 
     address = Address.objects.create(user=user, **data)
+    try:
+        log_account_activity(user, "address_update", details={"action": "created", "label": address.label})
+    except Exception as e:
+        logger.error(f"Failed to log address creation for user {user.pk}: {e}")
     return address
 
 
@@ -429,6 +433,10 @@ def update_address(address: Any, **data: Any) -> Any:
         if hasattr(address, key) and key != "user":
             setattr(address, key, value)
     address.save()
+    try:
+        log_account_activity(address.user, "address_update", details={"action": "updated", "label": address.label})
+    except Exception as e:
+        logger.error(f"Failed to log address update for user {address.user.pk}: {e}")
     return address
 
 
@@ -529,4 +537,301 @@ def format_address(address: Any, html: bool = False) -> str:
         return "<br>".join(lines)
 
     return getattr(address, "formatted_address", "") or str(address)
+
+
+def _get_client_ip(request: Optional[HttpRequest]) -> Optional[str]:
+    """Helper to extract client IP address from request headers."""
+    if not request:
+        return None
+    x_forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR")
+    if x_forwarded_for:
+        return x_forwarded_for.split(",")[0].strip()
+    return request.META.get("REMOTE_ADDR")
+
+
+def log_account_activity(
+    user: Any,
+    event_type: str,
+    request: Optional[HttpRequest] = None,
+    details: Optional[dict] = None
+) -> Optional[AccountActivity]:
+    """
+    Record a security event in the AccountActivity audit log.
+    """
+    if not user or not getattr(user, "is_authenticated", False):
+        return None
+    try:
+        ip_addr = _get_client_ip(request)
+        ua = request.META.get("HTTP_USER_AGENT", "")[:500] if request else ""
+        return AccountActivity.objects.create(
+            user=user,
+            event_type=event_type,
+            ip_address=ip_addr,
+            user_agent=ua,
+            details=details or {}
+        )
+    except Exception as e:
+        logger.error(f"Failed to log security activity ({event_type}) for user {getattr(user, 'pk', None)}: {e}", exc_info=True)
+        return None
+
+
+def track_user_session(request: HttpRequest, user: Any, log_login: bool = True) -> Optional[UserSession]:
+    """
+    Create or update a UserSession for the current request session.
+    Also logs a successful login event if this is a newly tracked session and log_login is True.
+    """
+    if not request or not hasattr(request, "session"):
+        return None
+
+    if not request.session.session_key:
+        request.session.save()
+    if not request.session.session_key:
+        return None
+
+    session_key = request.session.session_key
+    ip_addr = _get_client_ip(request)
+    ua = request.META.get("HTTP_USER_AGENT", "")[:500]
+
+    try:
+        session_instance = Session.objects.get(session_key=session_key)
+    except Session.DoesNotExist:
+        return None
+
+    user_session, created = UserSession.objects.get_or_create(
+        session_key=session_key,
+        defaults={
+            "user": user,
+            "session": session_instance,
+            "ip_address": ip_addr,
+            "user_agent": ua,
+            "last_activity": timezone.now(),
+        }
+    )
+    if not created:
+        user_session.last_activity = timezone.now()
+        if ip_addr and not user_session.ip_address:
+            user_session.ip_address = ip_addr
+        if ua and not user_session.user_agent:
+            user_session.user_agent = ua
+        user_session.save(update_fields=["last_activity", "ip_address", "user_agent"])
+    elif log_login:
+        log_account_activity(user, "login", request=request)
+    return user_session
+
+
+@transaction.atomic
+def request_email_change(
+    user: Any,
+    new_email: str,
+    password: str,
+    request: Optional[HttpRequest] = None
+) -> PendingEmailChange:
+    """
+    Initiate an email change request.
+    1. Verify current password.
+    2. Validate uniqueness of new_email against User model and existing pending changes.
+    3. Invalidate/delete previous pending email change requests for this user.
+    4. Create PendingEmailChange with a secure token.
+    5. Dispatch verification email to new_email.
+    6. Log security activity.
+    """
+    if not user.check_password(password):
+        raise ValidationError("Incorrect current password.")
+
+    cleaned_email = new_email.strip().lower()
+    if cleaned_email == user.email.lower():
+        raise ValidationError("New email address must be different from your current email.")
+
+    if email_exists(cleaned_email) or User.objects.filter(email__iexact=cleaned_email).exists():
+        raise ValidationError("An account with this email address already exists.")
+
+    # Invalidate any previous pending email change request
+    PendingEmailChange.objects.filter(user=user).delete()
+
+    token = get_random_string(64)
+    pending = PendingEmailChange.objects.create(
+        user=user,
+        new_email=cleaned_email,
+        token=token
+    )
+
+    log_account_activity(
+        user,
+        "email_change_request",
+        request=request,
+        details={"new_email": cleaned_email}
+    )
+
+    def _dispatch_email():
+        try:
+            send_email_change_verification_email(pending, request=request)
+        except Exception as e:
+            logger.error(f"Failed to send email change verification to {cleaned_email}: {e}", exc_info=True)
+
+    transaction.on_commit(_dispatch_email)
+    return pending
+
+
+def send_email_change_verification_email(pending: PendingEmailChange, request: Optional[HttpRequest] = None) -> bool:
+    """
+    Send a verification link to the requested new email address.
+    """
+    if not pending or not pending.new_email:
+        return False
+
+    verify_path = reverse("accounts:verify_email_change", kwargs={"token": pending.token})
+    verification_url = _get_absolute_url(request, verify_path)
+
+    context = {
+        "user": pending.user,
+        "new_email": pending.new_email,
+        "site_name": "House of Bore",
+        "verification_url": verification_url,
+        "support_email": "concierge@houseofbore.com",
+    }
+
+    subject = "Verify Your New Email Address — House of Bore"
+    return _dispatch_templated_email(subject, "accounts/emails/email_change_verification", context, [pending.new_email])
+
+
+@transaction.atomic
+def verify_email_change(token: str, request: Optional[HttpRequest] = None) -> Tuple[bool, Optional[Any], str]:
+    """
+    Validate email change token and update user email address.
+    Returns (success: bool, user: Optional[User], message: str).
+    """
+    pending = get_pending_email_change_by_token(token)
+    if not pending:
+        return False, None, "This email verification link is invalid or has expired."
+
+    user = pending.user
+    old_email = user.email
+    new_email = pending.new_email
+
+    # Check one more time if someone else took the email while pending
+    if User.objects.filter(email__iexact=new_email).exclude(pk=user.pk).exists():
+        pending.delete()
+        return False, user, "This email address is no longer available."
+
+    user.email = new_email
+    if hasattr(user, "email_verified"):
+        user.email_verified = True
+    user.save(update_fields=["email", "email_verified"] if hasattr(user, "email_verified") else ["email"])
+
+    log_account_activity(
+        user,
+        "email_change",
+        request=request,
+        details={"old_email": old_email, "new_email": new_email}
+    )
+
+    # Invalidate pending change request
+    pending.delete()
+    return True, user, "Your email address has been successfully updated."
+
+
+@transaction.atomic
+def revoke_session(user: Any, session_key: str, request: Optional[HttpRequest] = None) -> bool:
+    """
+    Revoke an individual session belonging to the user.
+    """
+    user_session = UserSession.objects.filter(user=user, session_key=session_key).first()
+    if not user_session:
+        return False
+
+    Session.objects.filter(session_key=session_key).delete()
+    user_session.delete()
+
+    log_account_activity(
+        user,
+        "session_revoked",
+        request=request,
+        details={"revoked_session_key": session_key[:8] + "..."}
+    )
+    return True
+
+
+@transaction.atomic
+def revoke_other_sessions(user: Any, current_session_key: Optional[str] = None, request: Optional[HttpRequest] = None) -> int:
+    """
+    Sign out of all other sessions except the current session.
+    Returns the number of revoked sessions.
+    """
+    qs = UserSession.objects.filter(user=user)
+    if current_session_key:
+        qs = qs.exclude(session_key=current_session_key)
+
+    session_keys = list(qs.values_list("session_key", flat=True))
+    count = len(session_keys)
+    if count > 0:
+        Session.objects.filter(session_key__in=session_keys).delete()
+        qs.delete()
+
+        log_account_activity(
+            user,
+            "other_sessions_revoked",
+            request=request,
+            details={"revoked_count": count}
+        )
+    return count
+
+
+@transaction.atomic
+def deactivate_account(user: Any, password: str, request: Optional[HttpRequest] = None) -> bool:
+    """
+    Soft-delete/deactivate the user account (is_active = False).
+    Preserves all customer data for future reactivation.
+    Immediately terminates all active sessions.
+    """
+    if not user.check_password(password):
+        raise ValidationError("Incorrect current password.")
+
+    user.is_active = False
+    user.save(update_fields=["is_active"])
+
+    # Revoke ALL sessions including current
+    revoke_other_sessions(user, current_session_key=None, request=request)
+
+    log_account_activity(
+        user,
+        "account_deactivation",
+        request=request,
+        details={"status": "deactivated"}
+    )
+    return True
+
+
+@transaction.atomic
+def delete_account(user: Any, password: str, confirmation_phrase: str, request: Optional[HttpRequest] = None) -> bool:
+    """
+    Soft-delete the account wherever possible, preserving historical order records
+    for auditing and legal purposes. Immediately terminates all sessions.
+    Requires password confirmation and explicit confirmation phrase 'DELETE MY ACCOUNT'.
+    """
+    if not user.check_password(password):
+        raise ValidationError("Incorrect current password.")
+
+    if not confirmation_phrase or confirmation_phrase.strip() != "DELETE MY ACCOUNT":
+        raise ValidationError("Please type exactly 'DELETE MY ACCOUNT' to confirm deletion.")
+
+    user.is_active = False
+    user.save(update_fields=["is_active"])
+    # Anonymize profile data if needed while keeping historical records
+    from .selectors import get_profile
+    profile = get_profile(user)
+    if profile:
+        profile.phone_number = ""
+        profile.marketing_emails = False
+        profile.save(update_fields=["phone_number", "marketing_emails", "updated_at"])
+
+    # Revoke ALL sessions including current
+    revoke_other_sessions(user, current_session_key=None, request=request)
+
+    log_account_activity(
+        user,
+        "account_deletion",
+        request=request,
+        details={"status": "deleted"}
+    )
+    return True
 

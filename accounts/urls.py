@@ -28,6 +28,14 @@ from accounts.views import (
     AddressUpdateView,
     AddressDeleteView,
     AddressSetDefaultView,
+    AccountSettingsView,
+    EmailChangeView,
+    EmailChangeVerifyView,
+    SessionManagementView,
+    SessionRevokeView,
+    SessionRevokeOthersView,
+    AccountDeactivateView,
+    AccountDeleteView,
 )
 
 app_name = "accounts"
@@ -62,5 +70,15 @@ urlpatterns = [
     path("account/addresses/<int:pk>/edit/", AddressUpdateView.as_view(), name="address_edit"),
     path("account/addresses/<int:pk>/delete/", AddressDeleteView.as_view(), name="address_delete"),
     path("account/addresses/<int:pk>/set-default/<str:address_type>/", AddressSetDefaultView.as_view(), name="address_set_default"),
+    
+    # Account Security & Session Management
+    path("account/settings/", AccountSettingsView.as_view(), name="settings"),
+    path("account/settings/email-change/", EmailChangeView.as_view(), name="email_change"),
+    path("account/settings/email-change/verify/<str:token>/", EmailChangeVerifyView.as_view(), name="verify_email_change"),
+    path("account/sessions/", SessionManagementView.as_view(), name="sessions"),
+    path("account/sessions/revoke/<str:session_key>/", SessionRevokeView.as_view(), name="session_revoke"),
+    path("account/sessions/revoke-others/", SessionRevokeOthersView.as_view(), name="session_revoke_others"),
+    path("account/deactivate/", AccountDeactivateView.as_view(), name="deactivate"),
+    path("account/delete/", AccountDeleteView.as_view(), name="delete"),
 ]
 

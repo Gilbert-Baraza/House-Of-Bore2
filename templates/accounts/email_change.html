@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Change Email Address | House of Bore{% endblock %}
+
+{% block meta_description %}
+  Request a change to your House of Bore patron account email address.
+{% endblock %}
+
+{% block content %}
+<div class="bg-neutral-50 min-h-screen py-16 lg:py-24 flex items-center justify-center">
+  <div class="container-site max-w-xl">
+    
+    <div class="bg-white border border-neutral-200/80 rounded-2xl p-8 sm:p-12 shadow-xl relative overflow-hidden">
+      
+      {# Subtle luxury background accent #}
+      <div class="absolute -top-12 -right-12 w-40 h-40 bg-primary-900/5 rounded-full blur-2xl pointer-events-none" aria-hidden="true"></div>
+      
+      <div class="text-center mb-8">
+        <span class="inline-block px-3 py-1 bg-neutral-100 text-neutral-700 text-xs font-semibold tracking-widest uppercase rounded-full mb-3">
+          Security Settings
+        </span>
+        <h1 class="font-serif text-3xl sm:text-4xl font-bold text-primary-900 tracking-tight mb-3">
+          Change Email Address
+        </h1>
+        <p class="text-neutral-600 text-sm leading-relaxed max-w-md mx-auto">
+          Your current registered address is <strong class="text-primary-900">{{ user.email }}</strong>. Enter your new desired email address and current password below.
+        </p>
+      </div>
+
+      {% if pending_email %}
+        <div class="mb-6 p-4 bg-amber-50 border border-amber-300 rounded-xl text-amber-900 text-xs leading-relaxed space-y-1" role="alert">
+          <p class="font-bold flex items-center gap-1.5">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4 text-amber-600 shrink-0">
+              <path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495ZM10 5a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 10 5Zm0 9a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clip-rule="evenodd" />
+            </svg>
+            <span>Existing Verification Pending</span>
+          </p>
+          <p class="ml-5">You already have a pending change to <strong>{{ pending_email.new_email }}</strong>. Submitting this form will supersede the previous request and dispatch a fresh verification link.</p>
+        </div>
+      {% endif %}
+
+      {% if form.non_field_errors %}
+        <div class="mb-6 p-4 bg-red-50 border border-red-300 rounded-lg text-red-900 text-xs leading-relaxed space-y-1" role="alert" aria-live="assertive">
+          <div class="font-bold flex items-center gap-1.5">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4 text-red-600 shrink-0">
+              <path fill-rule="evenodd" d="M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Zm-8-5a.75.75 0 0 1 .75.75v4.5a.75.75 0 0 1-1.5 0v-4.5A.75.75 0 0 1 10 5Zm0 10a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clip-rule="evenodd" />
+            </svg>
+            <span>Validation Error</span>
+          </div>
+          {% for error in form.non_field_errors %}
+            <p class="ml-5">{{ error }}</p>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      <form method="post" class="space-y-6" novalidate>
+        {% csrf_token %}
+
+        {# New Email Field #}
+        <div>
+          <label for="{{ form.new_email.id_for_label }}" class="block text-xs font-semibold uppercase tracking-wider text-neutral-700 mb-1.5">
+            {{ form.new_email.label }} <span class="text-red-600" aria-hidden="true">*</span>
+          </label>
+          {{ form.new_email }}
+          {% if form.new_email.errors %}
+            <p class="mt-1.5 text-xs text-red-600 font-medium flex items-center gap-1" id="{{ form.new_email.id_for_label }}_error" role="alert">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-3.5 h-3.5 shrink-0">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Zm-8-5a.75.75 0 0 1 .75.75v4.5a.75.75 0 0 1-1.5 0v-4.5A.75.75 0 0 1 10 5Zm0 10a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clip-rule="evenodd" />
+              </svg>
+              <span>{{ form.new_email.errors.0 }}</span>
+            </p>
+          {% endif %}
+          <p class="mt-1 text-[11px] text-neutral-500">We will send a verification link to this address. The change will not take effect until confirmed.</p>
+        </div>
+
+        {# Password Field #}
+        <div>
+          <label for="{{ form.password.id_for_label }}" class="block text-xs font-semibold uppercase tracking-wider text-neutral-700 mb-1.5">
+            {{ form.password.label }} <span class="text-red-600" aria-hidden="true">*</span>
+          </label>
+          <div class="relative">
+            {{ form.password }}
+            <button type="button" 
+                    class="absolute inset-y-0 right-0 pr-3 flex items-center text-neutral-400 hover:text-primary-900 focus:outline-none focus:text-primary-900 transition-colors"
+                    aria-label="Show password"
+                    aria-pressed="false"
+                    onclick="toggleEmailChangePasswordVisibility('{{ form.password.id_for_label }}', this)">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+              </svg>
+            </button>
+          </div>
+          {% if form.password.errors %}
+            <p class="mt-1.5 text-xs text-red-600 font-medium flex items-center gap-1" id="{{ form.password.id_for_label }}_error" role="alert">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-3.5 h-3.5 shrink-0">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Zm-8-5a.75.75 0 0 1 .75.75v4.5a.75.75 0 0 1-1.5 0v-4.5A.75.75 0 0 1 10 5Zm0 10a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clip-rule="evenodd" />
+              </svg>
+              <span>{{ form.password.errors.0 }}</span>
+            </p>
+          {% endif %}
+        </div>
+
+        <div class="pt-2 flex flex-col sm:flex-row items-center gap-3">
+          <button type="submit" class="btn-primary w-full sm:w-auto flex-1 text-center py-3 text-xs uppercase tracking-wider">
+            Send Verification Link
+          </button>
+          <a href="{% url 'accounts:settings' %}" class="btn-secondary w-full sm:w-auto text-center py-3 px-6 text-xs uppercase tracking-wider">
+            Cancel
+          </a>
+        </div>
+      </form>
+
+    </div>
+  </div>
+</div>
+
+<script>
+  function toggleEmailChangePasswordVisibility(inputId, btn) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+    if (input.type === 'password') {
+      input.type = 'text';
+      btn.setAttribute('aria-pressed', 'true');
+      btn.setAttribute('aria-label', 'Hide password');
+    } else {
+      input.type = 'password';
+      btn.setAttribute('aria-pressed', 'false');
+      btn.setAttribute('aria-label', 'Show password');
+    }
+  }
+</script>
+{% endblock %}

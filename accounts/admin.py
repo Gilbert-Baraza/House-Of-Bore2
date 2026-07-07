@@ -20,7 +20,7 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.utils.translation import gettext_lazy as _
 
-from .models import User, UserProfile, Address
+from .models import User, UserProfile, Address, PendingEmailChange, AccountActivity, UserSession
 
 
 class AddressInline(admin.StackedInline):
@@ -121,4 +121,31 @@ class AddressAdmin(admin.ModelAdmin):
     list_filter = ("address_type", "is_default_shipping", "is_default_billing", "country")
     search_fields = ("user__email", "label", "recipient_name", "address_line_1", "city")
     readonly_fields = ("created_at", "updated_at")
+
+
+@admin.register(PendingEmailChange)
+class PendingEmailChangeAdmin(admin.ModelAdmin):
+    """Admin configuration for PendingEmailChange."""
+    list_display = ("user", "new_email", "created_at", "is_expired")
+    list_filter = ("created_at",)
+    search_fields = ("user__email", "new_email", "token")
+    readonly_fields = ("created_at",)
+
+
+@admin.register(AccountActivity)
+class AccountActivityAdmin(admin.ModelAdmin):
+    """Admin configuration for AccountActivity audit log (read-only in production)."""
+    list_display = ("user", "event_type", "ip_address", "timestamp")
+    list_filter = ("event_type", "timestamp")
+    search_fields = ("user__email", "ip_address", "user_agent")
+    readonly_fields = ("user", "event_type", "ip_address", "user_agent", "details", "timestamp")
+
+
+@admin.register(UserSession)
+class UserSessionAdmin(admin.ModelAdmin):
+    """Admin configuration for UserSession monitoring."""
+    list_display = ("user", "session_key", "ip_address", "last_activity", "created_at")
+    list_filter = ("last_activity", "created_at")
+    search_fields = ("user__email", "session_key", "ip_address", "user_agent")
+    readonly_fields = ("created_at", "last_activity")
 

@@ -257,51 +257,60 @@
             <p>{{ product.short_description }}</p>
           </div>
 
-          {# ── Quantity Selector UI ────────────────────────────────────── #}
-          <div class="mb-6">
-            <label for="quantity-input" class="block text-xs font-bold uppercase tracking-wider text-neutral-700 mb-2">
-              Select Quantity
-            </label>
-            <div class="inline-flex items-center border border-neutral-300 rounded-btn bg-white shadow-sm overflow-hidden">
-              <button type="button"
-                      class="w-11 h-11 flex items-center justify-center text-neutral-400 bg-neutral-50 border-r border-neutral-200 cursor-not-allowed transition-colors focus:outline-none"
-                      aria-label="Decrease quantity (disabled in catalog preview)"
-                      disabled>
-                <span class="text-lg font-bold">&minus;</span>
-              </button>
-              <input type="number"
-                     id="quantity-input"
-                     name="quantity"
-                     value="1"
-                     min="1"
-                     max="{{ product.stock_quantity|default:10 }}"
-                     class="w-14 h-11 text-center font-bold text-primary-900 bg-white border-0 focus:outline-none cursor-default tabular-nums"
-                     readonly>
-              <button type="button"
-                      class="w-11 h-11 flex items-center justify-center text-neutral-400 bg-neutral-50 border-l border-neutral-200 cursor-not-allowed transition-colors focus:outline-none"
-                      aria-label="Increase quantity (disabled in catalog preview)"
-                      disabled>
-                <span class="text-lg font-bold">&plus;</span>
-              </button>
+          {# ── Add to Cart Form & Quantity Selector ────────────────────── #}
+          <form action="{% url 'cart:add' product.pk %}" method="post" class="mb-8">
+            {% csrf_token %}
+            
+            {# Quantity Selector #}
+            <div class="mb-6">
+              <label for="quantity-input" class="block text-xs font-bold uppercase tracking-wider text-neutral-700 mb-2">
+                Select Quantity
+              </label>
+              <div class="inline-flex items-center border border-neutral-300 rounded-btn bg-white shadow-sm overflow-hidden">
+                <button type="button"
+                        onclick="var inp = document.getElementById('quantity-input'); var val = parseInt(inp.value, 10) || 1; if(val > 1) { inp.value = val - 1; }"
+                        class="w-11 h-11 flex items-center justify-center text-neutral-600 bg-neutral-50 hover:bg-neutral-100 border-r border-neutral-200 transition-colors focus:outline-none focus:ring-2 focus:ring-accent-500"
+                        aria-label="Decrease quantity">
+                  <span class="text-lg font-bold">&minus;</span>
+                </button>
+                <input type="number"
+                       id="quantity-input"
+                       name="quantity"
+                       value="1"
+                       min="1"
+                       max="{{ product.stock_quantity|default:99 }}"
+                       class="w-14 h-11 text-center font-bold text-primary-900 bg-white border-0 focus:outline-none tabular-nums"
+                       aria-label="Quantity of {{ product.name }}">
+                <button type="button"
+                        onclick="var inp = document.getElementById('quantity-input'); var val = parseInt(inp.value, 10) || 1; var max = parseInt(inp.max, 10) || 99; if(val < max) { inp.value = val + 1; }"
+                        class="w-11 h-11 flex items-center justify-center text-neutral-600 bg-neutral-50 hover:bg-neutral-100 border-l border-neutral-200 transition-colors focus:outline-none focus:ring-2 focus:ring-accent-500"
+                        aria-label="Increase quantity">
+                  <span class="text-lg font-bold">&plus;</span>
+                </button>
+              </div>
             </div>
-          </div>
 
-          {# ── Add to Cart & Wishlist Section ──────────────────────────── #}
-          <div class="flex flex-col sm:flex-row items-stretch gap-3 mb-8">
-            <button type="button"
-                    disabled
-                    class="flex-1 inline-flex items-center justify-center gap-2.5 px-8 py-4 rounded-btn
-                           font-bold text-sm tracking-widest uppercase transition-all shadow-sm
-                           {% if product.in_stock %}bg-primary-900 text-white opacity-85 cursor-not-allowed{% else %}bg-neutral-200 text-neutral-500 cursor-not-allowed{% endif %}"
-                    aria-disabled="true"
-                    title="Purchasing functionality will be implemented in Phase 3">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor" class="w-5 h-5">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5V6a3.75 3.75 0 1 0-7.5 0v4.5m11.356-1.993 1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 0 1-1.12-1.243l1.264-12A1.125 1.125 0 0 1 5.513 7.5h12.974c.576 0 1.059.435 1.119 1.007ZM8.625 10.5a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm7.5 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z"/>
-              </svg>
-              <span>{% if product.in_stock %}Add to Bag &mdash; Phase 3 Preview{% else %}Currently Sold Out{% endif %}</span>
-            </button>
-            {% include "components/wishlist_button.html" with product=product style="full" %}
-          </div>
+            {# Submit & Wishlist Actions #}
+            <div class="flex flex-col sm:flex-row items-stretch gap-3">
+              {% if product.in_stock %}
+                <button type="submit"
+                        class="flex-1 inline-flex items-center justify-center gap-2.5 px-8 py-4 rounded-btn
+                               font-bold text-sm tracking-widest uppercase transition-all shadow-sm bg-primary-900 text-white hover:bg-accent-600 focus:outline-none focus:ring-2 focus:ring-accent-500">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor" class="w-5 h-5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5V6a3.75 3.75 0 1 0-7.5 0v4.5m11.356-1.993 1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 0 1-1.12-1.243l1.264-12A1.125 1.125 0 0 1 5.513 7.5h12.974c.576 0 1.059.435 1.119 1.007ZM8.625 10.5a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm7.5 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z"/>
+                  </svg>
+                  <span>Add to Bag</span>
+                </button>
+              {% else %}
+                <button type="button" disabled
+                        class="flex-1 inline-flex items-center justify-center gap-2.5 px-8 py-4 rounded-btn
+                               font-bold text-sm tracking-widest uppercase transition-all shadow-sm bg-neutral-200 text-neutral-500 cursor-not-allowed">
+                  <span>Currently Sold Out</span>
+                </button>
+              {% endif %}
+              {% include "components/wishlist_button.html" with product=product style="full" %}
+            </div>
+          </form>
 
           {# ── Customer Assurance Badges ───────────────────────────────── #}
           <div class="grid grid-cols-2 gap-3 py-6 border-t border-b border-neutral-200 mb-8"

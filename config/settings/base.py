@@ -98,8 +98,7 @@ TEMPLATES = [
                 # Makes Django messages (flash alerts) available in templates.
                 "django.contrib.messages.context_processors.messages",
                 "wishlist.context_processors.wishlist_status",
-                # Cart context processor will be added here in Phase 1.4.
-                # 'cart.context_processors.cart',
+                "cart.context_processors.cart",
             ],
         },
     },

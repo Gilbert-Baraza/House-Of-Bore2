@@ -18,6 +18,7 @@ from django.contrib.auth import password_validation
 from django.core.exceptions import ValidationError
 from django.http import HttpRequest
 from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
 
 from accounts.selectors import email_exists, get_users_for_password_reset, username_exists
 from accounts.services import send_password_reset_email
@@ -509,7 +510,7 @@ class AddressForm(AriaErrorHighlightFormMixin, forms.ModelForm):
             }),
             "phone_number": forms.TextInput(attrs={
                 "class": "w-full px-4 py-3 bg-white border border-neutral-300 rounded-btn text-primary-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-900 focus:border-transparent transition-all text-sm",
-                "placeholder": "+1 (555) 000-0000",
+                "placeholder": "e.g., +1 555-0199 or +44 20 7946 0999",
                 "autocomplete": "tel",
             }),
             "company_name": forms.TextInput(attrs={
@@ -561,7 +562,7 @@ class AddressForm(AriaErrorHighlightFormMixin, forms.ModelForm):
         phone = self.cleaned_data.get("phone_number", "").strip()
         import re
         if not re.match(r"^\+?[\d\s\-\(\)\.]{7,25}$", phone):
-            raise ValidationError("Please enter a valid phone number (e.g., +1 555-0199).")
+            raise ValidationError("Please enter a valid international phone number (e.g., +1 555-0199 or +44 20 7946 0999).")
         return phone
 
     def clean(self) -> Any:
@@ -571,4 +572,126 @@ class AddressForm(AriaErrorHighlightFormMixin, forms.ModelForm):
         if country in ("US", "CA", "GB", "FR", "IT", "DE", "CH", "JP", "AU") and not postal:
             self.add_error("postal_code", "Postal code is required for the selected country.")
         return cleaned_data
+
+
+class EmailChangeForm(AriaErrorHighlightFormMixin, forms.Form):
+    """
+    Form for requesting a login email address change.
+    Requires current password confirmation and unique new email validation.
+    """
+    new_email = forms.EmailField(
+        label=_("New Email Address"),
+        widget=forms.EmailInput(
+            attrs={
+                "class": "w-full px-4 py-3 bg-white border border-neutral-300 rounded-btn text-primary-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-900 focus:border-transparent transition-all text-sm",
+                "placeholder": "Enter your new email address",
+                "autocomplete": "email",
+            }
+        ),
+    )
+    password = forms.CharField(
+        label=_("Current Password"),
+        widget=forms.PasswordInput(
+            attrs={
+                "class": "w-full px-4 py-3 bg-white border border-neutral-300 rounded-btn text-primary-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-900 focus:border-transparent transition-all text-sm",
+                "placeholder": "Enter your current password to confirm",
+                "autocomplete": "current-password",
+            }
+        ),
+    )
+
+    def __init__(self, *args: Any, user: Optional[Any] = None, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self.user = user
+
+    def clean_new_email(self) -> str:
+        new_email = self.cleaned_data.get("new_email", "").strip().lower()
+        if not new_email:
+            raise ValidationError(_("Please provide a valid email address."))
+
+        if self.user and new_email == self.user.email.lower():
+            raise ValidationError(_("New email address must be different from your current email."))
+
+        from accounts.selectors import email_exists
+        if email_exists(new_email):
+            raise ValidationError(_("An account with this email address already exists."))
+
+        return new_email
+
+    def clean_password(self) -> str:
+        password = self.cleaned_data.get("password", "")
+        if self.user and not self.user.check_password(password):
+            raise ValidationError(_("Incorrect current password."))
+        return password
+
+
+class AccountDeactivateForm(AriaErrorHighlightFormMixin, forms.Form):
+    """
+    Form for deactivating a customer account.
+    Requires current password confirmation.
+    """
+    password = forms.CharField(
+        label=_("Current Password"),
+        widget=forms.PasswordInput(
+            attrs={
+                "class": "w-full px-4 py-3 bg-white border border-neutral-300 rounded-btn text-primary-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-900 focus:border-transparent transition-all text-sm",
+                "placeholder": "Enter your password to confirm deactivation",
+                "autocomplete": "current-password",
+            }
+        ),
+    )
+
+    def __init__(self, *args: Any, user: Optional[Any] = None, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self.user = user
+
+    def clean_password(self) -> str:
+        password = self.cleaned_data.get("password", "")
+        if self.user and not self.user.check_password(password):
+            raise ValidationError(_("Incorrect current password."))
+        return password
+
+
+class AccountDeleteForm(AriaErrorHighlightFormMixin, forms.Form):
+    """
+    Form for permanently/soft-deleting a customer account.
+    Requires password confirmation and an explicit confirmation phrase.
+    """
+    password = forms.CharField(
+        label=_("Current Password"),
+        widget=forms.PasswordInput(
+            attrs={
+                "class": "w-full px-4 py-3 bg-white border border-neutral-300 rounded-btn text-primary-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-900 focus:border-transparent transition-all text-sm",
+                "placeholder": "Enter your password",
+                "autocomplete": "current-password",
+            }
+        ),
+    )
+    confirmation_phrase = forms.CharField(
+        label=_("Confirmation Phrase"),
+        help_text=_("Type exactly: DELETE MY ACCOUNT"),
+        widget=forms.TextInput(
+            attrs={
+                "class": "w-full px-4 py-3 bg-white border border-neutral-300 rounded-btn text-primary-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-900 focus:border-transparent transition-all text-sm font-mono uppercase",
+                "placeholder": "DELETE MY ACCOUNT",
+                "autocomplete": "off",
+            }
+        ),
+    )
+
+    def __init__(self, *args: Any, user: Optional[Any] = None, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self.user = user
+
+    def clean_password(self) -> str:
+        password = self.cleaned_data.get("password", "")
+        if self.user and not self.user.check_password(password):
+            raise ValidationError(_("Incorrect current password."))
+        return password
+
+    def clean_confirmation_phrase(self) -> str:
+        phrase = self.cleaned_data.get("confirmation_phrase", "").strip()
+        if phrase != "DELETE MY ACCOUNT":
+            raise ValidationError(_("Please type exactly 'DELETE MY ACCOUNT' to confirm."))
+        return phrase
 

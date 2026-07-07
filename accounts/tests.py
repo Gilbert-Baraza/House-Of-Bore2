@@ -35,8 +35,12 @@ from accounts.forms import (
     ProfileUpdateForm,
     AvatarUploadForm,
     AddressForm,
+    EmailChangeForm,
+    AccountDeactivateForm,
+    AccountDeleteForm,
 )
-from accounts.models import UserProfile, Address
+from accounts.models import UserProfile, Address, PendingEmailChange, AccountActivity, UserSession
+from django.contrib.sessions.models import Session
 from accounts.selectors import (
     email_exists,
     get_user_by_email,
@@ -51,6 +55,9 @@ from accounts.selectors import (
     get_user_address_by_pk,
     get_default_shipping,
     get_default_billing,
+    get_active_sessions,
+    get_recent_activity,
+    pending_email_change,
 )
 from accounts.services import (
     _get_absolute_url,
@@ -67,8 +74,15 @@ from accounts.services import (
     update_address,
     delete_address,
     set_default_shipping,
-    set_default_billing,
     format_address,
+    log_account_activity,
+    track_user_session,
+    request_email_change,
+    verify_email_change,
+    revoke_session,
+    revoke_other_sessions,
+    deactivate_account,
+    delete_account,
 )
 
 User = get_user_model()
@@ -1242,5 +1256,237 @@ class TestAddressBookViews(TestCase):
         self.assertRedirects(response, self.list_url)
         self.address.refresh_from_db()
         self.assertTrue(self.address.is_default_shipping)
+
+
+class TestSecuritySelectorsAndServices(TestCase):
+    """Test security selectors and services in Phase 3.6."""
+
+    def setUp(self) -> None:
+        self.user = User.objects.create_user(
+            email="security@houseofbore.com",
+            password="SecurePassword123!",
+            first_name="Security",
+            last_name="Patron"
+        )
+        self.other_user = User.objects.create_user(
+            email="other@houseofbore.com",
+            password="OtherPassword123!"
+        )
+
+    def test_log_account_activity(self) -> None:
+        log_account_activity(self.user, "login", details={"browser": "Chrome"})
+        activity = get_recent_activity(self.user)
+        self.assertEqual(len(activity), 1)
+        self.assertEqual(activity[0].event_type, "login")
+        self.assertEqual(activity[0].details["browser"], "Chrome")
+
+    def test_track_and_get_active_sessions(self) -> None:
+        from django.utils import timezone
+        from datetime import timedelta
+        expire_date = timezone.now() + timedelta(days=365)
+        session = Session.objects.create(session_key="testkey123", expire_date=expire_date)
+        request = unittest.mock.MagicMock()
+        request.session = session
+        request.META = {"HTTP_USER_AGENT": "Mozilla/5.0", "REMOTE_ADDR": "127.0.0.1"}
+
+        user_session = track_user_session(request, self.user)
+        self.assertIsNotNone(user_session)
+        self.assertEqual(user_session.session_key, "testkey123")
+
+        active = get_active_sessions(self.user)
+        self.assertEqual(len(active), 1)
+        self.assertEqual(active[0].session_key, "testkey123")
+
+    def test_request_and_verify_email_change(self) -> None:
+        pending = request_email_change(self.user, "newemail@houseofbore.com", "SecurePassword123!")
+        self.assertEqual(pending.new_email, "newemail@houseofbore.com")
+        self.assertEqual(pending_email_change(self.user), pending)
+
+        success, user, msg = verify_email_change(pending.token)
+        self.assertTrue(success)
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.email, "newemail@houseofbore.com")
+        self.assertIsNone(pending_email_change(self.user))
+
+    def test_request_email_change_wrong_password(self) -> None:
+        with self.assertRaises(Exception):
+            request_email_change(self.user, "newemail@houseofbore.com", "WrongPassword!")
+
+    def test_verify_email_change_expired(self) -> None:
+        from django.utils import timezone
+        from datetime import timedelta
+        pending = request_email_change(self.user, "expire@houseofbore.com", "SecurePassword123!")
+        self.assertIsNotNone(pending.expires_at)
+        # Simulate expiration by setting created_at to 25 hours ago
+        PendingEmailChange.objects.filter(pk=pending.pk).update(
+            created_at=timezone.now() - timedelta(hours=25)
+        )
+        pending.refresh_from_db()
+        self.assertTrue(pending.is_expired)
+        success, user, msg = verify_email_change(pending.token)
+        self.assertFalse(success)
+        self.assertIn("expired", msg.lower())
+
+    def test_revoke_session(self) -> None:
+        from django.utils import timezone
+        from datetime import timedelta
+        expire_date = timezone.now() + timedelta(days=365)
+        session = Session.objects.create(session_key="tokill123", expire_date=expire_date)
+        UserSession.objects.create(user=self.user, session=session, session_key="tokill123")
+        res = revoke_session(self.user, "tokill123")
+        self.assertTrue(res)
+        self.assertFalse(Session.objects.filter(session_key="tokill123").exists())
+
+    def test_deactivate_account(self) -> None:
+        deactivate_account(self.user, "SecurePassword123!")
+        self.user.refresh_from_db()
+        self.assertFalse(self.user.is_active)
+
+    def test_delete_account(self) -> None:
+        delete_account(self.user, "SecurePassword123!", "DELETE MY ACCOUNT")
+        self.user.refresh_from_db()
+        self.assertFalse(self.user.is_active)
+        profile = get_profile(self.user)
+        if profile:
+            self.assertEqual(profile.phone_number, "")
+
+
+class TestSecurityForms(TestCase):
+    """Test security forms in Phase 3.6."""
+
+    def setUp(self) -> None:
+        self.user = User.objects.create_user(
+            email="formsec@houseofbore.com",
+            password="SecurePassword123!"
+        )
+
+    def test_email_change_form_valid(self) -> None:
+        form = EmailChangeForm(data={
+            "new_email": "updated@houseofbore.com",
+            "password": "SecurePassword123!"
+        }, user=self.user)
+        self.assertTrue(form.is_valid())
+
+    def test_email_change_form_invalid_password(self) -> None:
+        form = EmailChangeForm(data={
+            "new_email": "updated@houseofbore.com",
+            "password": "WrongPassword!"
+        }, user=self.user)
+        self.assertFalse(form.is_valid())
+
+    def test_delete_form_invalid_phrase(self) -> None:
+        form = AccountDeleteForm(data={
+            "password": "SecurePassword123!",
+            "confirmation_phrase": "WRONG PHRASE"
+        }, user=self.user)
+        self.assertFalse(form.is_valid())
+
+
+class TestSecurityViews(TestCase):
+    """Test security Class-Based Views in Phase 3.6."""
+
+    def setUp(self) -> None:
+        self.user = User.objects.create_user(
+            email="viewsec@houseofbore.com",
+            password="SecurePassword123!"
+        )
+        self.settings_url = reverse("accounts:settings")
+        self.sessions_url = reverse("accounts:sessions")
+        self.email_change_url = reverse("accounts:email_change")
+        self.deactivate_url = reverse("accounts:deactivate")
+        self.delete_url = reverse("accounts:delete")
+
+    def test_settings_view_requires_login(self) -> None:
+        response = self.client.get(self.settings_url)
+        self.assertNotEqual(response.status_code, 200)
+
+    def test_settings_view_logged_in(self) -> None:
+        self.client.force_login(self.user)
+        response = self.client.get(self.settings_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "accounts/settings.html")
+
+    def test_sessions_view_logged_in(self) -> None:
+        self.client.force_login(self.user)
+        response = self.client.get(self.sessions_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "accounts/sessions.html")
+
+    def test_email_change_view_post_success(self) -> None:
+        self.client.force_login(self.user)
+        response = self.client.post(self.email_change_url, {
+            "new_email": "changed@houseofbore.com",
+            "password": "SecurePassword123!"
+        })
+        self.assertRedirects(response, self.settings_url)
+        self.assertIsNotNone(pending_email_change(self.user))
+
+    def test_deactivate_view_post_success(self) -> None:
+        self.client.force_login(self.user)
+        response = self.client.post(self.deactivate_url, {
+            "password": "SecurePassword123!"
+        })
+        self.assertRedirects(response, reverse("core:home"))
+        self.user.refresh_from_db()
+        self.assertFalse(self.user.is_active)
+
+    def test_session_revoke_view_post(self) -> None:
+        from django.utils import timezone
+        from datetime import timedelta
+        self.client.force_login(self.user)
+        expire_date = timezone.now() + timedelta(days=365)
+        session = Session.objects.create(session_key="viewkill123", expire_date=expire_date)
+        UserSession.objects.create(user=self.user, session=session, session_key="viewkill123")
+        revoke_url = reverse("accounts:session_revoke", kwargs={"session_key": "viewkill123"})
+        response = self.client.post(revoke_url)
+        self.assertRedirects(response, self.sessions_url)
+        self.assertFalse(Session.objects.filter(session_key="viewkill123").exists())
+
+    def test_session_revoke_others_view_post(self) -> None:
+        from django.utils import timezone
+        from datetime import timedelta
+        self.client.force_login(self.user)
+        expire_date = timezone.now() + timedelta(days=365)
+        s1 = Session.objects.create(session_key="other1", expire_date=expire_date)
+        s2 = Session.objects.create(session_key="other2", expire_date=expire_date)
+        UserSession.objects.create(user=self.user, session=s1, session_key="other1")
+        UserSession.objects.create(user=self.user, session=s2, session_key="other2")
+        revoke_others_url = reverse("accounts:session_revoke_others")
+        response = self.client.post(revoke_others_url)
+        self.assertRedirects(response, self.sessions_url)
+        # Other sessions should be deleted (except the client's current session if tracked)
+        self.assertFalse(Session.objects.filter(session_key__in=["other1", "other2"]).exists())
+
+
+class TestAuthenticationThrottling(TestCase):
+    """
+    Test rate limiting and throttling on authentication endpoints.
+    """
+    def setUp(self) -> None:
+        from django.core.cache import cache
+        cache.clear()
+        self.login_url = reverse("accounts:login")
+
+    def tearDown(self) -> None:
+        from django.core.cache import cache
+        cache.clear()
+
+    def test_login_throttling_after_max_attempts(self) -> None:
+        # Perform 10 failed login attempts
+        for _ in range(10):
+            response = self.client.post(self.login_url, {
+                "email": "nonexistent@houseofbore.com",
+                "password": "WrongPassword123!"
+            })
+            self.assertEqual(response.status_code, 200)
+
+        # 11th attempt should trigger throttling warning
+        response = self.client.post(self.login_url, {
+            "email": "nonexistent@houseofbore.com",
+            "password": "WrongPassword123!"
+        })
+        self.assertEqual(response.status_code, 200)
+        messages_list = list(response.context["messages"])
+        self.assertTrue(any("Too many unsuccessful attempts" in str(m) for m in messages_list))
 
 
