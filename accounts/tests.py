@@ -14,14 +14,62 @@ Covers:
 
 import unittest.mock
 from django.contrib.auth import get_user_model
+from django.contrib.auth.tokens import default_token_generator
 from django.core import mail
+from django.core.cache import cache
+from django.http import HttpResponse
 from django.test import Client, TestCase
 from django.urls import reverse
+from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_encode
+from django.core.files.uploadedfile import SimpleUploadedFile
 
 from accounts.backends import EmailAuthenticationBackend
-from accounts.forms import UserLoginForm, UserRegistrationForm
-from accounts.selectors import email_exists, get_user_by_email, username_exists
-from accounts.services import _get_absolute_url, register_user, send_verification_email, send_welcome_email
+from accounts.decorators import verified_email_required, VerifiedEmailRequiredMixin, EmailVerificationMiddleware
+from accounts.forms import (
+    UserLoginForm,
+    UserPasswordChangeForm,
+    UserPasswordResetForm,
+    UserRegistrationForm,
+    UserSetPasswordForm,
+    ProfileUpdateForm,
+    AvatarUploadForm,
+    AddressForm,
+)
+from accounts.models import UserProfile, Address
+from accounts.selectors import (
+    email_exists,
+    get_user_by_email,
+    get_user_by_pk,
+    get_user_by_uidb64,
+    get_users_for_password_reset,
+    is_email_verified,
+    username_exists,
+    get_profile,
+    profile_completion_percentage,
+    get_user_addresses,
+    get_user_address_by_pk,
+    get_default_shipping,
+    get_default_billing,
+)
+from accounts.services import (
+    _get_absolute_url,
+    register_user,
+    resend_verification_email,
+    send_password_reset_email,
+    send_verification_email,
+    send_welcome_email,
+    verify_email_token,
+    update_profile,
+    update_avatar,
+    remove_avatar,
+    create_address,
+    update_address,
+    delete_address,
+    set_default_shipping,
+    set_default_billing,
+    format_address,
+)
 
 User = get_user_model()
 
@@ -271,15 +319,16 @@ class TestRegistrationViews(TestCase):
         self.assertTemplateUsed(response, "accounts/register_success.html")
         self.assertContains(response, "Welcome to the Circle")
 
-    def test_verify_email_placeholder_redirects(self) -> None:
+    def test_verify_email_active_view_renders_invalid_for_dummy_token(self) -> None:
         verify_url = reverse("accounts:verify_email", kwargs={"uidb64": "testuid", "token": "testtoken"})
         response = self.client.get(verify_url)
-        self.assertRedirects(response, self.success_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "accounts/email_verification_invalid.html")
 
-    def test_resend_verification_placeholder_redirects(self) -> None:
+    def test_resend_verification_requires_login(self) -> None:
         resend_url = reverse("accounts:resend_verification")
         response = self.client.get(resend_url)
-        self.assertRedirects(response, self.success_url)
+        self.assertRedirects(response, f"{reverse('accounts:login')}?next={resend_url}")
 
 
 class TestURLRouting(TestCase):
@@ -461,3 +510,737 @@ class TestNavbarRendering(TestCase):
         self.assertContains(response, reverse("accounts:logout"))
         self.assertContains(response, reverse("wishlist:wishlist"))
         self.assertNotContains(response, "Sign In")
+
+
+class TestEmailVerificationAndSelectors(TestCase):
+    """Test email verification model methods, selectors, and services."""
+
+    def setUp(self) -> None:
+        self.user = User.objects.create_user(
+            email="verify_test@houseofbore.com",
+            password="SecurePassword123!",
+            is_active=True,
+        )
+
+    def test_verify_email_model_method(self) -> None:
+        self.assertFalse(self.user.email_verified)
+        self.assertIsNone(self.user.email_verified_at)
+        self.user.verify_email()
+        self.assertTrue(self.user.email_verified)
+        self.assertIsNotNone(self.user.email_verified_at)
+
+    def test_selectors_helpers(self) -> None:
+        self.assertEqual(get_user_by_pk(self.user.pk), self.user)
+        uidb64 = urlsafe_base64_encode(force_bytes(self.user.pk))
+        self.assertEqual(get_user_by_uidb64(uidb64), self.user)
+        self.assertFalse(is_email_verified(self.user))
+        self.user.verify_email()
+        self.assertTrue(is_email_verified(self.user))
+
+    def test_verify_email_token_service(self) -> None:
+        uidb64 = urlsafe_base64_encode(force_bytes(self.user.pk))
+        token = default_token_generator.make_token(self.user)
+        
+        success, status, verified_user = verify_email_token(uidb64, token)
+        self.assertTrue(success)
+        self.assertEqual(status, "success")
+        self.assertEqual(verified_user, self.user)
+        self.user.refresh_from_db()
+        self.assertTrue(is_email_verified(self.user))
+
+        # Test already verified
+        success_again, status_again, _ = verify_email_token(uidb64, token)
+        self.assertTrue(success_again)
+        self.assertEqual(status_again, "already_verified")
+
+    def test_verify_email_token_invalid(self) -> None:
+        uidb64 = urlsafe_base64_encode(force_bytes(self.user.pk))
+        success, status, _ = verify_email_token(uidb64, "invalid-token")
+        self.assertFalse(success)
+        self.assertEqual(status, "invalid_token")
+
+
+class TestEmailVerificationViews(TestCase):
+    """Test email verification and resend verification views."""
+
+    def setUp(self) -> None:
+        cache.clear()
+        self.client = Client()
+        self.user = User.objects.create_user(
+            email="patron_verify@houseofbore.com",
+            password="SecurePassword123!",
+            is_active=True,
+        )
+        self.uidb64 = urlsafe_base64_encode(force_bytes(self.user.pk))
+        self.token = default_token_generator.make_token(self.user)
+
+    def test_verify_email_view_success(self) -> None:
+        url = reverse("accounts:verify_email", kwargs={"uidb64": self.uidb64, "token": self.token})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "accounts/email_verified.html")
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.email_verified)
+
+    def test_verify_email_view_already_verified(self) -> None:
+        self.user.verify_email()
+        url = reverse("accounts:verify_email", kwargs={"uidb64": self.uidb64, "token": self.token})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "accounts/email_verification_already.html")
+
+    def test_verify_email_view_invalid_token(self) -> None:
+        url = reverse("accounts:verify_email", kwargs={"uidb64": self.uidb64, "token": "bogus-token"})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "accounts/email_verification_invalid.html")
+
+    def test_resend_verification_view_unauthenticated(self) -> None:
+        url = reverse("accounts:resend_verification")
+        response = self.client.get(url)
+        self.assertRedirects(response, f"{reverse('accounts:login')}?next={url}")
+
+    def test_resend_verification_view_authenticated_post(self) -> None:
+        self.client.force_login(self.user)
+        url = reverse("accounts:resend_verification")
+        response = self.client.post(url)
+        self.assertRedirects(response, url)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn("Please Verify Your Email Address", mail.outbox[0].subject)
+
+    def test_resend_verification_view_authenticated_get_unverified(self) -> None:
+        self.client.force_login(self.user)
+        url = reverse("accounts:resend_verification")
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "accounts/resend_verification.html")
+
+    def test_resend_verification_view_authenticated_get_already_verified(self) -> None:
+        self.user.verify_email()
+        self.client.force_login(self.user)
+        url = reverse("accounts:resend_verification")
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "accounts/email_verification_already.html")
+
+    def test_resend_verification_throttling(self) -> None:
+        self.client.force_login(self.user)
+        url = reverse("accounts:resend_verification")
+        # First request sends email
+        self.client.post(url)
+        self.assertEqual(len(mail.outbox), 1)
+        # Second immediate request is throttled
+        response = self.client.post(url)
+        self.assertRedirects(response, url)
+        self.assertEqual(len(mail.outbox), 1)
+
+
+class TestPasswordResetWorkflows(TestCase):
+    """Test password reset form, email dispatch, and confirmation views."""
+
+    def setUp(self) -> None:
+        cache.clear()
+        self.client = Client()
+        self.user = User.objects.create_user(
+            email="reset_patron@houseofbore.com",
+            password="OldPassword123!",
+            is_active=True,
+        )
+
+    def test_password_reset_form_valid_email(self) -> None:
+        form = UserPasswordResetForm(data={"email": "reset_patron@houseofbore.com"})
+        self.assertTrue(form.is_valid())
+        form.save()
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn("Password Reset Request", mail.outbox[0].subject)
+
+    def test_password_reset_form_unregistered_email(self) -> None:
+        """Ensure no email is sent and no error is thrown for unknown emails (anti-enumeration)."""
+        form = UserPasswordResetForm(data={"email": "unknown_patron@houseofbore.com"})
+        self.assertTrue(form.is_valid())
+        form.save()
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_password_reset_view(self) -> None:
+        url = reverse("accounts:password_reset")
+        response = self.client.post(url, data={"email": "reset_patron@houseofbore.com"})
+        self.assertRedirects(response, reverse("accounts:password_reset_done"))
+        self.assertEqual(len(mail.outbox), 1)
+
+    def test_password_reset_confirm_view_post(self) -> None:
+        uidb64 = urlsafe_base64_encode(force_bytes(self.user.pk))
+        token = default_token_generator.make_token(self.user)
+        url = reverse("accounts:password_reset_confirm", kwargs={"uidb64": uidb64, "token": token})
+        
+        # Django redirects /reset/<uidb64>/<token>/ to /reset/<uidb64>/set-password/ to hide token from Referer
+        get_res = self.client.get(url, follow=True)
+        self.assertEqual(get_res.status_code, 200)
+        
+        post_url = reverse("accounts:password_reset_confirm", kwargs={"uidb64": uidb64, "token": "set-password"})
+        response = self.client.post(post_url, data={
+            "new_password1": "NewSecurePassword456!",
+            "new_password2": "NewSecurePassword456!",
+        })
+        self.assertRedirects(response, reverse("accounts:password_reset_complete"))
+        
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.check_password("NewSecurePassword456!"))
+
+    def test_password_reset_confirm_view_get_invalid_token(self) -> None:
+        uidb64 = urlsafe_base64_encode(force_bytes(self.user.pk))
+        url = reverse("accounts:password_reset_confirm", kwargs={"uidb64": uidb64, "token": "invalid-token"})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "accounts/password_reset_confirm.html")
+        self.assertFalse(response.context["validlink"])
+
+
+class TestPasswordChangeWorkflows(TestCase):
+    """Test authenticated password change workflows."""
+
+    def setUp(self) -> None:
+        self.client = Client()
+        self.user = User.objects.create_user(
+            email="change_patron@houseofbore.com",
+            password="CurrentPassword123!",
+        )
+
+    def test_password_change_unauthenticated(self) -> None:
+        url = reverse("accounts:password_change")
+        response = self.client.get(url)
+        self.assertRedirects(response, f"{reverse('accounts:login')}?next={url}")
+
+    def test_password_change_success(self) -> None:
+        self.client.force_login(self.user)
+        url = reverse("accounts:password_change")
+        response = self.client.post(url, data={
+            "old_password": "CurrentPassword123!",
+            "new_password1": "UpdatedPassword789!",
+            "new_password2": "UpdatedPassword789!",
+        })
+        self.assertRedirects(response, reverse("core:home"))
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.check_password("UpdatedPassword789!"))
+        # Ensure user remains logged in
+        self.assertIn("_auth_user_id", self.client.session)
+
+
+class TestRouteProtectionInfrastructure(TestCase):
+    """Test decorators, mixins, and middleware for email verification enforcement."""
+
+    def setUp(self) -> None:
+        self.client = Client()
+        self.user = User.objects.create_user(
+            email="unverified_patron@houseofbore.com",
+            password="SecurePassword123!",
+        )
+
+    def test_verified_email_required_decorator(self) -> None:
+        @verified_email_required
+        def dummy_view(request):
+            return HttpResponse("Access Granted")
+
+        # Unauthenticated
+        from django.test import RequestFactory
+        factory = RequestFactory()
+        req = factory.get("/protected/")
+        req.user = unittest.mock.Mock(is_authenticated=False)
+        res = dummy_view(req)
+        self.assertEqual(res.status_code, 302)
+
+        # Authenticated but unverified
+        req.user = self.user
+        req._messages = unittest.mock.Mock()
+        res = dummy_view(req)
+        self.assertEqual(res.status_code, 302)
+        self.assertEqual(res.url, reverse("accounts:resend_verification"))
+
+        # Authenticated and verified
+        self.user.verify_email()
+        res = dummy_view(req)
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.content.decode(), "Access Granted")
+
+
+class TestUserProfileManagement(TestCase):
+    """
+    Comprehensive automated tests for Phase 3.4 — Customer Profile Management.
+    """
+    def setUp(self) -> None:
+        self.client = Client()
+        self.user = User.objects.create_user(
+            email="patron_profile@houseofbore.com",
+            password="SecurePassword123!",
+        )
+        import io
+        from PIL import Image
+        buf = io.BytesIO()
+        Image.new("RGB", (1, 1), color="red").save(buf, format="GIF")
+        self.valid_gif_data = buf.getvalue()
+
+    def test_signal_creates_profile_on_user_registration(self) -> None:
+        self.assertTrue(UserProfile.objects.filter(user=self.user).exists())
+        profile = get_profile(self.user)
+        self.assertIsNotNone(profile)
+        self.assertEqual(profile.preferred_currency, "USD")
+        self.assertEqual(profile.preferred_language, "en")
+
+    def test_register_user_populates_phone(self) -> None:
+        new_user = register_user(
+            email="concierge_patron@houseofbore.com",
+            password="SecurePassword123!",
+            phone="+1 555 999 8888"
+        )
+        profile = get_profile(new_user)
+        self.assertIsNotNone(profile)
+        self.assertEqual(profile.phone_number, "+1 555 999 8888")
+
+    def test_profile_completion_percentage_calculation(self) -> None:
+        # Initially 0 out of 6 criteria (email unverified, no phone, no avatar, no dob)
+        # But wait: preferred_language and preferred_currency have defaults!
+        # So 2 out of 6 (33%) should be complete by default.
+        initial_pct = profile_completion_percentage(self.user)
+        self.assertEqual(initial_pct, 33)
+
+        # Verify email -> 3/6 = 50%
+        self.user.verify_email()
+        self.assertEqual(profile_completion_percentage(self.user), 50)
+
+        # Set phone & dob -> 5/6 = 83%
+        update_profile(self.user, phone_number="+1 555 000 1111", date_of_birth="1985-06-15")
+        self.assertEqual(profile_completion_percentage(self.user), 83)
+
+        # Set avatar -> 6/6 = 100%
+        avatar_file = SimpleUploadedFile("avatar.gif", self.valid_gif_data, content_type="image/gif")
+        update_avatar(self.user, avatar_file)
+        self.assertEqual(profile_completion_percentage(self.user), 100)
+
+    def test_update_profile_service(self) -> None:
+        profile = update_profile(
+            self.user,
+            phone_number="+33 1 23 45 67 89",
+            preferred_language="fr",
+            preferred_currency="EUR",
+            marketing_emails=False
+        )
+        self.assertIsNotNone(profile)
+        self.assertEqual(profile.phone_number, "+33 1 23 45 67 89")
+        self.assertEqual(profile.preferred_language, "fr")
+        self.assertEqual(profile.preferred_currency, "EUR")
+        self.assertFalse(profile.marketing_emails)
+
+    def test_avatar_upload_and_removal_service(self) -> None:
+        avatar_file = SimpleUploadedFile("patron.gif", self.valid_gif_data, content_type="image/gif")
+        success, msg = update_avatar(self.user, avatar_file)
+        self.assertTrue(success)
+        self.assertEqual(msg, "Avatar updated successfully.")
+
+        profile = get_profile(self.user)
+        self.assertTrue(bool(profile.avatar))
+
+        # Remove avatar
+        removed = remove_avatar(self.user)
+        self.assertTrue(removed)
+        profile.refresh_from_db()
+        self.assertFalse(bool(profile.avatar))
+
+    def test_avatar_upload_validation_errors(self) -> None:
+        # Too large (> 2MB)
+        huge_file = SimpleUploadedFile("huge.png", b"a" * (2 * 1024 * 1024 + 100), content_type="image/png")
+        success, msg = update_avatar(self.user, huge_file)
+        self.assertFalse(success)
+        self.assertIn("too large", msg)
+
+        # Invalid extension
+        txt_file = SimpleUploadedFile("document.txt", b"not an image", content_type="text/plain")
+        success, msg = update_avatar(self.user, txt_file)
+        self.assertFalse(success)
+        self.assertIn("Invalid image format", msg)
+
+    def test_profile_views_unauthenticated_redirect(self) -> None:
+        url_profile = reverse("accounts:profile")
+        url_edit = reverse("accounts:profile_edit")
+        
+        res1 = self.client.get(url_profile)
+        self.assertRedirects(res1, f"{reverse('accounts:login')}?next={url_profile}")
+
+        res2 = self.client.get(url_edit)
+        self.assertRedirects(res2, f"{reverse('accounts:login')}?next={url_edit}")
+
+    def test_profile_overview_view_authenticated(self) -> None:
+        self.client.force_login(self.user)
+        url = reverse("accounts:profile")
+        res = self.client.get(url)
+        self.assertEqual(res.status_code, 200)
+        self.assertTemplateUsed(res, "accounts/profile.html")
+        self.assertIn("profile", res.context)
+        self.assertIn("completion_percentage", res.context)
+
+    def test_profile_edit_view_post_update_info(self) -> None:
+        self.client.force_login(self.user)
+        url = reverse("accounts:profile_edit")
+        res = self.client.post(url, data={
+            "action": "update_profile",
+            "phone_number": "+44 20 7946 0999",
+            "date_of_birth": "1990-01-01",
+            "preferred_language": "it",
+            "preferred_currency": "GBP",
+            "marketing_emails": "on",
+        })
+        self.assertRedirects(res, reverse("accounts:profile"))
+        
+        profile = get_profile(self.user)
+        profile.refresh_from_db()
+        self.assertEqual(profile.phone_number, "+44 20 7946 0999")
+        self.assertEqual(profile.preferred_language, "it")
+        self.assertEqual(profile.preferred_currency, "GBP")
+        self.assertTrue(profile.marketing_emails)
+
+    def test_profile_edit_view_post_upload_and_remove_avatar(self) -> None:
+        self.client.force_login(self.user)
+        url = reverse("accounts:profile_edit")
+        
+        avatar_file = SimpleUploadedFile("test_avatar.gif", self.valid_gif_data, content_type="image/gif")
+        res_upload = self.client.post(url, data={
+            "action": "upload_avatar",
+            "avatar": avatar_file,
+        })
+        self.assertRedirects(res_upload, reverse("accounts:profile_edit"))
+        
+        profile = get_profile(self.user)
+        profile.refresh_from_db()
+        self.assertTrue(bool(profile.avatar))
+
+        res_remove = self.client.post(url, data={
+            "action": "remove_avatar",
+        })
+        self.assertRedirects(res_remove, reverse("accounts:profile_edit"))
+        
+        profile.refresh_from_db()
+        self.assertFalse(bool(profile.avatar))
+
+    def test_admin_registration(self) -> None:
+        from django.contrib import admin
+        from accounts.admin import UserProfileInline
+        self.assertIn(UserProfile, admin.site._registry)
+        user_admin = admin.site._registry[User]
+        self.assertIn(UserProfileInline, user_admin.inlines)
+
+    def test_date_of_birth_future_validation(self) -> None:
+        import datetime
+        from django.utils import timezone
+        future_date = timezone.now().date() + datetime.timedelta(days=10)
+        
+        form = ProfileUpdateForm(data={"date_of_birth": future_date.strftime("%Y-%m-%d")})
+        self.assertFalse(form.is_valid())
+        self.assertIn("date_of_birth", form.errors)
+        self.assertIn("future", form.errors["date_of_birth"][0])
+
+    def test_avatar_upload_corrupted_content_verification(self) -> None:
+        fake_png = SimpleUploadedFile("fake.png", b"not a real png bitmap", content_type="image/png")
+        success, msg = update_avatar(self.user, fake_png)
+        self.assertFalse(success)
+        self.assertIn("corrupted", msg)
+
+    def test_get_profile_caching_efficiency(self) -> None:
+        profile = get_profile(self.user)
+        self.assertIsNotNone(profile)
+        with self.assertNumQueries(0):
+            cached_profile = get_profile(self.user)
+            self.assertEqual(cached_profile, profile)
+
+
+class TestAddressBookModels(TestCase):
+    """Test Address model methods and default unsetting logic."""
+
+    def setUp(self) -> None:
+        self.user = User.objects.create_user(
+            email="address_model@houseofbore.com",
+            password="SecurePassword123!",
+            is_active=True,
+        )
+
+    def test_address_creation_and_str(self) -> None:
+        address = Address.objects.create(
+            user=self.user,
+            label="Home",
+            recipient_name="Lord Bore",
+            phone_number="+1 555-0100",
+            address_line_1="100 Luxury Way",
+            city="Beverly Hills",
+            county_or_state="CA",
+            postal_code="90210",
+            country="US",
+        )
+        self.assertIn("Home", str(address))
+        self.assertIn("Beverly Hills", str(address))
+
+    def test_formatted_address_property(self) -> None:
+        address = Address.objects.create(
+            user=self.user,
+            label="Office",
+            recipient_name="Executive Suite",
+            company_name="Bore Industries",
+            phone_number="+1 555-0101",
+            address_line_1="500 Wall Street",
+            address_line_2="Floor 40",
+            city="New York",
+            county_or_state="NY",
+            postal_code="10005",
+            country="US",
+        )
+        formatted = address.formatted_address
+        self.assertIn("Executive Suite", formatted)
+        self.assertIn("Bore Industries", formatted)
+        self.assertIn("500 Wall Street", formatted)
+        self.assertIn("Floor 40", formatted)
+        self.assertIn("New York, NY 10005", formatted)
+        self.assertIn("United States", formatted)
+
+    def test_auto_unsetting_defaults_on_save(self) -> None:
+        addr1 = Address.objects.create(
+            user=self.user,
+            label="Home",
+            recipient_name="User",
+            phone_number="+1 555-0100",
+            address_line_1="1 Street",
+            city="City",
+            county_or_state="State",
+            postal_code="10000",
+            country="US",
+            is_default_shipping=True,
+            is_default_billing=True,
+        )
+        self.assertTrue(addr1.is_default_shipping)
+        self.assertTrue(addr1.is_default_billing)
+
+        addr2 = Address.objects.create(
+            user=self.user,
+            label="Work",
+            recipient_name="User Work",
+            phone_number="+1 555-0102",
+            address_line_1="2 Street",
+            city="City",
+            county_or_state="State",
+            postal_code="10000",
+            country="US",
+            is_default_shipping=True,
+            is_default_billing=True,
+        )
+        addr1.refresh_from_db()
+        self.assertFalse(addr1.is_default_shipping)
+        self.assertFalse(addr1.is_default_billing)
+        self.assertTrue(addr2.is_default_shipping)
+        self.assertTrue(addr2.is_default_billing)
+
+
+class TestAddressBookSelectors(TestCase):
+    """Test read-only address queries and ownership isolation."""
+
+    def setUp(self) -> None:
+        self.user1 = User.objects.create_user(email="user1@houseofbore.com", password="pwd")
+        self.user2 = User.objects.create_user(email="user2@houseofbore.com", password="pwd")
+        self.addr1 = Address.objects.create(
+            user=self.user1, label="Home", recipient_name="U1", phone_number="+1 555-0100",
+            address_line_1="1 St", city="City", county_or_state="ST", country="US",
+            is_default_shipping=True
+        )
+        self.addr2 = Address.objects.create(
+            user=self.user2, label="Work", recipient_name="U2", phone_number="+1 555-0101",
+            address_line_1="2 St", city="City", county_or_state="ST", country="US",
+            is_default_billing=True
+        )
+
+    def test_get_user_addresses(self) -> None:
+        u1_addrs = get_user_addresses(self.user1)
+        self.assertEqual(u1_addrs.count(), 1)
+        self.assertEqual(u1_addrs.first(), self.addr1)
+
+        u2_addrs = get_user_addresses(self.user2)
+        self.assertEqual(u2_addrs.count(), 1)
+        self.assertEqual(u2_addrs.first(), self.addr2)
+
+    def test_get_user_address_by_pk_ownership_isolation(self) -> None:
+        self.assertIsNone(get_user_address_by_pk(self.user1, self.addr2.pk))
+        self.assertEqual(get_user_address_by_pk(self.user1, self.addr1.pk), self.addr1)
+
+    def test_get_default_shipping_and_billing(self) -> None:
+        self.assertEqual(get_default_shipping(self.user1), self.addr1)
+        self.assertIsNone(get_default_billing(self.user1))
+        self.assertIsNone(get_default_shipping(self.user2))
+        self.assertEqual(get_default_billing(self.user2), self.addr2)
+
+
+class TestAddressBookServices(TestCase):
+    """Test transactional CRUD services and default promotion."""
+
+    def setUp(self) -> None:
+        self.user = User.objects.create_user(email="service_test@houseofbore.com", password="pwd")
+
+    def test_create_address_auto_default_assignment(self) -> None:
+        addr = create_address(
+            user=self.user, label="First", recipient_name="Me", phone_number="+1 555-0100",
+            address_line_1="1 St", city="City", county_or_state="ST", country="US",
+            address_type="both"
+        )
+        self.assertTrue(addr.is_default_shipping)
+        self.assertTrue(addr.is_default_billing)
+
+    def test_delete_address_fallback_promotion(self) -> None:
+        addr1 = create_address(
+            user=self.user, label="First", recipient_name="Me", phone_number="+1 555-0100",
+            address_line_1="1 St", city="City", county_or_state="ST", country="US",
+            address_type="both"
+        )
+        addr2 = create_address(
+            user=self.user, label="Second", recipient_name="Me", phone_number="+1 555-0100",
+            address_line_1="2 St", city="City", county_or_state="ST", country="US",
+            address_type="both", is_default_shipping=False, is_default_billing=False
+        )
+        self.assertTrue(addr1.is_default_shipping)
+        self.assertFalse(addr2.is_default_shipping)
+
+        delete_address(addr1)
+        addr2.refresh_from_db()
+        self.assertTrue(addr2.is_default_shipping)
+        self.assertTrue(addr2.is_default_billing)
+
+    def test_set_default_shipping_modifies_billing_only(self) -> None:
+        addr = create_address(
+            user=self.user, label="Billing", recipient_name="Me", phone_number="+1 555-0100",
+            address_line_1="1 St", city="City", county_or_state="ST", country="US",
+            address_type="billing"
+        )
+        self.assertEqual(addr.address_type, "billing")
+        set_default_shipping(addr)
+        addr.refresh_from_db()
+        self.assertEqual(addr.address_type, "both")
+        self.assertTrue(addr.is_default_shipping)
+
+    def test_format_address_service(self) -> None:
+        addr = create_address(
+            user=self.user, label="Home", recipient_name="Lord Bore", phone_number="+1 555-0100",
+            address_line_1="100 Luxury Way", city="Beverly Hills", county_or_state="CA", country="US"
+        )
+        html_formatted = format_address(addr, html=True)
+        self.assertIn("<br>", html_formatted)
+        self.assertIn("Lord Bore", html_formatted)
+        plain_formatted = format_address(addr, html=False)
+        self.assertNotIn("<br>", plain_formatted)
+
+
+class TestAddressBookForm(TestCase):
+    """Test AddressForm validation and international country choices."""
+
+    def test_valid_address_form(self) -> None:
+        form = AddressForm(data={
+            "label": "Home",
+            "recipient_name": "John Doe",
+            "phone_number": "+1 (555) 019-9888",
+            "address_line_1": "123 Main St",
+            "city": "Austin",
+            "county_or_state": "TX",
+            "postal_code": "78701",
+            "country": "US",
+            "address_type": "both",
+        })
+        self.assertTrue(form.is_valid(), form.errors)
+
+    def test_invalid_phone_number_format(self) -> None:
+        form = AddressForm(data={
+            "label": "Home",
+            "recipient_name": "John Doe",
+            "phone_number": "invalid-phone-str",
+            "address_line_1": "123 Main St",
+            "city": "Austin",
+            "county_or_state": "TX",
+            "postal_code": "78701",
+            "country": "US",
+            "address_type": "both",
+        })
+        self.assertFalse(form.is_valid())
+        self.assertIn("phone_number", form.errors)
+
+    def test_postal_code_required_for_certain_countries(self) -> None:
+        form = AddressForm(data={
+            "label": "Home",
+            "recipient_name": "John Doe",
+            "phone_number": "+1 555-0199",
+            "address_line_1": "123 Main St",
+            "city": "Austin",
+            "county_or_state": "TX",
+            "postal_code": "",
+            "country": "US",
+            "address_type": "both",
+        })
+        self.assertFalse(form.is_valid())
+        self.assertIn("postal_code", form.errors)
+
+
+class TestAddressBookViews(TestCase):
+    """Test Class-Based Views, routing, permissions, and flash messages."""
+
+    def setUp(self) -> None:
+        self.user = User.objects.create_user(email="view_user@houseofbore.com", password="pwd")
+        self.other_user = User.objects.create_user(email="other_user@houseofbore.com", password="pwd")
+        self.address = create_address(
+            user=self.user, label="Home", recipient_name="View User", phone_number="+1 555-0100",
+            address_line_1="1 St", city="City", county_or_state="ST", country="US"
+        )
+        self.list_url = reverse("accounts:address_list")
+        self.create_url = reverse("accounts:address_create")
+        self.edit_url = reverse("accounts:address_edit", args=[self.address.pk])
+        self.delete_url = reverse("accounts:address_delete", args=[self.address.pk])
+        self.set_default_url = reverse("accounts:address_set_default", args=[self.address.pk, "shipping"])
+
+    def test_anonymous_redirects(self) -> None:
+        for url in [self.list_url, self.create_url, self.edit_url, self.delete_url]:
+            response = self.client.get(url)
+            self.assertEqual(response.status_code, 302)
+            self.assertIn(reverse("accounts:login"), response.url)
+
+    def test_address_list_view_authenticated(self) -> None:
+        self.client.force_login(self.user)
+        response = self.client.get(self.list_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Address Book")
+        self.assertContains(response, "Home")
+        self.assertEqual(response.context["active_nav"], "addresses")
+
+    def test_address_create_view_post(self) -> None:
+        self.client.force_login(self.user)
+        response = self.client.post(self.create_url, data={
+            "label": "Vacation Home",
+            "recipient_name": "View User",
+            "phone_number": "+1 555-0199",
+            "address_line_1": "777 Beach Blvd",
+            "city": "Miami",
+            "county_or_state": "FL",
+            "postal_code": "33101",
+            "country": "US",
+            "address_type": "shipping",
+        })
+        self.assertRedirects(response, self.list_url)
+        self.assertEqual(Address.objects.filter(user=self.user).count(), 2)
+
+    def test_address_edit_view_other_user_404(self) -> None:
+        self.client.force_login(self.other_user)
+        response = self.client.get(self.edit_url)
+        self.assertEqual(response.status_code, 404)
+
+    def test_address_delete_view_post(self) -> None:
+        self.client.force_login(self.user)
+        response = self.client.post(self.delete_url)
+        self.assertRedirects(response, self.list_url)
+        self.assertEqual(Address.objects.filter(user=self.user).count(), 0)
+
+    def test_address_set_default_view_post(self) -> None:
+        self.client.force_login(self.user)
+        self.address.is_default_shipping = False
+        self.address.save()
+        response = self.client.post(self.set_default_url)
+        self.assertRedirects(response, self.list_url)
+        self.address.refresh_from_db()
+        self.assertTrue(self.address.is_default_shipping)
+
+

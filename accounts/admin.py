@@ -20,7 +20,31 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.utils.translation import gettext_lazy as _
 
-from .models import User
+from .models import User, UserProfile, Address
+
+
+class AddressInline(admin.StackedInline):
+    """
+    Inline admin configuration for Address.
+    Allows viewing and editing patron addresses within the User detail view.
+    """
+    model = Address
+    extra = 0
+    can_delete = True
+    verbose_name = _("address")
+    verbose_name_plural = _("addresses")
+    fk_name = "user"
+
+
+class UserProfileInline(admin.StackedInline):
+    """
+    Inline admin configuration for UserProfile.
+    Allows editing profile details directly within the User detail view.
+    """
+    model = UserProfile
+    can_delete = False
+    verbose_name_plural = _("profile")
+    fk_name = "user"
 
 
 @admin.register(User)
@@ -77,3 +101,24 @@ class UserAdmin(BaseUserAdmin):
             },
         ),
     )
+
+    inlines = (UserProfileInline, AddressInline)
+
+
+@admin.register(UserProfile)
+class UserProfileAdmin(admin.ModelAdmin):
+    """Standalone admin configuration for UserProfile."""
+    list_display = ("user", "phone_number", "preferred_language", "preferred_currency", "marketing_emails", "updated_at")
+    list_filter = ("preferred_language", "preferred_currency", "marketing_emails")
+    search_fields = ("user__email", "phone_number")
+    readonly_fields = ("created_at", "updated_at")
+
+
+@admin.register(Address)
+class AddressAdmin(admin.ModelAdmin):
+    """Standalone admin configuration for Address."""
+    list_display = ("label", "user", "recipient_name", "city", "country", "address_type", "is_default_shipping", "is_default_billing", "updated_at")
+    list_filter = ("address_type", "is_default_shipping", "is_default_billing", "country")
+    search_fields = ("user__email", "label", "recipient_name", "address_line_1", "city")
+    readonly_fields = ("created_at", "updated_at")
+

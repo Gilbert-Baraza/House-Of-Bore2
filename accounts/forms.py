@@ -13,16 +13,48 @@ mandatory acceptance of legal terms and privacy policy.
 from typing import Any, Dict, Optional
 from django import forms
 from django.contrib.auth import authenticate, get_user_model
+from django.contrib.auth import forms as auth_forms
 from django.contrib.auth import password_validation
 from django.core.exceptions import ValidationError
 from django.http import HttpRequest
+from django.utils import timezone
 
-from accounts.selectors import email_exists, username_exists
+from accounts.selectors import email_exists, get_users_for_password_reset, username_exists
+from accounts.services import send_password_reset_email
+from accounts.models import UserProfile, Address
 
 User = get_user_model()
 
 
-class UserRegistrationForm(forms.ModelForm):
+class AriaErrorHighlightFormMixin:
+    """
+    Reusable form mixin that automatically attaches ARIA accessibility attributes
+    (aria-invalid, aria-describedby) and visual error styling classes to form widgets
+    when validation errors occur.
+    """
+    def full_clean(self) -> None:
+        super().full_clean()  # type: ignore[misc]
+        fields_to_mark = list(getattr(self, "errors", {}).keys())
+        if "__all__" in fields_to_mark:
+            for fallback_field in ["email", "password", "old_password"]:
+                if fallback_field in getattr(self, "fields", {}):
+                    fields_to_mark.append(fallback_field)
+
+        for field_name in set(fields_to_mark):
+            if field_name in getattr(self, "fields", {}):
+                field = self.fields[field_name]  # type: ignore[attr-defined]
+                field_id = field.widget.attrs.get("id") or f"id_{field_name}"
+                field.widget.attrs["aria-invalid"] = "true"
+                field.widget.attrs["aria-describedby"] = f"{field_id}_error"
+                
+                existing_class = field.widget.attrs.get("class", "")
+                if "border-neutral-300" in existing_class:
+                    field.widget.attrs["class"] = existing_class.replace(
+                        "border-neutral-300", "border-red-500 text-red-900 focus:ring-red-500"
+                    )
+
+
+class UserRegistrationForm(AriaErrorHighlightFormMixin, forms.ModelForm):
     """
     Customer registration form.
     
@@ -190,26 +222,6 @@ class UserRegistrationForm(forms.ModelForm):
 
         return cleaned_data
 
-    def full_clean(self) -> None:
-        """
-        Override full_clean to automatically attach ARIA accessibility attributes
-        and styling classes to widgets when form validation errors occur.
-        """
-        super().full_clean()
-        for field_name in self.errors:
-            if field_name in self.fields:
-                field = self.fields[field_name]
-                field_id = field.widget.attrs.get("id") or f"id_{field_name}"
-                field.widget.attrs["aria-invalid"] = "true"
-                field.widget.attrs["aria-describedby"] = f"{field_id}_error"
-                
-                # Add visual error highlight styling to text inputs
-                existing_class = field.widget.attrs.get("class", "")
-                if "border-neutral-300" in existing_class:
-                    field.widget.attrs["class"] = existing_class.replace(
-                        "border-neutral-300", "border-red-500 text-red-900 focus:ring-red-500"
-                    )
-
     def save(self, commit: bool = True) -> Any:
         """
         Save is overridden in Phase 3.1 to delegate instantiation to services.py
@@ -228,7 +240,7 @@ class UserRegistrationForm(forms.ModelForm):
         return user
 
 
-class UserLoginForm(forms.Form):
+class UserLoginForm(AriaErrorHighlightFormMixin, forms.Form):
     """
     Custom authentication form supporting email login and 'Remember Me'.
     """
@@ -299,26 +311,264 @@ class UserLoginForm(forms.Form):
     def get_user(self) -> Any:
         return self.user_cache
 
-    def full_clean(self) -> None:
-        """
-        Override full_clean to automatically attach ARIA accessibility attributes
-        and styling classes to widgets when login validation errors occur.
-        """
-        super().full_clean()
-        fields_to_mark = list(self.errors.keys())
-        if "__all__" in fields_to_mark:
-            fields_to_mark.extend(["email", "password"])
 
-        for field_name in set(fields_to_mark):
-            if field_name in self.fields:
-                field = self.fields[field_name]
-                field_id = field.widget.attrs.get("id") or f"id_{field_name}"
-                field.widget.attrs["aria-invalid"] = "true"
-                field.widget.attrs["aria-describedby"] = f"{field_id}_error"
-                
-                # Add visual error highlight styling to text inputs
-                existing_class = field.widget.attrs.get("class", "")
-                if "border-neutral-300" in existing_class:
-                    field.widget.attrs["class"] = existing_class.replace(
-                        "border-neutral-300", "border-red-500 text-red-900 focus:ring-red-500"
-                    )
+class UserPasswordResetForm(AriaErrorHighlightFormMixin, forms.Form):
+    """
+    Form for requesting a password reset email.
+    
+    Crucially, to prevent user enumeration attacks, this form never reveals
+    whether an email address exists in the system. It always validates successfully
+    and dispatches emails only if matching active accounts exist.
+    """
+    email = forms.EmailField(
+        label="Email Address",
+        required=True,
+        widget=forms.EmailInput(
+            attrs={
+                "class": "w-full px-4 py-3 bg-white border border-neutral-300 rounded-btn text-primary-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-900 focus:border-transparent transition-all text-sm",
+                "placeholder": "name@example.com",
+                "autocomplete": "email",
+            }
+        ),
+        error_messages={
+            "required": "Please enter your email address.",
+            "invalid": "Please enter a valid email address.",
+        },
+    )
+
+    def save(self, request: Optional[HttpRequest] = None) -> None:
+        """
+        Retrieve matching active accounts and dispatch password reset emails.
+        Succeeds silently if no matching account is found.
+        """
+        email = self.cleaned_data["email"]
+        users = get_users_for_password_reset(email)
+        for user in users:
+            send_password_reset_email(user, request=request)
+
+
+class UserSetPasswordForm(AriaErrorHighlightFormMixin, auth_forms.SetPasswordForm):
+    """
+    Form for setting a new password when resetting via token.
+    
+    Inherits Django's password validation framework and cross-field confirmation check.
+    Customizes widgets with luxury styling and ARIA accessibility attributes.
+    """
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self.fields["new_password1"].widget.attrs.update({
+            "class": "w-full px-4 py-3 bg-white border border-neutral-300 rounded-btn text-primary-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-900 focus:border-transparent transition-all text-sm",
+            "placeholder": "••••••••••••",
+            "autocomplete": "new-password",
+        })
+        self.fields["new_password2"].widget.attrs.update({
+            "class": "w-full px-4 py-3 bg-white border border-neutral-300 rounded-btn text-primary-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-900 focus:border-transparent transition-all text-sm",
+            "placeholder": "••••••••••••",
+            "autocomplete": "new-password",
+        })
+
+
+class UserPasswordChangeForm(AriaErrorHighlightFormMixin, auth_forms.PasswordChangeForm):
+    """
+    Form for authenticated users to change their password.
+    
+    Requires current password verification and enforces Django's password validators
+    on the new password. Customizes widgets with luxury styling and ARIA attributes.
+    """
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self.fields["old_password"].widget.attrs.update({
+            "class": "w-full px-4 py-3 bg-white border border-neutral-300 rounded-btn text-primary-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-900 focus:border-transparent transition-all text-sm",
+            "placeholder": "••••••••••••",
+            "autocomplete": "current-password",
+        })
+        self.fields["new_password1"].widget.attrs.update({
+            "class": "w-full px-4 py-3 bg-white border border-neutral-300 rounded-btn text-primary-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-900 focus:border-transparent transition-all text-sm",
+            "placeholder": "••••••••••••",
+            "autocomplete": "new-password",
+        })
+        self.fields["new_password2"].widget.attrs.update({
+            "class": "w-full px-4 py-3 bg-white border border-neutral-300 rounded-btn text-primary-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-900 focus:border-transparent transition-all text-sm",
+            "placeholder": "••••••••••••",
+            "autocomplete": "new-password",
+        })
+
+
+class ProfileUpdateForm(AriaErrorHighlightFormMixin, forms.ModelForm):
+    """
+    Form for updating customer profile attributes and preferences.
+    
+    Enforces that email and password cannot be changed here.
+    """
+    class Meta:
+        model = UserProfile
+        fields = [
+            "phone_number",
+            "date_of_birth",
+            "preferred_language",
+            "preferred_currency",
+            "marketing_emails",
+        ]
+        widgets = {
+            "phone_number": forms.TextInput(attrs={
+                "class": "w-full px-4 py-3 bg-white border border-neutral-300 rounded-btn text-primary-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-900 focus:border-transparent transition-all text-sm",
+                "placeholder": "+1 (555) 000-0000",
+                "autocomplete": "tel",
+            }),
+            "date_of_birth": forms.DateInput(attrs={
+                "class": "w-full px-4 py-3 bg-white border border-neutral-300 rounded-btn text-primary-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-900 focus:border-transparent transition-all text-sm",
+                "type": "date",
+            }),
+            "preferred_language": forms.Select(attrs={
+                "class": "w-full px-4 py-3 bg-white border border-neutral-300 rounded-btn text-primary-900 focus:outline-none focus:ring-2 focus:ring-primary-900 focus:border-transparent transition-all text-sm",
+            }),
+            "preferred_currency": forms.Select(attrs={
+                "class": "w-full px-4 py-3 bg-white border border-neutral-300 rounded-btn text-primary-900 focus:outline-none focus:ring-2 focus:ring-primary-900 focus:border-transparent transition-all text-sm",
+            }),
+            "marketing_emails": forms.CheckboxInput(attrs={
+                "class": "w-4 h-4 text-primary-900 border-neutral-300 rounded focus:ring-primary-900 transition-all",
+            }),
+        }
+
+    def clean_date_of_birth(self) -> Any:
+        dob = self.cleaned_data.get("date_of_birth")
+        if dob and dob > timezone.now().date():
+            raise ValidationError("Date of birth cannot be in the future.")
+        return dob
+
+
+
+class AvatarUploadForm(AriaErrorHighlightFormMixin, forms.ModelForm):
+    """
+    Form for uploading a new customer avatar image.
+    
+    Enforces file size (<= 2MB) and valid image extension/format.
+    Uses FileField instead of ImageField to avoid premature stream closure by Pillow during form binding.
+    """
+    avatar = forms.FileField(
+        widget=forms.FileInput(attrs={
+            "class": "block w-full text-sm text-neutral-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-btn file:border-0 file:text-sm file:font-medium file:bg-neutral-100 file:text-primary-900 hover:file:bg-neutral-200 transition-all cursor-pointer",
+            "accept": "image/jpeg,image/png,image/webp,image/gif",
+        }),
+        error_messages={
+            "required": "Please select an image file to upload.",
+        }
+    )
+
+    class Meta:
+        model = UserProfile
+        fields = ["avatar"]
+
+    def clean_avatar(self) -> Any:
+        avatar = self.cleaned_data.get("avatar")
+        if avatar:
+            max_size = 2 * 1024 * 1024
+            if getattr(avatar, "size", 0) > max_size:
+                raise ValidationError("Image file too large. Maximum allowed size is 2MB.")
+
+            valid_extensions = [".jpg", ".jpeg", ".png", ".webp", ".gif"]
+            file_name = getattr(avatar, "name", "").lower()
+            if not any(file_name.endswith(ext) for ext in valid_extensions):
+                raise ValidationError("Invalid image format. Supported formats: JPEG, PNG, WEBP, GIF.")
+        return avatar
+
+
+class AddressForm(AriaErrorHighlightFormMixin, forms.ModelForm):
+    """
+    ModelForm for adding and editing customer shipping/billing addresses.
+
+    Includes accessibility attributes, international country selection,
+    postal code validation, and phone number format checks.
+    """
+    class Meta:
+        model = Address
+        fields = [
+            "label",
+            "recipient_name",
+            "phone_number",
+            "company_name",
+            "address_line_1",
+            "address_line_2",
+            "city",
+            "county_or_state",
+            "postal_code",
+            "country",
+            "address_type",
+            "is_default_shipping",
+            "is_default_billing",
+        ]
+        widgets = {
+            "label": forms.TextInput(attrs={
+                "class": "w-full px-4 py-3 bg-white border border-neutral-300 rounded-btn text-primary-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-900 focus:border-transparent transition-all text-sm",
+                "placeholder": "e.g., Home, Office, Parents",
+            }),
+            "recipient_name": forms.TextInput(attrs={
+                "class": "w-full px-4 py-3 bg-white border border-neutral-300 rounded-btn text-primary-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-900 focus:border-transparent transition-all text-sm",
+                "placeholder": "Full Name",
+                "autocomplete": "name",
+            }),
+            "phone_number": forms.TextInput(attrs={
+                "class": "w-full px-4 py-3 bg-white border border-neutral-300 rounded-btn text-primary-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-900 focus:border-transparent transition-all text-sm",
+                "placeholder": "+1 (555) 000-0000",
+                "autocomplete": "tel",
+            }),
+            "company_name": forms.TextInput(attrs={
+                "class": "w-full px-4 py-3 bg-white border border-neutral-300 rounded-btn text-primary-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-900 focus:border-transparent transition-all text-sm",
+                "placeholder": "Optional company or building name",
+                "autocomplete": "organization",
+            }),
+            "address_line_1": forms.TextInput(attrs={
+                "class": "w-full px-4 py-3 bg-white border border-neutral-300 rounded-btn text-primary-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-900 focus:border-transparent transition-all text-sm",
+                "placeholder": "Street address, P.O. box, c/o",
+                "autocomplete": "address-line1",
+            }),
+            "address_line_2": forms.TextInput(attrs={
+                "class": "w-full px-4 py-3 bg-white border border-neutral-300 rounded-btn text-primary-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-900 focus:border-transparent transition-all text-sm",
+                "placeholder": "Apartment, suite, unit, building, floor, etc.",
+                "autocomplete": "address-line2",
+            }),
+            "city": forms.TextInput(attrs={
+                "class": "w-full px-4 py-3 bg-white border border-neutral-300 rounded-btn text-primary-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-900 focus:border-transparent transition-all text-sm",
+                "placeholder": "City or Town",
+                "autocomplete": "address-level2",
+            }),
+            "county_or_state": forms.TextInput(attrs={
+                "class": "w-full px-4 py-3 bg-white border border-neutral-300 rounded-btn text-primary-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-900 focus:border-transparent transition-all text-sm",
+                "placeholder": "State, Province, or County",
+                "autocomplete": "address-level1",
+            }),
+            "postal_code": forms.TextInput(attrs={
+                "class": "w-full px-4 py-3 bg-white border border-neutral-300 rounded-btn text-primary-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-900 focus:border-transparent transition-all text-sm",
+                "placeholder": "Postal or ZIP code",
+                "autocomplete": "postal-code",
+            }),
+            "country": forms.Select(attrs={
+                "class": "w-full px-4 py-3 bg-white border border-neutral-300 rounded-btn text-primary-900 focus:outline-none focus:ring-2 focus:ring-primary-900 focus:border-transparent transition-all text-sm cursor-pointer",
+                "autocomplete": "country",
+            }),
+            "address_type": forms.Select(attrs={
+                "class": "w-full px-4 py-3 bg-white border border-neutral-300 rounded-btn text-primary-900 focus:outline-none focus:ring-2 focus:ring-primary-900 focus:border-transparent transition-all text-sm cursor-pointer",
+            }),
+            "is_default_shipping": forms.CheckboxInput(attrs={
+                "class": "h-4 w-4 rounded border-neutral-300 text-primary-900 focus:ring-primary-900 transition-colors cursor-pointer",
+            }),
+            "is_default_billing": forms.CheckboxInput(attrs={
+                "class": "h-4 w-4 rounded border-neutral-300 text-primary-900 focus:ring-primary-900 transition-colors cursor-pointer",
+            }),
+        }
+
+    def clean_phone_number(self) -> str:
+        phone = self.cleaned_data.get("phone_number", "").strip()
+        import re
+        if not re.match(r"^\+?[\d\s\-\(\)\.]{7,25}$", phone):
+            raise ValidationError("Please enter a valid phone number (e.g., +1 555-0199).")
+        return phone
+
+    def clean(self) -> Any:
+        cleaned_data = super().clean()
+        postal = cleaned_data.get("postal_code", "").strip() if cleaned_data.get("postal_code") else ""
+        country = cleaned_data.get("country", "")
+        if country in ("US", "CA", "GB", "FR", "IT", "DE", "CH", "JP", "AU") and not postal:
+            self.add_error("postal_code", "Postal code is required for the selected country.")
+        return cleaned_data
+

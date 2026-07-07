@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Delete Address — House of Bore{% endblock %}
+
+{% block content %}
+<div class="bg-neutral-50 min-h-screen py-12 md:py-20 flex items-center justify-center">
+  <div class="max-w-lg w-full mx-auto px-4 sm:px-6">
+
+    <div class="bg-white border border-neutral-200 shadow-md rounded-lg p-6 md:p-8 text-center">
+      
+      {# Warning Icon #}
+      <div class="w-14 h-14 bg-red-50 text-red-600 rounded-full flex items-center justify-center mx-auto mb-6">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-7 h-7">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+        </svg>
+      </div>
+
+      <h1 class="font-serif text-2xl font-bold text-primary-900 mb-2">
+        Remove Address?
+      </h1>
+
+      <p class="text-xs text-neutral-500 leading-relaxed mb-6">
+        Are you sure you wish to delete the address labeled <strong class="text-primary-900 font-semibold">"{{ address.label }}"</strong>? This action cannot be undone.
+      </p>
+
+      {# Address Preview Card #}
+      <div class="bg-neutral-50 border border-neutral-200 rounded p-4 text-left text-xs text-neutral-700 space-y-1 mb-6">
+        <div class="flex items-center justify-between font-bold text-primary-900 border-b border-neutral-200 pb-2 mb-2">
+          <span>{{ address.label }}</span>
+          <span class="text-[10px] text-neutral-500 font-normal uppercase">{{ address.get_address_type_display }}</span>
+        </div>
+        <p class="font-semibold">{{ address.recipient_name }}</p>
+        <p>{{ address.address_line_1 }}</p>
+        {% if address.address_line_2 %}
+          <p>{{ address.address_line_2 }}</p>
+        {% endif %}
+        <p>{{ address.city }}, {{ address.county_or_state }} {{ address.postal_code }}</p>
+        <p class="text-neutral-500">{{ address.get_country_display }}</p>
+      </div>
+
+      {% if address.is_default_shipping or address.is_default_billing %}
+        <div class="p-3 bg-amber-50 border border-amber-200 rounded text-[11px] text-amber-800 text-left mb-6 flex items-start gap-2">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 shrink-0 mt-0.5 text-amber-600">
+            <path stroke-linecap="round" stroke-linejoin="round" d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" />
+          </svg>
+          <div>
+            <strong>Note:</strong> This is currently set as your default {% if address.is_default_shipping and address.is_default_billing %}shipping and billing address{% elif address.is_default_shipping %}shipping address{% else %}billing address{% endif %}. Deleting it will automatically promote your most recently updated remaining address.
+          </div>
+        </div>
+      {% endif %}
+
+      {# Actions #}
+      <form method="post" class="flex flex-col sm:flex-row items-center justify-center gap-3">
+        {% csrf_token %}
+        <a href="{% url 'accounts:address_list' %}"
+           class="w-full sm:w-auto px-6 py-3 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 text-xs font-semibold tracking-wider uppercase rounded-btn transition-colors">
+          Cancel
+        </a>
+        <button type="submit"
+                class="w-full sm:w-auto px-6 py-3 bg-red-600 hover:bg-red-700 text-white text-xs font-semibold tracking-wider uppercase rounded-btn shadow transition-all">
+          Yes, Delete Address
+        </button>
+      </form>
+
+    </div>
+
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Edit Profile | House of Bore{% endblock %}
+
+{% block meta_description %}
+  Update your House of Bore patron profile, upload an avatar, and manage your luxury preferences.
+{% endblock %}
+
+{% block content %}
+<div class="bg-neutral-50 min-h-screen py-16 lg:py-24">
+  <div class="container-site max-w-3xl mx-auto px-4 sm:px-6">
+    
+    {# ── Page Header ──────────────────────────────────────────────────────── #}
+    <div class="text-center mb-10">
+      <span class="inline-block px-3 py-1 bg-neutral-100 text-neutral-700 text-xs font-semibold tracking-widest uppercase rounded-full mb-3">
+        Account Settings
+      </span>
+      <h1 class="font-serif text-3xl sm:text-4xl font-bold text-primary-900 tracking-tight mb-2">
+        Edit Profile
+      </h1>
+      <p class="text-neutral-600 text-sm leading-relaxed">
+        Update your personal details, profile picture, and communication preferences.
+      </p>
+    </div>
+
+    <div class="space-y-8">
+
+      {# ── Section 1: Avatar Management ──────────────────────────────────── #}
+      <div class="bg-white border border-neutral-200/80 rounded-2xl p-6 sm:p-8 shadow-xl relative overflow-hidden">
+        <h2 class="font-serif text-xl font-bold text-primary-900 tracking-tight border-b border-neutral-200 pb-3 mb-6">
+          Profile Photo
+        </h2>
+
+        <div class="flex flex-col sm:flex-row items-center gap-6">
+          
+          {# Current Avatar Preview #}
+          <div class="w-24 h-24 rounded-full overflow-hidden bg-neutral-100 border-2 border-primary-900/20 shadow-inner flex items-center justify-center shrink-0">
+            {% if profile and profile.avatar %}
+              <img src="{{ profile.avatar.url }}" alt="{{ user.full_name|default:user.email }}" class="w-full h-full object-cover">
+            {% else %}
+              <span class="font-serif text-2xl font-bold text-primary-900 tracking-wider">
+                {{ user.email|slice:":2"|upper }}
+              </span>
+            {% endif %}
+          </div>
+
+          {# Upload & Remove Forms #}
+          <div class="flex-1 space-y-4 w-full">
+            <form method="post" enctype="multipart/form-data" class="space-y-3" novalidate>
+              {% csrf_token %}
+              <input type="hidden" name="action" value="upload_avatar">
+              
+              <div>
+                <label for="{{ avatar_form.avatar.id_for_label }}" class="block text-xs font-semibold uppercase tracking-wider text-neutral-700 mb-1.5">
+                  Upload New Photo
+                </label>
+                {{ avatar_form.avatar }}
+                <p class="text-[11px] text-neutral-500 mt-1.5">Supported formats: JPEG, PNG, WEBP, GIF. Max size 2MB.</p>
+                {% if avatar_form.avatar.errors %}
+                  <p class="text-xs text-red-600 mt-1 font-medium" id="{{ avatar_form.avatar.id_for_label }}_error" role="alert">
+                    {{ avatar_form.avatar.errors.0 }}
+                  </p>
+                {% endif %}
+              </div>
+
+              <div class="flex flex-wrap items-center gap-3 pt-1">
+                <button type="submit" class="btn-primary text-xs py-2 px-4">
+                  Upload Photo
+                </button>
+              </div>
+            </form>
+
+            {% if profile and profile.avatar %}
+              <form method="post" class="inline-block pt-2 border-t border-neutral-100 w-full" onsubmit="return confirm('Are you sure you want to remove your profile photo?');">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="remove_avatar">
+                <button type="submit" class="text-xs font-semibold text-red-600 hover:text-red-800 transition-colors flex items-center gap-1">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-3.5 h-3.5">
+                    <path fill-rule="evenodd" d="M8.75 1A2.75 2.75 0 0 0 6 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 1 0 .23 1.482l.149-.022.841 10.518A2.75 2.75 0 0 0 7.596 19h4.807a2.75 2.75 0 0 0 2.742-2.53l.841-10.52.149.023a.75.75 0 0 0 .23-1.482A41.03 41.03 0 0 0 14 4.193V3.75A2.75 2.75 0 0 0 11.25 1h-2.5ZM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4ZM8.58 7.72a.75.75 0 0 0-1.5.06l.3 7.5a.75.75 0 1 0 1.5-.06l-.3-7.5Zm4.34.06a.75.75 0 1 0-1.5-.06l-.3 7.5a.75.75 0 1 0 1.5.06l.3-7.5Z" clip-rule="evenodd" />
+                  </svg>
+                  Remove Current Photo
+                </button>
+              </form>
+            {% endif %}
+          </div>
+
+        </div>
+      </div>
+
+      {# ── Section 2: Personal Information & Preferences ─────────────────── #}
+      <div class="bg-white border border-neutral-200/80 rounded-2xl p-6 sm:p-8 shadow-xl relative overflow-hidden">
+        <h2 class="font-serif text-xl font-bold text-primary-900 tracking-tight border-b border-neutral-200 pb-3 mb-6">
+          Personal Details & Preferences
+        </h2>
+
+        {# Security Notice regarding Email & Password #}
+        <div class="mb-6 p-4 bg-neutral-100 border border-neutral-200 rounded-lg text-xs text-neutral-600 leading-relaxed flex items-start gap-3">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5 text-neutral-500 shrink-0 mt-0.5">
+            <path fill-rule="evenodd" d="M10 1a4.5 4.5 0 0 0-4.5 4.5V9H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2h-.5V5.5A4.5 4.5 0 0 0 10 1Zm3 8V5.5a3 3 0 1 0-6 0V9h6Z" clip-rule="evenodd" />
+          </svg>
+          <div>
+            <p class="font-semibold text-neutral-800">Email Address & Security</p>
+            <p class="mt-0.5">
+              Your login email (<strong class="text-primary-900">{{ user.email }}</strong>) and password are managed separately for security. 
+              To update your password, visit the <a href="{% url 'accounts:password_change' %}" class="underline font-semibold hover:text-primary-900">Security Settings</a>.
+            </p>
+          </div>
+        </div>
+
+        <form method="post" class="space-y-6" novalidate>
+          {% csrf_token %}
+          <input type="hidden" name="action" value="update_profile">
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            
+            {# Phone Number #}
+            <div>
+              <label for="{{ profile_form.phone_number.id_for_label }}" class="block text-xs font-semibold uppercase tracking-wider text-neutral-700 mb-1.5">
+                {{ profile_form.phone_number.label }}
+              </label>
+              {{ profile_form.phone_number }}
+              <p class="text-[11px] text-neutral-500 mt-1">{{ profile_form.phone_number.help_text }}</p>
+              {% if profile_form.phone_number.errors %}
+                <p class="text-xs text-red-600 mt-1 font-medium" id="{{ profile_form.phone_number.id_for_label }}_error" role="alert">
+                  {{ profile_form.phone_number.errors.0 }}
+                </p>
+              {% endif %}
+            </div>
+
+            {# Date of Birth #}
+            <div>
+              <label for="{{ profile_form.date_of_birth.id_for_label }}" class="block text-xs font-semibold uppercase tracking-wider text-neutral-700 mb-1.5">
+                {{ profile_form.date_of_birth.label }}
+              </label>
+              {{ profile_form.date_of_birth }}
+              <p class="text-[11px] text-neutral-500 mt-1">{{ profile_form.date_of_birth.help_text }}</p>
+              {% if profile_form.date_of_birth.errors %}
+                <p class="text-xs text-red-600 mt-1 font-medium" id="{{ profile_form.date_of_birth.id_for_label }}_error" role="alert">
+                  {{ profile_form.date_of_birth.errors.0 }}
+                </p>
+              {% endif %}
+            </div>
+
+            {# Preferred Language #}
+            <div>
+              <label for="{{ profile_form.preferred_language.id_for_label }}" class="block text-xs font-semibold uppercase tracking-wider text-neutral-700 mb-1.5">
+                {{ profile_form.preferred_language.label }}
+              </label>
+              {{ profile_form.preferred_language }}
+              <p class="text-[11px] text-neutral-500 mt-1">{{ profile_form.preferred_language.help_text }}</p>
+              {% if profile_form.preferred_language.errors %}
+                <p class="text-xs text-red-600 mt-1 font-medium" id="{{ profile_form.preferred_language.id_for_label }}_error" role="alert">
+                  {{ profile_form.preferred_language.errors.0 }}
+                </p>
+              {% endif %}
+            </div>
+
+            {# Preferred Currency #}
+            <div>
+              <label for="{{ profile_form.preferred_currency.id_for_label }}" class="block text-xs font-semibold uppercase tracking-wider text-neutral-700 mb-1.5">
+                {{ profile_form.preferred_currency.label }}
+              </label>
+              {{ profile_form.preferred_currency }}
+              <p class="text-[11px] text-neutral-500 mt-1">{{ profile_form.preferred_currency.help_text }}</p>
+              {% if profile_form.preferred_currency.errors %}
+                <p class="text-xs text-red-600 mt-1 font-medium" id="{{ profile_form.preferred_currency.id_for_label }}_error" role="alert">
+                  {{ profile_form.preferred_currency.errors.0 }}
+                </p>
+              {% endif %}
+            </div>
+
+          </div>
+
+          {# Marketing Checkbox #}
+          <div class="pt-2 border-t border-neutral-100">
+            <div class="flex items-start gap-3">
+              <div class="flex items-center h-5 mt-0.5">
+                {{ profile_form.marketing_emails }}
+              </div>
+              <div class="text-sm">
+                <label for="{{ profile_form.marketing_emails.id_for_label }}" class="font-semibold text-primary-900 cursor-pointer">
+                  {{ profile_form.marketing_emails.label }}
+                </label>
+                <p class="text-xs text-neutral-500 leading-relaxed mt-0.5">
+                  {{ profile_form.marketing_emails.help_text }}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {# Submit Actions #}
+          <div class="pt-4 border-t border-neutral-200 flex flex-col sm:flex-row items-center justify-end gap-3">
+            <a href="{% url 'accounts:profile' %}" class="btn-secondary w-full sm:w-auto text-center text-sm py-2.5 px-6">
+              Cancel
+            </a>
+            <button type="submit" class="btn-primary w-full sm:w-auto text-center text-sm py-2.5 px-8">
+              Save Changes
+            </button>
+          </div>
+
+        </form>
+
+      </div>
+
+    </div>
+
+  </div>
+</div>
+{% endblock %}

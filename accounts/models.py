@@ -41,8 +41,11 @@ doing it later is extremely painful.
 ──────────────────────────────────────────────────────────────────────────────
 """
 
+from typing import Any
 from django.contrib.auth.models import AbstractUser
+from django.core.exceptions import ValidationError
 from django.db import models
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from .managers import UserManager
@@ -70,6 +73,19 @@ class User(AbstractUser):
         _("email address"),
         unique=True,
         help_text=_("Required. A valid email address."),
+    )
+
+    # Email verification indicators (Phase 3.3 scope)
+    email_verified = models.BooleanField(
+        _("email verified"),
+        default=False,
+        help_text=_("Designates whether this user has verified their email address."),
+    )
+    email_verified_at = models.DateTimeField(
+        _("email verified at"),
+        null=True,
+        blank=True,
+        help_text=_("Timestamp when the email address was verified."),
     )
 
     # Tell Django which field to use as the login identifier.
@@ -102,3 +118,236 @@ class User(AbstractUser):
         """
         name = self.get_full_name()
         return name if name else self.email
+
+    def verify_email(self) -> None:
+        """
+        Mark the customer's email address as verified and record the timestamp.
+        """
+        self.email_verified = True
+        self.email_verified_at = timezone.now()
+        self.save(update_fields=["email_verified", "email_verified_at"])
+
+
+def validate_not_in_future(value: Any) -> None:
+    """Validator to ensure date of birth is not in the future."""
+    if value and value > timezone.now().date():
+        raise ValidationError(_("Date of birth cannot be in the future."))
+
+
+class UserProfile(models.Model):
+    """
+    Customer-specific profile attributes and preferences.
+    
+    Separates authentication credentials (on User) from personal profile data.
+    Automatically created via post_save signal when a new User is registered.
+    """
+    LANGUAGE_CHOICES = [
+        ("en", _("English")),
+        ("fr", _("French")),
+        ("it", _("Italian")),
+        ("ar", _("Arabic")),
+    ]
+    CURRENCY_CHOICES = [
+        ("USD", _("USD ($)")),
+        ("EUR", _("EUR (€)")),
+        ("GBP", _("GBP (£)")),
+        ("CHF", _("CHF (CHF)")),
+    ]
+
+    user = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE,
+        related_name="profile",
+        verbose_name=_("user"),
+    )
+    phone_number = models.CharField(
+        _("phone number"),
+        max_length=30,
+        blank=True,
+        help_text=_("Customer phone number for order updates and concierge contact."),
+    )
+    avatar = models.ImageField(
+        _("avatar"),
+        upload_to="avatars/%Y/%m/",
+        blank=True,
+        null=True,
+        help_text=_("Profile picture. Max size 2MB."),
+    )
+    date_of_birth = models.DateField(
+        _("date of birth"),
+        blank=True,
+        null=True,
+        validators=[validate_not_in_future],
+        help_text=_("Optional date of birth for birthday rewards."),
+    )
+    preferred_language = models.CharField(
+        _("preferred language"),
+        max_length=10,
+        default="en",
+        choices=LANGUAGE_CHOICES,
+        help_text=_("Preferred communication language."),
+    )
+    preferred_currency = models.CharField(
+        _("preferred currency"),
+        max_length=3,
+        default="USD",
+        choices=CURRENCY_CHOICES,
+        help_text=_("Preferred display currency."),
+    )
+    marketing_emails = models.BooleanField(
+        _("marketing emails"),
+        default=True,
+        help_text=_("Receive exclusive catalog invitations and luxury updates."),
+    )
+    created_at = models.DateTimeField(_("created at"), auto_now_add=True)
+    updated_at = models.DateTimeField(_("updated at"), auto_now=True)
+
+    class Meta:
+        verbose_name = _("user profile")
+        verbose_name_plural = _("user profiles")
+
+    def __str__(self) -> str:
+        return f"Profile for {self.user.email}"
+
+
+class Address(models.Model):
+    """
+    Customer Address Book model for shipping and billing addresses.
+    
+    Stores patron addresses separately from User/UserProfile to allow multiple
+    addresses per customer, distinct shipping/billing defaults, and seamless
+    checkout integration.
+    """
+    COUNTRY_CHOICES = [
+        ("US", _("United States")),
+        ("CA", _("Canada")),
+        ("GB", _("United Kingdom")),
+        ("FR", _("France")),
+        ("IT", _("Italy")),
+        ("DE", _("Germany")),
+        ("CH", _("Switzerland")),
+        ("AE", _("United Arab Emirates")),
+        ("SA", _("Saudi Arabia")),
+        ("JP", _("Japan")),
+        ("AU", _("Australia")),
+    ]
+    ADDRESS_TYPE_CHOICES = [
+        ("shipping", _("Shipping Only")),
+        ("billing", _("Billing Only")),
+        ("both", _("Shipping & Billing")),
+    ]
+
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="addresses",
+        verbose_name=_("user"),
+    )
+    label = models.CharField(
+        _("label"),
+        max_length=50,
+        help_text=_("e.g., Home, Office, Parents"),
+    )
+    recipient_name = models.CharField(
+        _("recipient name"),
+        max_length=150,
+    )
+    phone_number = models.CharField(
+        _("phone number"),
+        max_length=30,
+        help_text=_("Contact phone number for delivery and verification."),
+    )
+    company_name = models.CharField(
+        _("company name"),
+        max_length=100,
+        blank=True,
+    )
+    address_line_1 = models.CharField(
+        _("address line 1"),
+        max_length=255,
+    )
+    address_line_2 = models.CharField(
+        _("address line 2"),
+        max_length=255,
+        blank=True,
+    )
+    city = models.CharField(
+        _("city"),
+        max_length=100,
+    )
+    county_or_state = models.CharField(
+        _("county / state / province"),
+        max_length=100,
+    )
+    postal_code = models.CharField(
+        _("postal code"),
+        max_length=20,
+        blank=True,
+    )
+    country = models.CharField(
+        _("country"),
+        max_length=2,
+        choices=COUNTRY_CHOICES,
+        default="US",
+    )
+    address_type = models.CharField(
+        _("address type"),
+        max_length=10,
+        choices=ADDRESS_TYPE_CHOICES,
+        default="both",
+    )
+    is_default_shipping = models.BooleanField(
+        _("default shipping address"),
+        default=False,
+    )
+    is_default_billing = models.BooleanField(
+        _("default billing address"),
+        default=False,
+    )
+    created_at = models.DateTimeField(_("created at"), auto_now_add=True)
+    updated_at = models.DateTimeField(_("updated at"), auto_now=True)
+
+    class Meta:
+        verbose_name = _("address")
+        verbose_name_plural = _("addresses")
+        ordering = ["-is_default_shipping", "-is_default_billing", "-updated_at"]
+
+    def __str__(self) -> str:
+        return f"{self.label} ({self.recipient_name}) - {self.city}, {self.country}"
+
+    @property
+    def formatted_address(self) -> str:
+        """
+        Return a clean, multi-line string representation of the address.
+        """
+        lines = [self.recipient_name]
+        if self.company_name:
+            lines.append(self.company_name)
+        lines.append(self.address_line_1)
+        if self.address_line_2:
+            lines.append(self.address_line_2)
+
+        city_line = f"{self.city}, {self.county_or_state}"
+        if self.postal_code:
+            city_line += f" {self.postal_code}"
+        lines.append(city_line)
+
+        country_display = self.get_country_display() if hasattr(self, "get_country_display") else self.country
+        lines.append(str(country_display))
+        return "\n".join(lines)
+
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        """
+        Save the address and atomically enforce that only one default shipping
+        and one default billing address exist per user.
+        """
+        super().save(*args, **kwargs)
+        if self.is_default_shipping:
+            Address.objects.filter(
+                user=self.user, is_default_shipping=True
+            ).exclude(pk=self.pk).update(is_default_shipping=False)
+        if self.is_default_billing:
+            Address.objects.filter(
+                user=self.user, is_default_billing=True
+            ).exclude(pk=self.pk).update(is_default_billing=False)
+
