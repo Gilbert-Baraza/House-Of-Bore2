@@ -1,0 +1,288 @@
+{% extends "base.html" %}
+{% comment %}
+  templates/checkout/review.html
+  CHECKOUT FINAL REVIEW STEP
+  ─────────────────────────────────────────────────────────────────────────────
+  Displays snapshotted shipping and billing locations, order line items, Notes,
+  and subtotal metrics. Unlocks the placeholder continue checkout CTA.
+  ─────────────────────────────────────────────────────────────────────────────
+{% endcomment %}
+
+{% block title %}Review Order — House of Bore{% endblock %}
+
+{% block content %}
+<div class="bg-neutral-50 min-h-screen py-10 sm:py-16">
+  <div class="container-site max-w-5xl">
+
+    {# ── Stepper ───────────────────────────────────────────────────────────── #}
+    <nav class="mb-12" aria-label="Checkout progress">
+      <ol class="flex items-center justify-between text-xs font-bold uppercase tracking-widest text-neutral-400">
+        <li class="flex items-center">
+          <a href="{% url 'cart:cart_detail' %}" class="hover:text-accent-600 focus:outline-none focus:ring-2 focus:ring-accent-500 rounded p-1">Bag</a>
+        </li>
+        <li class="w-full border-t border-neutral-300 mx-4" aria-hidden="true"></li>
+        <li class="flex items-center">
+          <a href="{% url 'checkout:start' %}" class="hover:text-accent-600 focus:outline-none focus:ring-2 focus:ring-accent-500 rounded p-1">Start</a>
+        </li>
+        <li class="w-full border-t border-neutral-300 mx-4" aria-hidden="true"></li>
+        <li class="flex items-center">
+          <a href="{% url 'checkout:shipping' %}" class="hover:text-accent-600 focus:outline-none focus:ring-2 focus:ring-accent-500 rounded p-1">Shipping</a>
+        </li>
+        <li class="w-full border-t border-neutral-300 mx-4" aria-hidden="true"></li>
+        <li class="flex items-center">
+          <a href="{% url 'checkout:billing' %}" class="hover:text-accent-600 focus:outline-none focus:ring-2 focus:ring-accent-500 rounded p-1">Billing</a>
+        </li>
+        <li class="w-full border-t border-neutral-300 mx-4" aria-hidden="true"></li>
+        <li class="flex items-center text-primary-900" aria-current="step">
+          <span class="p-1">Review</span>
+        </li>
+      </ol>
+    </nav>
+
+    {# ── Main Layout Grid ──────────────────────────────────────────────────── #}
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      
+      {# Left Column (Snapshots & Items) #}
+      <main class="lg:col-span-8 flex flex-col gap-6">
+        
+        {# Address and Notes Summary Card #}
+        <div class="bg-white rounded-card border border-neutral-200 shadow-sm p-6 sm:p-10">
+          <h1 class="font-serif text-2xl font-bold text-primary-900 mb-6 border-b border-neutral-100 pb-4">
+            Review Your Order
+          </h1>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+            
+            {# Shipping snapshot #}
+            <div>
+              <div class="flex items-baseline justify-between border-b border-neutral-100 pb-2 mb-3">
+                <h2 class="text-xs font-bold uppercase tracking-widest text-primary-900">Shipping Destination</h2>
+                <a href="{% url 'checkout:shipping' %}" class="text-[10px] font-bold uppercase tracking-widest text-accent-700 hover:text-accent-600 transition-colors">Edit</a>
+              </div>
+              <div class="text-sm text-neutral-600 space-y-1">
+                <span class="block font-bold text-primary-900">{{ checkout_session.shipping_address.recipient_name }}</span>
+                {% if checkout_session.shipping_address.company_name %}
+                  <span class="block">{{ checkout_session.shipping_address.company_name }}</span>
+                {% endif %}
+                <span class="block">{{ checkout_session.shipping_address.address_line_1 }}</span>
+                {% if checkout_session.shipping_address.address_line_2 %}
+                  <span class="block">{{ checkout_session.shipping_address.address_line_2 }}</span>
+                {% endif %}
+                <span class="block">{{ checkout_session.shipping_address.city }}, {{ checkout_session.shipping_address.county_or_state }} {{ checkout_session.shipping_address.postal_code }}</span>
+                <span class="block font-medium text-primary-900 mt-1">{{ checkout_session.shipping_address.get_country_display }}</span>
+                <span class="block text-xs text-neutral-400 mt-2">Phone: {{ checkout_session.shipping_address.phone_number }}</span>
+              </div>
+            </div>
+
+            {# Billing snapshot #}
+            <div>
+              <div class="flex items-baseline justify-between border-b border-neutral-100 pb-2 mb-3">
+                <h2 class="text-xs font-bold uppercase tracking-widest text-primary-900">Billing Address</h2>
+                <a href="{% url 'checkout:billing' %}" class="text-[10px] font-bold uppercase tracking-widest text-accent-700 hover:text-accent-600 transition-colors">Edit</a>
+              </div>
+              {% if checkout_session.billing_same_as_shipping %}
+                <div class="text-sm text-neutral-500 italic">
+                  Billing address is identical to shipping address.
+                </div>
+              {% else %}
+                <div class="text-sm text-neutral-600 space-y-1">
+                  <span class="block font-bold text-primary-900">{{ checkout_session.billing_address.recipient_name }}</span>
+                  {% if checkout_session.billing_address.company_name %}
+                    <span class="block">{{ checkout_session.billing_address.company_name }}</span>
+                  {% endif %}
+                  <span class="block">{{ checkout_session.billing_address.address_line_1 }}</span>
+                  {% if checkout_session.billing_address.address_line_2 %}
+                    <span class="block">{{ checkout_session.billing_address.address_line_2 }}</span>
+                  {% endif %}
+                  <span class="block">{{ checkout_session.billing_address.city }}, {{ checkout_session.billing_address.county_or_state }} {{ checkout_session.billing_address.postal_code }}</span>
+                  <span class="block font-medium text-primary-900 mt-1">{{ checkout_session.billing_address.get_country_display }}</span>
+                  <span class="block text-xs text-neutral-400 mt-2">Phone: {{ checkout_session.billing_address.phone_number }}</span>
+                </div>
+              {% endif %}
+            </div>
+
+          </div>
+
+          {# Notes snapshot #}
+          {% if checkout_session.notes %}
+            <div class="border-t border-neutral-100 pt-6">
+              <h2 class="text-xs font-bold uppercase tracking-widest text-primary-900 mb-2">Order Notes</h2>
+              <p class="text-xs text-neutral-500 italic bg-neutral-50 border border-neutral-200 rounded p-4">
+                "{{ checkout_session.notes }}"
+              </p>
+            </div>
+          {% endif %}
+
+        </div>
+
+        {# Order Line Items Card #}
+        <div class="bg-white rounded-card border border-neutral-200 shadow-sm p-6 sm:p-10">
+          <h2 class="font-serif text-lg font-bold text-primary-900 mb-6">Shopping bag items</h2>
+          
+          <div class="divide-y divide-neutral-100">
+            {% for item in cart_items %}
+              <article class="py-6 flex items-start gap-5 first:pt-0 last:pb-0">
+                
+                {# Product Image #}
+                <div class="w-16 aspect-[3/4] bg-neutral-100 rounded border border-neutral-200 overflow-hidden shrink-0">
+                  {% with primary=item.product.get_primary_image %}
+                    {% if primary and primary.image %}
+                      <img src="{{ primary.image.url }}" alt="{{ primary.alt_text|default:item.product.name }}" class="w-full h-full object-cover">
+                    {% else %}
+                      <div class="w-full h-full flex items-center justify-center text-neutral-300">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5V6a3.75 3.75 0 1 0-7.5 0v4.5m11.356-1.993 1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 0 1-1.12-1.243l1.264-12A1.125 1.125 0 0 1 5.513 7.5h12.974c.576 0 1.059.435 1.119 1.007ZM8.625 10.5a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm7.5 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z"/>
+                        </svg>
+                      </div>
+                    {% endif %}
+                  {% endwith %}
+                </div>
+
+                {# Product details #}
+                <div class="flex-1 min-w-0">
+                  <h3 class="text-sm font-bold text-primary-900 truncate mb-1">
+                    {{ item.product.name }}
+                  </h3>
+                  <p class="text-xs text-neutral-400 mb-1">
+                    {% if item.product.brand %}{{ item.product.brand.name }}{% endif %}
+                  </p>
+                  <p class="text-xs text-neutral-500">
+                    Quantity: <span class="font-bold text-primary-900">{{ item.quantity }}</span> &times; <span class="tabular-nums">${{ item.unit_price }}</span>
+                  </p>
+                </div>
+
+                {# Line Subtotal #}
+                <div class="text-right shrink-0">
+                  <span class="text-sm font-bold text-primary-900 tabular-nums">${{ item.subtotal }}</span>
+                </div>
+
+              </article>
+            {% endfor %}
+          </div>
+        </div>
+
+      </main>
+
+      {# Right Column (Totals & Actions) #}
+      <aside class="lg:col-span-4 sticky top-28 space-y-6">
+        
+        {# Order totals summary card #}
+        <div class="bg-white rounded-card border border-neutral-200 shadow-sm p-6 sm:p-8">
+          <h2 class="font-serif text-lg font-bold text-primary-900 pb-4 mb-4 border-b border-neutral-100">Order Summary</h2>
+
+          <div class="space-y-3.5 text-xs mb-6 text-neutral-600 leading-relaxed">
+            <div class="flex justify-between">
+              <span>Items Subtotal ({{ checkout_totals.item_count }} item{{ checkout_totals.item_count|pluralize }})</span>
+              <span class="font-bold text-primary-900 tabular-nums">${{ checkout_totals.subtotal|floatformat:2 }}</span>
+            </div>
+
+            {% if checkout_totals.discount > 0 %}
+              <div class="flex justify-between text-emerald-700 font-medium">
+                <span>Promotional Savings</span>
+                <span class="tabular-nums">-${{ checkout_totals.discount|floatformat:2 }}</span>
+              </div>
+              {% if checkout_totals.promotions_applied %}
+                <div class="pl-2.5 border-l-2 border-emerald-500 space-y-1 my-1">
+                  {% for promo_desc in checkout_totals.promotions_applied %}
+                    <p class="text-[10px] text-emerald-800 font-mono">{{ promo_desc }}</p>
+                  {% endfor %}
+                </div>
+              {% endif %}
+            {% endif %}
+
+            {% if checkout_totals.coupon_discount > 0 and checkout_totals.coupon_code %}
+              <div class="flex items-center justify-between bg-emerald-50 border border-emerald-200 px-2.5 py-2 rounded-btn">
+                <div class="flex items-center gap-1.5">
+                  <span class="block text-[11px] font-bold text-emerald-900 uppercase font-mono">{{ checkout_totals.coupon_code }}</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="text-[11px] font-bold text-emerald-800 tabular-nums">-${{ checkout_totals.coupon_discount|floatformat:2 }}</span>
+                  <form action="{% url 'pricing:remove_coupon' %}" method="post" class="inline">
+                    {% csrf_token %}
+                    <input type="hidden" name="next" value="{{ request.path }}">
+                    <button type="submit" class="text-neutral-400 hover:text-red-600 transition-colors" title="Remove Promo Code" aria-label="Remove Promo Code">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </form>
+                </div>
+              </div>
+            {% endif %}
+
+            <div class="flex justify-between">
+              <span>Estimated Shipping</span>
+              {% if checkout_totals.shipping == 0 %}
+                <span class="font-semibold text-accent-700">Complimentary</span>
+              {% else %}
+                <span class="font-semibold text-primary-900 tabular-nums">${{ checkout_totals.shipping|floatformat:2 }}</span>
+              {% endif %}
+            </div>
+
+            <div class="flex justify-between">
+              <span>Estimated Taxes</span>
+              {% if checkout_totals.tax == 0 %}
+                <span class="italic text-[10px] text-neutral-400">Calculated at payment</span>
+              {% else %}
+                <span class="font-semibold text-primary-900 tabular-nums">${{ checkout_totals.tax|floatformat:2 }}</span>
+              {% endif %}
+            </div>
+          </div>
+
+          {# Promo Code Form (If no coupon applied) #}
+          {% if not checkout_totals.coupon_discount or checkout_totals.coupon_discount == 0 %}
+            <div class="mb-6 pt-3 border-t border-neutral-100">
+              <form action="{% url 'pricing:apply_coupon' %}" method="post" class="flex gap-2">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ request.path }}">
+                <div class="flex-1">
+                  <input type="text" name="code" placeholder="PROMO CODE" required
+                         class="w-full px-2.5 py-1.5 bg-neutral-50 border border-neutral-300 rounded text-[11px] font-mono uppercase tracking-wider text-primary-900 placeholder-neutral-400 focus:outline-none focus:ring-1 focus:ring-accent-500 focus:bg-white transition-colors"
+                         aria-label="Promotional Code">
+                </div>
+                <button type="submit"
+                        class="px-3 py-1.5 bg-neutral-900 hover:bg-accent-600 text-white font-bold text-[11px] uppercase tracking-wider rounded transition-colors shrink-0">
+                  Apply
+                </button>
+              </form>
+            </div>
+          {% endif %}
+
+          <div class="border-t border-neutral-100 pt-4 mb-6 flex justify-between items-baseline">
+            <span class="text-sm font-bold uppercase tracking-wider text-primary-900">Estimated Total</span>
+            <span class="text-xl font-bold text-primary-900 tabular-nums">${{ checkout_totals.grand_total|floatformat:2 }}</span>
+          </div>
+
+          {# Continue placeholder #}
+          <div class="space-y-3">
+            <button type="button" disabled
+                    class="w-full py-4 px-6 bg-primary-900/40 text-white font-bold uppercase tracking-widest text-xs rounded-btn cursor-not-allowed shadow-sm flex items-center justify-center gap-2"
+                    aria-disabled="true"
+                    title="Payment processing will be implemented in Phase 4.4">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z"/>
+              </svg>
+              <span>Continue to Payment &mdash; Phase 4.4</span>
+            </button>
+            <p class="text-[10px] text-center text-neutral-400 italic">
+              Payment gateway integrations and security handshakes will be unlocked in Phase 4.4.
+            </p>
+          </div>
+
+        </div>
+
+        {# Back Link #}
+        <div class="text-center">
+          <a href="{% url 'checkout:billing' %}"
+             class="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-neutral-400 hover:text-primary-900 transition-colors p-2 rounded focus:outline-none focus:ring-2 focus:ring-accent-500">
+            <span>Back to Billing details</span>
+          </a>
+        </div>
+
+      </aside>
+
+    </div>
+
+  </div>
+</div>
+{% endblock content %}

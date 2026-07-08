@@ -31,13 +31,13 @@ def get_cart(request: HttpRequest) -> Optional[Cart]:
     ]
 
     if hasattr(request, "user") and request.user.is_authenticated:
-        return Cart.objects.filter(user=request.user).prefetch_related(*prefetch_fields).first()
+        return Cart.objects.filter(user=request.user).select_related("coupon", "user").prefetch_related(*prefetch_fields).first()
 
     session_key = request.session.session_key
     if not session_key:
         return None
 
-    return Cart.objects.filter(session_key=session_key).prefetch_related(*prefetch_fields).first()
+    return Cart.objects.filter(session_key=session_key).select_related("coupon", "user").prefetch_related(*prefetch_fields).first()
 
 
 def get_cart_items(cart: Optional[Cart]) -> List[CartItem]:
@@ -62,9 +62,8 @@ def cart_item_count(cart: Optional[Cart]) -> int:
 
 def cart_total(cart: Optional[Cart]) -> Decimal:
     """
-    Calculate the monetary subtotal of all line items in the cart.
+    Calculate the monetary subtotal of all line items in the cart via pricing engine.
     Returns 0.00 if the cart is None.
     """
-    if not cart:
-        return Decimal("0.00")
-    return cart.subtotal()
+    from pricing.services import calculate_subtotal
+    return calculate_subtotal(cart)

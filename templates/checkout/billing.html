@@ -1,0 +1,281 @@
+{% extends "base.html" %}
+{% comment %}
+  templates/checkout/billing.html
+  CHECKOUT BILLING ADDRESS STEP
+  ─────────────────────────────────────────────────────────────────────────────
+  Supports a simple toggle to use the shipping address as billing, or
+  specify a custom billing address.
+  ─────────────────────────────────────────────────────────────────────────────
+{% endcomment %}
+
+{% block title %}Billing Address — House of Bore{% endblock %}
+
+{% block content %}
+<div class="bg-neutral-50 min-h-screen py-10 sm:py-16">
+  <div class="container-site max-w-5xl">
+
+    {# ── Stepper ───────────────────────────────────────────────────────────── #}
+    <nav class="mb-12" aria-label="Checkout progress">
+      <ol class="flex items-center justify-between text-xs font-bold uppercase tracking-widest text-neutral-400">
+        <li class="flex items-center">
+          <a href="{% url 'cart:cart_detail' %}" class="hover:text-accent-600 focus:outline-none focus:ring-2 focus:ring-accent-500 rounded p-1">Bag</a>
+        </li>
+        <li class="w-full border-t border-neutral-300 mx-4" aria-hidden="true"></li>
+        <li class="flex items-center">
+          <a href="{% url 'checkout:start' %}" class="hover:text-accent-600 focus:outline-none focus:ring-2 focus:ring-accent-500 rounded p-1">Start</a>
+        </li>
+        <li class="w-full border-t border-neutral-300 mx-4" aria-hidden="true"></li>
+        <li class="flex items-center">
+          <a href="{% url 'checkout:shipping' %}" class="hover:text-accent-600 focus:outline-none focus:ring-2 focus:ring-accent-500 rounded p-1">Shipping</a>
+        </li>
+        <li class="w-full border-t border-neutral-300 mx-4" aria-hidden="true"></li>
+        <li class="flex items-center text-primary-900" aria-current="step">
+          <span class="p-1">Billing</span>
+        </li>
+        <li class="w-full border-t border-neutral-200 mx-4" aria-hidden="true"></li>
+        <li class="flex items-center">
+          <span class="p-1">Review</span>
+        </li>
+      </ol>
+    </nav>
+
+    {# ── Main Layout ───────────────────────────────────────────────────────── #}
+    <div class="max-w-3xl mx-auto">
+      <div class="bg-white rounded-card border border-neutral-200 shadow-sm p-6 sm:p-10">
+        <h1 class="font-serif text-2xl font-bold text-primary-900 mb-2">Billing Information</h1>
+        <p class="text-xs text-neutral-400 uppercase tracking-wider mb-8">Step 2 of 3 — Payment Association</p>
+
+        <form action="{% url 'checkout:billing' %}" method="post" id="billing-form" class="space-y-8">
+          {% csrf_token %}
+
+          {# Same as Shipping Checkbox #}
+          <div class="p-5 bg-neutral-50 border border-neutral-200 rounded-card flex items-start gap-3">
+            <input type="checkbox" name="billing_same_as_shipping" value="true" id="id_billing_same_as_shipping"
+                   class="h-4 w-4 mt-0.5 rounded border-neutral-300 text-primary-900 focus:ring-accent-500 cursor-pointer"
+                   {% if checkout_session.billing_same_as_shipping %}checked{% endif %}>
+            <div class="select-none">
+              <label for="id_billing_same_as_shipping" class="block text-sm font-bold text-primary-900 cursor-pointer">
+                My billing address is identical to shipping address
+              </label>
+              <span class="block text-xs text-neutral-400 mt-1">
+                Select this to use your shipping location snapshot details for billing verification.
+              </span>
+            </div>
+          </div>
+
+          {# Custom Billing Address Block #}
+          <div id="custom-billing-block" class="space-y-8 {% if checkout_session.billing_same_as_shipping %}hidden{% endif %}">
+            
+            {# Saved Addresses Block #}
+            {% if saved_addresses %}
+              <div class="space-y-4">
+                <h2 class="text-sm font-bold uppercase tracking-wider text-primary-900">Select a Saved Address</h2>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {% for addr in saved_addresses %}
+                    <label class="relative flex flex-col justify-between p-5 rounded-card border border-neutral-200 hover:border-accent-500 bg-white cursor-pointer select-none transition-colors group">
+                      <div class="flex items-start gap-3">
+                        <input type="radio" name="saved_address_id" value="{{ addr.pk }}"
+                               class="saved-address-radio h-4 w-4 mt-0.5 rounded border-neutral-300 text-primary-900 focus:ring-accent-500"
+                               {% if checkout_session.billing_address and checkout_session.billing_address.recipient_name == addr.recipient_name and checkout_session.billing_address.address_line_1 == addr.address_line_1 %}checked{% endif %}>
+                        <div>
+                          <span class="block text-xs font-bold text-neutral-400 uppercase tracking-wider mb-1">{{ addr.label }}</span>
+                          <span class="block text-sm font-bold text-primary-900 mb-0.5">{{ addr.recipient_name }}</span>
+                          <span class="block text-xs text-neutral-500">{{ addr.address_line_1 }}</span>
+                          {% if addr.address_line_2 %}
+                            <span class="block text-xs text-neutral-500">{{ addr.address_line_2 }}</span>
+                          {% endif %}
+                          <span class="block text-xs text-neutral-500">{{ addr.city }}, {{ addr.county_or_state }} {{ addr.postal_code }}</span>
+                          <span class="block text-xs text-neutral-500 font-medium mt-1">{{ addr.get_country_display }}</span>
+                        </div>
+                      </div>
+                    </label>
+                  {% endfor %}
+
+                  {# Custom Card option to Enter New Address #}
+                  <label class="relative flex flex-col justify-center items-center p-5 rounded-card border border-dashed border-neutral-300 hover:border-accent-500 bg-neutral-50/50 cursor-pointer select-none transition-colors group text-center min-h-[140px]">
+                    <input type="radio" name="saved_address_id" value="" id="new-address-toggle"
+                           class="saved-address-radio sr-only"
+                           {% if checkout_session.billing_address and not saved_address_selected %}checked{% endif %}>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-neutral-400 group-hover:text-accent-500 transition-colors mb-2">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                    </svg>
+                    <span class="block text-xs font-bold text-primary-900 uppercase tracking-widest">Use a New Address</span>
+                  </label>
+                </div>
+              </div>
+            {% endif %}
+
+            {# Manual Address Input Fields #}
+            <div id="manual-address-container" class="space-y-6 {% if saved_addresses %}border-t border-neutral-100 pt-8{% endif %}">
+              <h2 class="text-sm font-bold uppercase tracking-wider text-primary-900">Custom Billing Address Details</h2>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div>
+                  <label for="{{ form.recipient_name.id_for_label }}" class="block text-xs font-bold uppercase tracking-widest text-neutral-500 mb-2">Recipient Name *</label>
+                  {{ form.recipient_name }}
+                  {{ form.recipient_name.errors }}
+                </div>
+                <div>
+                  <label for="{{ form.phone_number.id_for_label }}" class="block text-xs font-bold uppercase tracking-widest text-neutral-500 mb-2">Contact Phone *</label>
+                  {{ form.phone_number }}
+                  {{ form.phone_number.errors }}
+                </div>
+              </div>
+
+              <div>
+                <label for="{{ form.company_name.id_for_label }}" class="block text-xs font-bold uppercase tracking-widest text-neutral-500 mb-2">Company Name</label>
+                {{ form.company_name }}
+                {{ form.company_name.errors }}
+              </div>
+
+              <div class="grid grid-cols-1 gap-6">
+                <div>
+                  <label for="{{ form.address_line_1.id_for_label }}" class="block text-xs font-bold uppercase tracking-widest text-neutral-500 mb-2">Address Line 1 *</label>
+                  {{ form.address_line_1 }}
+                  {{ form.address_line_1.errors }}
+                </div>
+                <div>
+                  <label for="{{ form.address_line_2.id_for_label }}" class="block text-xs font-bold uppercase tracking-widest text-neutral-500 mb-2">Address Line 2</label>
+                  {{ form.address_line_2 }}
+                  {{ form.address_line_2.errors }}
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                <div>
+                  <label for="{{ form.city.id_for_label }}" class="block text-xs font-bold uppercase tracking-widest text-neutral-500 mb-2">City *</label>
+                  {{ form.city }}
+                  {{ form.city.errors }}
+                </div>
+                <div>
+                  <label for="{{ form.county_or_state.id_for_label }}" class="block text-xs font-bold uppercase tracking-widest text-neutral-500 mb-2">State / Province *</label>
+                  {{ form.county_or_state }}
+                  {{ form.county_or_state.errors }}
+                </div>
+                <div>
+                  <label for="{{ form.postal_code.id_for_label }}" class="block text-xs font-bold uppercase tracking-widest text-neutral-500 mb-2">Postal / ZIP Code</label>
+                  {{ form.postal_code }}
+                  {{ form.postal_code.errors }}
+                </div>
+              </div>
+
+              <div>
+                <label for="{{ form.country.id_for_label }}" class="block text-xs font-bold uppercase tracking-widest text-neutral-500 mb-2">Country *</label>
+                {{ form.country }}
+                {{ form.country.errors }}
+              </div>
+
+              {% if user.is_authenticated %}
+                <div class="flex items-center gap-3 mt-4">
+                  <input type="checkbox" name="save_to_profile" value="true" id="save_to_profile"
+                         class="h-4 w-4 rounded border-neutral-300 text-primary-900 focus:ring-accent-500">
+                  <label for="save_to_profile" class="text-xs font-semibold text-neutral-600 cursor-pointer">
+                    Save this billing address to my profile Address Book
+                  </label>
+                </div>
+              {% endif %}
+            </div>
+
+          </div>
+
+          {# Form Actions #}
+          <div class="border-t border-neutral-100 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <a href="{% url 'checkout:shipping' %}"
+               class="inline-flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-neutral-400 hover:text-primary-900 transition-colors p-2 rounded focus:outline-none focus:ring-2 focus:ring-accent-500">
+              <span>Back to Shipping</span>
+            </a>
+            <button type="submit"
+                    class="inline-flex w-full sm:w-auto items-center justify-center px-8 py-4 bg-primary-900 hover:bg-primary-800 text-white font-bold uppercase tracking-widest text-xs rounded-btn shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-accent-500">
+              <span>Proceed to Review</span>
+            </button>
+          </div>
+
+        </form>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const checkbox = document.getElementById("id_billing_same_as_shipping");
+    const customBlock = document.getElementById("custom-billing-block");
+    const billingForm = document.getElementById("billing-form");
+
+    const toggleBillingForm = () => {
+      if (checkbox.checked) {
+        customBlock.classList.add("hidden");
+        // Disable manual inputs when same-as-shipping is active to prevent required-field blocking
+        disableRequiredFields(true);
+      } else {
+        customBlock.classList.remove("hidden");
+        disableRequiredFields(false);
+        updateManualFormVisibility();
+      }
+    };
+
+    const disableRequiredFields = (disabled) => {
+      const inputs = customBlock.querySelectorAll("input, select");
+      inputs.forEach(input => {
+        if (disabled) {
+          if (input.required) {
+            input.setAttribute("required_backup", "true");
+            input.required = false;
+          }
+        } else {
+          if (input.getAttribute("required_backup") === "true") {
+            input.required = true;
+          }
+        }
+      });
+    };
+
+    // Support saved address cards toggle if present
+    const radioButtons = document.querySelectorAll(".saved-address-radio");
+    const manualContainer = document.getElementById("manual-address-container");
+
+    const updateManualFormVisibility = () => {
+      if (checkbox.checked) return;
+
+      let savedSelected = false;
+      radioButtons.forEach(radio => {
+        if (radio.checked && radio.id !== "new-address-toggle" && radio.value !== "") {
+          savedSelected = true;
+        }
+      });
+
+      if (manualContainer) {
+        const manualInputs = manualContainer.querySelectorAll("input, select");
+        if (savedSelected) {
+          manualContainer.style.opacity = "0.5";
+          manualContainer.style.pointerEvents = "none";
+          manualInputs.forEach(input => {
+            if (input.required) {
+              input.setAttribute("required_backup", "true");
+              input.required = false;
+            }
+          });
+        } else {
+          manualContainer.style.opacity = "1";
+          manualContainer.style.pointerEvents = "auto";
+          manualInputs.forEach(input => {
+            if (input.getAttribute("required_backup") === "true") {
+              input.required = true;
+            }
+          });
+        }
+      }
+    };
+
+    checkbox.addEventListener("change", toggleBillingForm);
+    radioButtons.forEach(radio => {
+      radio.addEventListener("change", updateManualFormVisibility);
+    });
+
+    // Run initial on load
+    toggleBillingForm();
+  });
+</script>
+{% endblock content %}

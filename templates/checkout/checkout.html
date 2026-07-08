@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% comment %}
+  templates/checkout/checkout.html
+  CHECKOUT START / LANDING EXPERIENCE
+  ─────────────────────────────────────────────────────────────────────────────
+  Luxury checkout landing page for House of Bore.
+  Offers options for guest checkout or sign-in for anonymous patrons,
+  and direct proceed paths for authenticated patrons.
+  ─────────────────────────────────────────────────────────────────────────────
+{% endcomment %}
+
+{% block title %}Checkout — House of Bore{% endblock %}
+
+{% block content %}
+<div class="bg-neutral-50 min-h-screen py-12 sm:py-20">
+  <div class="max-w-4xl mx-auto px-4">
+
+    {# ── Stepper ───────────────────────────────────────────────────────────── #}
+    <nav class="mb-12" aria-label="Checkout progress">
+      <ol class="flex items-center justify-between text-xs font-bold uppercase tracking-widest text-neutral-400">
+        <li class="flex items-center text-primary-900">
+          <a href="{% url 'cart:cart_detail' %}" class="hover:text-accent-600 focus:outline-none focus:ring-2 focus:ring-accent-500 rounded p-1">Bag</a>
+        </li>
+        <li class="w-full border-t border-neutral-300 mx-4" aria-hidden="true"></li>
+        <li class="flex items-center text-primary-900" aria-current="step">
+          <span class="p-1">Start</span>
+        </li>
+        <li class="w-full border-t border-neutral-200 mx-4" aria-hidden="true"></li>
+        <li class="flex items-center">
+          <span class="p-1">Shipping</span>
+        </li>
+        <li class="w-full border-t border-neutral-200 mx-4" aria-hidden="true"></li>
+        <li class="flex items-center">
+          <span class="p-1">Billing</span>
+        </li>
+        <li class="w-full border-t border-neutral-200 mx-4" aria-hidden="true"></li>
+        <li class="flex items-center">
+          <span class="p-1">Review</span>
+        </li>
+      </ol>
+    </nav>
+
+    {# ── Main Layout ───────────────────────────────────────────────────────── #}
+    <div class="bg-white rounded-card border border-neutral-200 shadow-sm overflow-hidden">
+      
+      {# Header #}
+      <div class="p-8 sm:p-12 text-center border-b border-neutral-100 bg-neutral-50/50">
+        <p class="text-xs font-bold uppercase tracking-widest text-accent-700 mb-1">House of Bore Atelier</p>
+        <h1 class="font-serif text-3xl font-bold text-primary-900 tracking-tight">Atelier Checkout</h1>
+        <p class="text-sm text-neutral-500 mt-2">Secure checkout pipeline for bespoke pieces.</p>
+      </div>
+
+      <div class="p-8 sm:p-12">
+        {% if user.is_authenticated %}
+          {# Authenticated User Proceed Block #}
+          <div class="max-w-md mx-auto text-center py-6">
+            <div class="w-16 h-16 mx-auto mb-6 bg-neutral-100 border border-neutral-200 text-primary-900 rounded-full flex items-center justify-center">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
+              </svg>
+            </div>
+            <h2 class="font-serif text-xl font-bold text-primary-900 mb-2">Welcome Back</h2>
+            <p class="text-sm text-neutral-500 mb-8">
+              You are signed in as <span class="font-semibold text-primary-900">{{ user.email }}</span>. We will automatically load your default address settings.
+            </p>
+            <a href="{% url 'checkout:shipping' %}"
+               class="inline-flex w-full items-center justify-center px-6 py-4 bg-primary-900 hover:bg-primary-800 text-white font-bold uppercase tracking-widest text-xs rounded-btn shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-accent-500">
+              <span>Proceed to Shipping</span>
+            </a>
+          </div>
+        {% else %}
+          {# Guest Checkout vs Sign In Grid #}
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-12 divide-y md:divide-y-0 md:divide-x divide-neutral-200">
+            
+            {# Left Column: Sign In #}
+            <div class="flex flex-col justify-between pb-8 md:pb-0">
+              <div>
+                <h2 class="font-serif text-xl font-bold text-primary-900 mb-4">Have an Account?</h2>
+                <p class="text-sm text-neutral-500 leading-relaxed mb-6">
+                  Sign in to access your saved address book, checkout preferences, and complete order history.
+                </p>
+              </div>
+              <div class="space-y-3">
+                <a href="{% url 'accounts:login' %}?next={% url 'checkout:start' %}"
+                   class="inline-flex w-full items-center justify-center px-6 py-4 border border-neutral-300 hover:bg-neutral-50 text-primary-900 font-bold uppercase tracking-widest text-xs rounded-btn transition-colors focus:outline-none focus:ring-2 focus:ring-accent-500">
+                  Sign In to Account
+                </a>
+                <a href="{% url 'accounts:register' %}" class="block text-center text-xs font-semibold text-neutral-400 hover:text-primary-900 transition-colors">
+                  Create an account
+                </a>
+              </div>
+            </div>
+
+            {# Right Column: Guest Checkout #}
+            <div class="flex flex-col justify-between pt-8 md:pt-0 md:pl-12">
+              <div>
+                <h2 class="font-serif text-xl font-bold text-primary-900 mb-4">New Patron Checkout</h2>
+                <p class="text-sm text-neutral-500 leading-relaxed mb-6">
+                  Proceed as a guest without creating an account. You will have the option to save your details for later after checking out.
+                </p>
+              </div>
+              <div>
+                <a href="{% url 'checkout:shipping' %}"
+                   class="inline-flex w-full items-center justify-center px-6 py-4 bg-primary-900 hover:bg-primary-800 text-white font-bold uppercase tracking-widest text-xs rounded-btn shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-accent-500">
+                  <span>Checkout as Guest</span>
+                </a>
+              </div>
+            </div>
+
+          </div>
+        {% endif %}
+      </div>
+
+    </div>
+
+  </div>
+</div>
+{% endblock content %}

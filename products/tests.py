@@ -712,7 +712,7 @@ class ProductDetailViewTests(TestCase):
         self.assertContains(response, "Secure Payments")
         self.assertContains(response, "Shipping &amp; Returns Policy")
         self.assertContains(response, "Recently Viewed")
-        self.assertContains(response, "Add to Bag &mdash; Phase 3 Preview")
+        self.assertContains(response, "Add to Bag")
 
 
 

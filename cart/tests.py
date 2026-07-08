@@ -448,3 +448,84 @@ class CartContextProcessorTests(CartBaseTestCase):
         self.assertIn("cart", ctx)
         self.assertEqual(ctx["cart_item_count"], 3)
         self.assertEqual(ctx["cart_subtotal"], Decimal("7500.00"))
+
+
+class CartRefactoredFeatureTests(CartBaseTestCase):
+    """
+    Integration and unit tests verifying refactored shopping cart features,
+    specifically session cycling during login, relative action-based updates,
+    and N+1 prefetch optimizations.
+    """
+    def setUp(self):
+        super().setUp()
+        self.client = Client()
+
+    def test_merge_carts_on_actual_login_with_key_rotation(self):
+        # 1. Start guest session and add product to guest cart
+        self.client.get("/")
+        guest_session_key_initial = self.client.session.session_key
+        
+        url_add = reverse("cart:add", kwargs={"product_id": self.product1.pk})
+        self.client.post(url_add, {"quantity": 2})
+        
+        # Verify guest cart exists and is associated with initial session key
+        guest_cart = Cart.objects.get(session_key=guest_session_key_initial)
+        self.assertEqual(guest_cart.item_count(), 2)
+
+        # 2. Log in using the test client, triggering Django session cycling
+        url_login = reverse("accounts:login")
+        res = self.client.post(url_login, {
+            "email": "customer@example.com",
+            "password": "SecurePassword123!",
+        }, follow=True)
+        self.assertEqual(res.status_code, 200)
+
+        # Verify key rotation: session key has changed
+        guest_session_key_after = self.client.session.session_key
+        self.assertNotEqual(guest_session_key_initial, guest_session_key_after)
+
+        # Verify guest cart has been merged into the authenticated user's cart
+        user_cart = Cart.objects.get(user=self.user)
+        self.assertEqual(user_cart.item_count(), 2)
+
+        # Verify the guest cart is deleted from the database
+        self.assertFalse(Cart.objects.filter(session_key=guest_session_key_initial).exists())
+
+    def test_action_based_quantity_updates(self):
+        self.client.force_login(self.user)
+        req = self.factory.get("/")
+        req.user = self.user
+        item = add_to_cart(req, product_id=self.product1.pk, quantity=3)
+
+        # Simulate relative decrease post request
+        url_update = reverse("cart:update", kwargs={"item_id": item.pk})
+        res_dec = self.client.post(url_update, {"action": "decrease", "quantity": "3"})
+        self.assertEqual(res_dec.status_code, 302)
+        item.refresh_from_db()
+        self.assertEqual(item.quantity, 2)
+
+        # Simulate relative increase post request
+        res_inc = self.client.post(url_update, {"action": "increase", "quantity": "2"})
+        self.assertEqual(res_inc.status_code, 302)
+        item.refresh_from_db()
+        self.assertEqual(item.quantity, 3)
+
+        # Simulate direct input post request (no action param)
+        res_direct = self.client.post(url_update, {"quantity": "5"})
+        self.assertEqual(res_direct.status_code, 302)
+        item.refresh_from_db()
+        self.assertEqual(item.quantity, 5)
+
+    def test_primary_image_prefetch_no_n_plus_one(self):
+        req = self.factory.get("/")
+        req.user = self.user
+        add_to_cart(req, product_id=self.product1.pk, quantity=1)
+        add_to_cart(req, product_id=self.product2.pk, quantity=1)
+
+        # Fetch cart using selectors to trigger prefetching
+        cart_obj = get_cart(req)
+        
+        # Accessing get_primary_image() on all prefetched products should not hit database
+        with self.assertNumQueries(0):
+            for item in cart_obj.items.all():
+                item.product.get_primary_image()

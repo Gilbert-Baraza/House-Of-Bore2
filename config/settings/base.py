@@ -52,6 +52,8 @@ LOCAL_APPS = [
     "core",       # Home page, static pages (about, contact)
     "products",   # Product catalogue, categories, variants
     "cart",       # Shopping cart (session-based)
+    "checkout",   # Checkout progress and session management
+    "pricing",    # Centralized pricing engine, promotions, coupons
     "orders",     # Order management and history
     "payments",   # Payment gateway integration
     "reviews",    # Product reviews and ratings

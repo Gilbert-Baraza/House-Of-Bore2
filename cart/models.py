@@ -40,6 +40,14 @@ class Cart(models.Model):
         db_index=True,
         help_text="Django session key for anonymous guest carts."
     )
+    coupon = models.ForeignKey(
+        "pricing.Coupon",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="carts",
+        help_text="Applied discount coupon."
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -77,15 +85,21 @@ class Cart(models.Model):
 
     def subtotal(self) -> Decimal:
         """
-        Calculate the total monetary value of all items in the cart.
+        Calculate the total monetary value of all items in the cart via pricing engine.
         """
-        return sum((item.subtotal() for item in self.items.all()), Decimal("0.00"))
+        from pricing.services import calculate_subtotal
+        return calculate_subtotal(self)
 
     def item_count(self) -> int:
         """
         Calculate the total number of physical units across all line items.
         """
         return sum(item.quantity for item in self.items.all())
+
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        if hasattr(self, "_cached_breakdown"):
+            delattr(self, "_cached_breakdown")
+        super().save(*args, **kwargs)
 
 
 class CartItem(models.Model):
@@ -148,3 +162,13 @@ class CartItem(models.Model):
         Calculate the monetary subtotal for this specific line item.
         """
         return Decimal(self.quantity) * self.unit_price
+
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        if hasattr(self.cart, "_cached_breakdown"):
+            delattr(self.cart, "_cached_breakdown")
+        super().save(*args, **kwargs)
+
+    def delete(self, *args: Any, **kwargs: Any) -> Any:
+        if hasattr(self.cart, "_cached_breakdown"):
+            delattr(self.cart, "_cached_breakdown")
+        return super().delete(*args, **kwargs)

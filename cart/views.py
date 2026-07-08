@@ -81,13 +81,15 @@ class UpdateCartItemView(View):
     """
     def post(self, request: HttpRequest, item_id: int, *args: Any, **kwargs: Any) -> HttpResponse:
         quantity_str = request.POST.get("quantity", 1)
+        action = request.POST.get("action")  # 'decrease' or 'increase'
+
         try:
             quantity = int(quantity_str)
         except (ValueError, TypeError):
             quantity = 1
 
         try:
-            item = update_quantity(request, item_id=item_id, quantity=quantity)
+            item = update_quantity(request, item_id=item_id, quantity=quantity, action=action)
             if item:
                 messages.success(request, f"Updated quantity for {item.product.name}.")
             else:

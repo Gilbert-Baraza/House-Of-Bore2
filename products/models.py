@@ -362,7 +362,19 @@ class Product(models.Model):
     def get_primary_image(self) -> "ProductImage | None":
         """
         Returns the primary image for this product, or the first available image if none marked primary.
+        Utilizes prefetched images cache if available to prevent N+1 database queries.
         """
+        # If prefetched, run the filter in Python memory to avoid querying the DB
+        if hasattr(self, "_prefetched_objects_cache") and "images" in self._prefetched_objects_cache:
+            images = list(self.images.all())
+            primary = next((img for img in images if img.is_primary), None)
+            if primary:
+                return primary
+            if images:
+                return sorted(images, key=lambda img: (img.sort_order, img.id))[0]
+            return None
+
+        # Fallback to DB query if not prefetched
         primary = self.images.filter(is_primary=True).first()
         if primary:
             return primary
