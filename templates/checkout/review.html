@@ -258,19 +258,25 @@
             <span class="text-xl font-bold text-primary-900 tabular-nums">${{ checkout_totals.grand_total|floatformat:2 }}</span>
           </div>
 
-          {# Continue placeholder #}
+          {# Order Placement & Continue #}
           <div class="space-y-3">
-            <button type="button" disabled
-                    class="w-full py-4 px-6 bg-primary-900/40 text-white font-bold uppercase tracking-widest text-xs rounded-btn cursor-not-allowed shadow-sm flex items-center justify-center gap-2"
-                    aria-disabled="true"
-                    title="Payment processing will be implemented in Phase 4.4">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z"/>
-              </svg>
-              <span>Continue to Payment &mdash; Phase 4.4</span>
-            </button>
+            <form action="{% url 'orders:create' %}" method="post"
+                  onsubmit="const btn = this.querySelector('button[type=submit]'); if(btn.disabled) return false; btn.disabled = true; btn.setAttribute('aria-busy', 'true'); btn.classList.add('opacity-75', 'cursor-not-allowed'); btn.querySelector('span').textContent = 'Processing Order...';">
+              {% csrf_token %}
+              {% if checkout_session.notes %}
+                <input type="hidden" name="customer_notes" value="{{ checkout_session.notes }}">
+              {% endif %}
+              <button type="submit"
+                      class="w-full py-4 px-6 bg-primary-900 hover:bg-accent-600 text-white font-bold uppercase tracking-widest text-xs rounded-btn shadow-md transition-all flex items-center justify-center gap-2"
+                      title="Place order and proceed to payment">
+                <span>Place Order & Continue to Payment</span>
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
+                </svg>
+              </button>
+            </form>
             <p class="text-[10px] text-center text-neutral-400 italic">
-              Payment gateway integrations and security handshakes will be unlocked in Phase 4.4.
+              Clicking Place Order converts your checkout session into a permanent order record. Payment gateway processing will unlock in Phase 4.4.5 / Payment phase.
             </p>
           </div>
 
