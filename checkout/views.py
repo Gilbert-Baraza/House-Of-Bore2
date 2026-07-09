@@ -293,7 +293,7 @@ class CheckoutReviewView(CheckoutBaseView):
             return redirect("cart:cart_detail")
 
         summary = checkout_summary(checkout_session)
-        cart_items = checkout_session.cart.items.all().select_related("product__brand")
+        cart_items = checkout_session.cart.items.all().select_related("product__brand", "product_variant")
 
         return render(request, self.template_name, {
             "checkout_session": checkout_session,

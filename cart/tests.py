@@ -18,7 +18,7 @@ from django.test import Client, RequestFactory, TestCase
 from django.urls import reverse
 from django.contrib.sessions.middleware import SessionMiddleware
 
-from products.models import Brand, Category, Product
+from products.models import Brand, Category, Product, ProductOption, ProductOptionValue, ProductVariant, ProductVariantOption
 from cart.models import Cart, CartItem
 from cart.selectors import (
     get_cart,
@@ -111,6 +111,10 @@ class CartBaseTestCase(TestCase):
         middleware.process_request(request)
         request.session.save()
         return request
+
+    def setup_session(self, request):
+        """Alias for attaching session to request."""
+        return self.add_session_to_request(request)
 
 
 class CartModelTests(CartBaseTestCase):
@@ -529,3 +533,92 @@ class CartRefactoredFeatureTests(CartBaseTestCase):
         with self.assertNumQueries(0):
             for item in cart_obj.items.all():
                 item.product.get_primary_image()
+
+
+class CartVariantTests(CartBaseTestCase):
+    """
+    Test suite verifying cart operations when interacting with Product Variants.
+    """
+    def setUp(self):
+        super().setUp()
+        self.opt_size = ProductOption.objects.create(name="Size", display_name="Size", sort_order=1)
+        self.val_m = ProductOptionValue.objects.create(option=self.opt_size, value="M", display_order=1)
+        self.val_l = ProductOptionValue.objects.create(option=self.opt_size, value="L", display_order=2)
+
+        self.var_m = ProductVariant.objects.create(
+            product=self.product1,
+            sku="STC-M",
+            price_override=Decimal("1300.00"),
+            stock_quantity=5,
+            is_active=True
+        )
+        ProductVariantOption.objects.create(variant=self.var_m, option_value=self.val_m)
+
+        self.var_l = ProductVariant.objects.create(
+            product=self.product1,
+            sku="STC-L",
+            price_override=Decimal("1350.00"),
+            stock_quantity=3,
+            is_active=True
+        )
+        ProductVariantOption.objects.create(variant=self.var_l, option_value=self.val_l)
+
+    def test_add_variant_to_cart_and_distinct_items(self):
+        """Verify adding distinct variants of the same product creates distinct CartItem rows with proper pricing."""
+        req = self.factory.get("/")
+        req.user = self.user
+
+        item_m = add_to_cart(req, product_id=self.product1.pk, quantity=1, variant_id=self.var_m.pk)
+        item_l = add_to_cart(req, product_id=self.product1.pk, quantity=2, variant_id=self.var_l.pk)
+
+        self.assertEqual(CartItem.objects.count(), 2)
+        self.assertEqual(item_m.unit_price, Decimal("1300.00"))
+        self.assertEqual(item_l.unit_price, Decimal("1350.00"))
+        self.assertEqual(item_m.product_variant, self.var_m)
+        self.assertEqual(item_l.product_variant, self.var_l)
+
+    def test_add_existing_variant_increments_quantity(self):
+        """Verify adding the exact same variant twice increments quantity on the same CartItem row."""
+        req = self.factory.get("/")
+        req.user = self.user
+
+        add_to_cart(req, product_id=self.product1.pk, quantity=2, variant_id=self.var_m.pk)
+        item_updated = add_to_cart(req, product_id=self.product1.pk, quantity=1, variant_id=self.var_m.pk)
+
+        self.assertEqual(CartItem.objects.count(), 1)
+        self.assertEqual(item_updated.quantity, 3)
+
+    def test_variant_stock_validation(self):
+        """Verify adding or updating quantity beyond variant stock raises ValidationError."""
+        req = self.factory.get("/")
+        req.user = self.user
+
+        # var_m has stock_quantity of 5
+        with self.assertRaises(ValidationError):
+            add_to_cart(req, product_id=self.product1.pk, quantity=6, variant_id=self.var_m.pk)
+
+        item = add_to_cart(req, product_id=self.product1.pk, quantity=3, variant_id=self.var_m.pk)
+        with self.assertRaises(ValidationError):
+            update_quantity(req, item_id=item.pk, quantity=6)
+
+    def test_merge_guest_cart_with_variants(self):
+        """Verify merge_carts correctly handles variant items across guest and user carts."""
+        # Create guest session and cart with var_m (qty 2)
+        req_guest = self.factory.get("/")
+        self.setup_session(req_guest)
+        add_to_cart(req_guest, product_id=self.product1.pk, quantity=2, variant_id=self.var_m.pk)
+        guest_cart = Cart.objects.get(session_key=req_guest.session.session_key)
+
+        # Create user cart with var_m (qty 1) and var_l (qty 1)
+        user_cart = Cart.objects.create(user=self.user)
+        CartItem.objects.create(cart=user_cart, product=self.product1, product_variant=self.var_m, quantity=1, unit_price=Decimal("1300.00"))
+        CartItem.objects.create(cart=user_cart, product=self.product1, product_variant=self.var_l, quantity=1, unit_price=Decimal("1350.00"))
+
+        merge_carts(req_guest, self.user)
+
+        self.assertEqual(user_cart.items.count(), 2)
+        m_item = user_cart.items.get(product_variant=self.var_m)
+        l_item = user_cart.items.get(product_variant=self.var_l)
+        self.assertEqual(m_item.quantity, 3)  # 2 + 1
+        self.assertEqual(l_item.quantity, 1)
+

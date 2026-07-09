@@ -202,6 +202,58 @@ class ProductDetailView(DetailView):
         else:
             context["review_form"] = None
 
+        # Product Variants & Options for Progressive Enhancement
+        from products.selectors import get_product_variants
+        variants = list(get_product_variants(product, active_only=True))
+        
+        options_map = {}
+        variants_json = []
+        for var in variants:
+            var_option_ids = []
+            for var_opt in var.variant_options.all():
+                opt = var_opt.option_value.option
+                val = var_opt.option_value
+                if opt.id not in options_map:
+                    options_map[opt.id] = {
+                        "id": opt.id,
+                        "name": opt.name,
+                        "display_name": opt.display_name or opt.name,
+                        "sort_order": opt.sort_order,
+                        "values": {}
+                    }
+                options_map[opt.id]["values"][val.id] = {
+                    "id": val.id,
+                    "value": val.value,
+                    "display_order": val.display_order,
+                    "sort_order": opt.sort_order,
+                }
+                var_option_ids.append(val.id)
+            
+            variants_json.append({
+                "id": var.id,
+                "sku": var.sku,
+                "price": str(var.get_price()),
+                "compare_at_price": str(var.get_compare_at_price()) if var.get_compare_at_price() else None,
+                "is_on_sale": var.is_on_sale(),
+                "stock_quantity": var.stock_quantity,
+                "in_stock": var.in_stock(),
+                "low_stock": var.low_stock(),
+                "is_available": var.is_available(),
+                "image_url": var.get_image_url(),
+                "description": var.get_description(),
+                "option_summary": var.get_options_summary(),
+                "option_value_ids": sorted(var_option_ids),
+            })
+
+        sorted_options = sorted(options_map.values(), key=lambda o: (o["sort_order"], o["name"]))
+        for opt in sorted_options:
+            opt["values_list"] = sorted(opt["values"].values(), key=lambda v: (v["sort_order"], v["display_order"], v["id"]))
+
+        context["has_variants"] = len(variants) > 0
+        context["product_variants"] = variants
+        context["product_options"] = sorted_options
+        context["variants_json"] = variants_json
+
         breadcrumbs = [
             {"label": "Home", "url": "/"},
             {"label": "Products", "url": "/products/"},

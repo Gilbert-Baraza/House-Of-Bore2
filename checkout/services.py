@@ -35,10 +35,11 @@ def get_or_create_checkout(request: HttpRequest) -> CheckoutSession:
 
     if not checkout_session:
         user = request.user if (hasattr(request, "user") and request.user.is_authenticated) else None
-        session_key = getattr(request.session, "session_key", None)
-        if not session_key:
-            request.session.create()
-            session_key = request.session.session_key
+        session_obj = getattr(request, "session", None)
+        session_key = getattr(session_obj, "session_key", None) if session_obj else None
+        if not session_key and session_obj is not None:
+            session_obj.create()
+            session_key = session_obj.session_key
 
         checkout_session = CheckoutSession.objects.create(
             user=user,
@@ -117,12 +118,20 @@ def validate_checkout(checkout_session: CheckoutSession) -> None:
 
     # 2. Inventory and Status Check
     for item in cart.items.all():
-        if not item.product.is_active:
-            raise ValidationError(f"The item '{item.product.name}' is no longer active or available.")
-        if item.quantity > item.product.stock_quantity:
-            raise ValidationError(
-                f"The requested quantity ({item.quantity}) for '{item.product.name}' exceeds available stock ({item.product.stock_quantity})."
-            )
+        if item.product_variant:
+            if not item.product_variant.is_active or not item.product.is_active:
+                raise ValidationError(f"The item option '{item.product.name} ({item.product_variant.get_options_summary()})' is no longer active or available.")
+            if item.quantity > item.product_variant.stock_quantity:
+                raise ValidationError(
+                    f"The requested quantity ({item.quantity}) for '{item.product.name} ({item.product_variant.get_options_summary()})' exceeds available stock ({item.product_variant.stock_quantity})."
+                )
+        else:
+            if not item.product.is_active:
+                raise ValidationError(f"The item '{item.product.name}' is no longer active or available.")
+            if item.quantity > item.product.stock_quantity:
+                raise ValidationError(
+                    f"The requested quantity ({item.quantity}) for '{item.product.name}' exceeds available stock ({item.product.stock_quantity})."
+                )
 
     # 3. Address Complete Validation
     if not checkout_session.shipping_address:

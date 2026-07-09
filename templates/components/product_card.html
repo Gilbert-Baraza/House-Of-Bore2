@@ -114,7 +114,9 @@
 
       {# Price #}
       <div class="flex items-baseline gap-2 mb-4">
-        {% if product.is_on_sale %}
+        {% if product.has_multiple_prices %}
+          <span class="text-base font-bold text-primary-900 tabular-nums">From ${{ product.get_starting_price }}</span>
+        {% elif product.is_on_sale %}
           <span class="text-base font-bold text-red-600 tabular-nums">${{ product.price }}</span>
           <del class="text-sm text-neutral-400 tabular-nums">${{ product.compare_at_price }}</del>
         {% else %}
@@ -123,9 +125,19 @@
       </div>
     </div>
 
-    {# Add to Bag Action (z-20 to sit above card link) #}
+    {# Add to Bag / Select Options Action (z-20 to sit above card link) #}
     <div class="pt-2 mt-auto relative z-20">
-      {% if product.in_stock %}
+      {% if not product.in_stock %}
+        <button type="button" disabled
+                class="w-full py-2.5 px-4 bg-neutral-200 text-neutral-500 font-bold text-xs uppercase tracking-wider rounded-btn cursor-not-allowed flex items-center justify-center gap-2">
+          <span>Sold Out</span>
+        </button>
+      {% elif product.has_multiple_prices or product.variants.all %}
+        <a href="{{ product.get_absolute_url }}"
+           class="w-full py-2.5 px-4 bg-primary-900 text-white font-bold text-xs uppercase tracking-wider rounded-btn shadow-sm hover:bg-accent-600 transition-colors flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-accent-500 text-center">
+          <span>Select Options</span>
+        </a>
+      {% else %}
         <form action="{% url 'cart:add' product.pk %}" method="post" class="w-full">
           {% csrf_token %}
           <input type="hidden" name="quantity" value="1">
@@ -137,11 +149,6 @@
             <span>Add to Bag</span>
           </button>
         </form>
-      {% else %}
-        <button type="button" disabled
-                class="w-full py-2.5 px-4 bg-neutral-200 text-neutral-500 font-bold text-xs uppercase tracking-wider rounded-btn cursor-not-allowed flex items-center justify-center gap-2">
-          <span>Sold Out</span>
-        </button>
       {% endif %}
     </div>
   </div>

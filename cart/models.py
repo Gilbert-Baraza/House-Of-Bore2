@@ -121,6 +121,14 @@ class CartItem(models.Model):
         related_name="cart_items",
         help_text="Selected catalog product."
     )
+    product_variant = models.ForeignKey(
+        "products.ProductVariant",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="cart_items",
+        help_text="Selected product variant."
+    )
     quantity = models.PositiveIntegerField(
         default=1,
         help_text="Number of units requested."
@@ -139,23 +147,34 @@ class CartItem(models.Model):
         verbose_name_plural = "cart items"
         constraints = [
             models.UniqueConstraint(
+                fields=["cart", "product", "product_variant"],
+                condition=Q(product_variant__isnull=False),
+                name="unique_cart_product_variant"
+            ),
+            models.UniqueConstraint(
                 fields=["cart", "product"],
-                name="unique_cart_product"
+                condition=Q(product_variant__isnull=True),
+                name="unique_cart_product_no_variant"
             )
         ]
 
     def __str__(self) -> str:
-        return f"{self.quantity}x {self.product.name} in Cart #{self.cart_id}"
+        name = self.product.name
+        if self.product_variant:
+            name += f" ({self.product_variant.get_options_summary()})"
+        return f"{self.quantity}x {name} in Cart #{self.cart_id}"
 
     def clean(self) -> None:
         """
-        Validate quantity and price integrity.
+        Validate quantity, price integrity, and variant ownership.
         """
         super().clean()
         if self.quantity < 1:
             raise ValidationError({"quantity": "Cart item quantity must be at least 1."})
         if self.unit_price is not None and self.unit_price < Decimal("0.00"):
             raise ValidationError({"unit_price": "Unit price cannot be negative."})
+        if self.product_variant is not None and getattr(self.product_variant, "product_id", None) != self.product_id:
+            raise ValidationError({"product_variant": "Selected variant does not belong to the selected product."})
 
     def subtotal(self) -> Decimal:
         """

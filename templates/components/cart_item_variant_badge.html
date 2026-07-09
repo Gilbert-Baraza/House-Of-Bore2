@@ -1,0 +1,11 @@
+{# templates/components/cart_item_variant_badge.html #}
+{% if item.product_variant %}
+<div class="mt-1 flex flex-wrap items-center gap-2 text-xs">
+  <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-accent-50 text-accent-800 border border-accent-100">
+    {{ item.product_variant.get_options_summary }}
+  </span>
+  <span class="text-neutral-400 font-normal text-[11px] tracking-wide">
+    SKU: {{ item.product_variant.sku }}
+  </span>
+</div>
+{% endif %}

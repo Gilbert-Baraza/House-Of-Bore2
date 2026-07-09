@@ -11,10 +11,11 @@ Performance notes:
 """
 
 from decimal import Decimal, InvalidOperation
+from typing import Optional, List, Union, Dict, Any
 from django.core.cache import cache
 from django.db.models import Count, F, Prefetch, Q, QuerySet
 from core.templatetags.query_helpers import is_truthy
-from products.models import Brand, Category, Product, ProductImage
+from products.models import Brand, Category, Product, ProductImage, ProductVariant
 
 
 # ─── Category Selectors ──────────────────────────────────────────────────────
@@ -318,5 +319,62 @@ def get_filter_options() -> dict:
         }
         cache.set("catalog_filter_options", options, 900)  # 15 minutes TTL
     return options
+
+
+# ─── Product Variant Selectors ───────────────────────────────────────────────
+def get_product_variants(product: Union[Product, int], active_only: bool = True) -> QuerySet[ProductVariant]:
+    """
+    Returns variants belonging to a specific product with option values prefetched.
+    """
+    product_id = product.pk if isinstance(product, Product) else product
+    qs = ProductVariant.objects.filter(product_id=product_id)
+    if active_only:
+        qs = qs.filter(is_active=True)
+    return qs.select_related("product").prefetch_related("option_values__option", "variant_options__option_value__option").order_by("sku")
+
+
+def get_variant(variant_id: int) -> Optional[ProductVariant]:
+    """
+    Retrieves a single ProductVariant by primary key with relations prefetched.
+    """
+    return ProductVariant.objects.filter(pk=variant_id).select_related("product").prefetch_related("option_values__option", "variant_options__option_value__option").first()
+
+
+def get_variant_by_options(product: Union[Product, int], option_value_ids: List[int]) -> Optional[ProductVariant]:
+    """
+    Finds the exact matching ProductVariant for a product given a list of ProductOptionValue IDs.
+    """
+    variants = get_product_variants(product, active_only=True)
+    target_ids = set(int(i) for i in option_value_ids)
+    for variant in variants:
+        var_ids = set(val.id for val in variant.option_values.all())
+        if var_ids == target_ids:
+            return variant
+    return None
+
+
+def available_variants(product: Union[Product, int]) -> QuerySet[ProductVariant]:
+    """
+    Returns active variants that are currently in stock (> 0 quantity).
+    """
+    return get_product_variants(product, active_only=True).filter(stock_quantity__gt=0)
+
+
+def variant_inventory(variant: Union[ProductVariant, int]) -> Dict[str, Any]:
+    """
+    Returns a dictionary summarizing inventory state for a variant.
+    """
+    if not isinstance(variant, ProductVariant):
+        variant_obj = get_variant(variant)
+        if not variant_obj:
+            return {"stock_quantity": 0, "low_stock": False, "in_stock": False, "is_active": False, "sku": ""}
+        variant = variant_obj
+    return {
+        "stock_quantity": variant.stock_quantity,
+        "low_stock": variant.low_stock(),
+        "in_stock": variant.in_stock(),
+        "is_active": variant.is_active,
+        "sku": variant.sku,
+    }
 
 

@@ -15,7 +15,7 @@ from django.test import Client, RequestFactory, TestCase
 from django.urls import reverse
 from django.utils import timezone
 
-from products.models import Brand, Category, Product
+from products.models import Brand, Category, Product, ProductOption, ProductOptionValue, ProductVariant, ProductVariantOption
 from cart.models import Cart, CartItem
 from cart.services import add_to_cart
 from checkout.models import CheckoutSession, CheckoutAddress
@@ -376,3 +376,99 @@ class CheckoutViewsAndFormsTests(CheckoutBaseTestCase):
         self.assertEqual(res.context["checkout_totals"]["subtotal"], Decimal("900.00"))
         self.assertEqual(res.context["checkout_totals"]["grand_total"], Decimal("974.25"))  # Includes 8.25% CA tax via Phase 4.3 Pricing Engine
         self.assertEqual(res.context["checkout_totals"]["item_count"], 2)
+
+
+class CheckoutVariantTests(CheckoutBaseTestCase):
+    """
+    Test suite verifying checkout validations and review when cart items contain Product Variants.
+    """
+    def setUp(self):
+        super().setUp()
+        self.opt_size = ProductOption.objects.create(name="Size", display_name="Size", sort_order=1)
+        self.val_40 = ProductOptionValue.objects.create(option=self.opt_size, value="40R", display_order=1)
+        self.variant = ProductVariant.objects.create(
+            product=self.product,
+            sku="ATELIER-40R",
+            price_override=Decimal("480.00"),
+            stock_quantity=5,
+            is_active=True
+        )
+        ProductVariantOption.objects.create(variant=self.variant, option_value=self.val_40)
+
+    def test_validate_checkout_with_variant_stock_exceeded(self):
+        """Verify validate_checkout raises ValidationError when variant stock is exceeded."""
+        self.client.force_login(self.user)
+        req = self.factory.get("/")
+        req.user = self.user
+        add_to_cart(req, product_id=self.product.pk, quantity=3, variant_id=self.variant.pk)
+
+        checkout_session = get_or_create_checkout(req)
+        update_shipping(checkout_session, {
+            "recipient_name": "Jane Doe",
+            "phone_number": "+15551234567",
+            "address_line_1": "123 Atelier Ave",
+            "city": "Beverly Hills",
+            "county_or_state": "CA",
+            "postal_code": "90210",
+            "country": "US",
+        })
+        update_billing(checkout_session, {}, billing_same_as_shipping=True)
+
+        # Reduce variant stock below requested quantity
+        self.variant.stock_quantity = 2
+        self.variant.save()
+
+        with self.assertRaises(ValidationError) as ctx:
+            validate_checkout(checkout_session)
+        self.assertIn("exceeds available stock", str(ctx.exception))
+
+    def test_validate_checkout_with_inactive_variant(self):
+        """Verify validate_checkout raises ValidationError when variant becomes inactive."""
+        self.client.force_login(self.user)
+        req = self.factory.get("/")
+        req.user = self.user
+        add_to_cart(req, product_id=self.product.pk, quantity=1, variant_id=self.variant.pk)
+
+        checkout_session = get_or_create_checkout(req)
+        update_shipping(checkout_session, {
+            "recipient_name": "Jane Doe",
+            "phone_number": "+15551234567",
+            "address_line_1": "123 Atelier Ave",
+            "city": "Beverly Hills",
+            "county_or_state": "CA",
+            "postal_code": "90210",
+            "country": "US",
+        })
+        update_billing(checkout_session, {}, billing_same_as_shipping=True)
+
+        self.variant.is_active = False
+        self.variant.save()
+
+        with self.assertRaises(ValidationError) as ctx:
+            validate_checkout(checkout_session)
+        self.assertIn("no longer active or available", str(ctx.exception))
+
+    def test_review_view_with_variant_items(self):
+        """Verify review screen renders item with variant details and accurate totals."""
+        self.client.force_login(self.user)
+        req = self.factory.get("/")
+        req.user = self.user
+        add_to_cart(req, product_id=self.product.pk, quantity=2, variant_id=self.variant.pk)
+
+        shipping_data = {
+            "recipient_name": "Jane Doe",
+            "phone_number": "+15551234567",
+            "address_line_1": "123 Atelier Ave",
+            "city": "Beverly Hills",
+            "county_or_state": "CA",
+            "postal_code": "90210",
+            "country": "US",
+        }
+        self.client.post(reverse("checkout:shipping"), shipping_data)
+        self.client.post(reverse("checkout:billing"), {"billing_same_as_shipping": "true"})
+
+        res = self.client.get(reverse("checkout:review"))
+        self.assertEqual(res.status_code, 200)
+        self.assertContains(res, "ATELIER-40R")
+        self.assertContains(res, "40R")
+

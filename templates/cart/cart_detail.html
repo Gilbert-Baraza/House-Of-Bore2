@@ -44,23 +44,33 @@
               
               {# Product Image #}
               <div class="w-24 sm:w-28 aspect-[3/4] bg-neutral-100 rounded-btn overflow-hidden border border-neutral-200 shrink-0 relative">
-                {% with primary=item.product.get_primary_image %}
-                  {% if primary and primary.image %}
-                    <a href="{{ item.product.get_absolute_url }}" class="block w-full h-full">
-                      <img src="{{ primary.image.url }}"
-                           alt="{{ primary.alt_text|default:item.product.name }}"
-                           class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                           loading="lazy"
-                           width="120" height="160">
-                    </a>
-                  {% else %}
-                    <a href="{{ item.product.get_absolute_url }}" class="w-full h-full flex items-center justify-center text-neutral-300">
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1" stroke="currentColor" class="w-8 h-8">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5V6a3.75 3.75 0 1 0-7.5 0v4.5m11.356-1.993 1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 0 1-1.12-1.243l1.264-12A1.125 1.125 0 0 1 5.513 7.5h12.974c.576 0 1.059.435 1.119 1.007ZM8.625 10.5a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm7.5 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z"/>
-                      </svg>
-                    </a>
-                  {% endif %}
-                {% endwith %}
+                {% if item.product_variant and item.product_variant.image %}
+                  <a href="{{ item.product.get_absolute_url }}" class="block w-full h-full">
+                    <img src="{{ item.product_variant.image.url }}"
+                         alt="{{ item.product.name }} - {{ item.product_variant.get_options_summary }}"
+                         class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                         loading="lazy"
+                         width="120" height="160">
+                  </a>
+                {% else %}
+                  {% with primary=item.product.get_primary_image %}
+                    {% if primary and primary.image %}
+                      <a href="{{ item.product.get_absolute_url }}" class="block w-full h-full">
+                        <img src="{{ primary.image.url }}"
+                             alt="{{ primary.alt_text|default:item.product.name }}"
+                             class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                             loading="lazy"
+                             width="120" height="160">
+                      </a>
+                    {% else %}
+                      <a href="{{ item.product.get_absolute_url }}" class="w-full h-full flex items-center justify-center text-neutral-300">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1" stroke="currentColor" class="w-8 h-8">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5V6a3.75 3.75 0 1 0-7.5 0v4.5m11.356-1.993 1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 0 1-1.12-1.243l1.264-12A1.125 1.125 0 0 1 5.513 7.5h12.974c.576 0 1.059.435 1.119 1.007ZM8.625 10.5a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm7.5 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z"/>
+                        </svg>
+                      </a>
+                    {% endif %}
+                  {% endwith %}
+                {% endif %}
               </div>
 
               {# Product Details #}
@@ -75,9 +85,10 @@
                     {{ item.product.name }}
                   </a>
                 </h3>
-                <p class="text-xs text-neutral-500 mb-3">
+                {% include "components/cart_item_variant_badge.html" %}
+                <p class="text-xs text-neutral-500 mb-3 mt-1.5">
                   Unit Price: <span class="font-semibold text-neutral-700">${{ item.unit_price }}</span>
-                  {% if item.product.low_stock %}
+                  {% if item.product_variant and item.product_variant.low_stock or not item.product_variant and item.product.low_stock %}
                     <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-amber-100 text-amber-800">
                       Low Stock
                     </span>
@@ -94,7 +105,7 @@
                             aria-label="Decrease quantity of {{ item.product.name }}">
                       <span class="text-base font-bold">&minus;</span>
                     </button>
-                    <input type="number" name="quantity" value="{{ item.quantity }}" min="1" max="{{ item.product.stock_quantity|default:99 }}"
+                    <input type="number" name="quantity" value="{{ item.quantity }}" min="1" max="{% if item.product_variant %}{{ item.product_variant.stock_quantity|default:99 }}{% else %}{{ item.product.stock_quantity|default:99 }}{% endif %}"
                            class="w-14 h-9 text-center text-xs font-bold text-primary-900 bg-white border-0 focus:outline-none focus:ring-2 focus:ring-accent-500/50 tabular-nums"
                            aria-label="Quantity of {{ item.product.name }}">
                     <button type="submit" name="action" value="increase"

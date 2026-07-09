@@ -57,9 +57,17 @@ class AddToCartView(View):
         except (ValueError, TypeError):
             quantity = 1
 
+        variant_id_str = request.POST.get("variant_id") or request.GET.get("variant_id")
+        variant_id = None
+        if variant_id_str and str(variant_id_str).isdigit():
+            variant_id = int(variant_id_str)
+
         try:
-            item = add_to_cart(request, product_id=product_id, quantity=quantity)
-            messages.success(request, f"Added {item.product.name} to your shopping bag.")
+            item = add_to_cart(request, product_id=product_id, quantity=quantity, variant_id=variant_id)
+            name = item.product.name
+            if item.product_variant:
+                name += f" ({item.product_variant.get_options_summary()})"
+            messages.success(request, f"Added {name} to your shopping bag.")
         except ValidationError as e:
             msg = e.message if hasattr(e, "message") else " ".join(e.messages)
             messages.error(request, msg)

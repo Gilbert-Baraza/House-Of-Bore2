@@ -6,7 +6,16 @@ Optimized for merchandising staff and content managers.
 
 from django.contrib import admin
 from django.utils.html import format_html
-from products.models import Brand, Category, Product, ProductImage
+from products.models import (
+    Brand,
+    Category,
+    Product,
+    ProductImage,
+    ProductOption,
+    ProductOptionValue,
+    ProductVariant,
+    ProductVariantOption,
+)
 
 
 @admin.register(Category)
@@ -148,6 +157,16 @@ class ProductImageInline(admin.TabularInline):
         return format_html('<span style="color: #999; font-size: 11px;">No image</span>')
 
 
+class ProductVariantInline(admin.TabularInline):
+    """
+    Inline variant management within the parent Product view.
+    """
+    model = ProductVariant
+    extra = 1
+    fields = ("sku", "price_override", "compare_at_price", "stock_quantity", "is_active")
+    show_change_link = True
+
+
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
     """
@@ -172,7 +191,7 @@ class ProductAdmin(admin.ModelAdmin):
     readonly_fields = ("created_at", "updated_at", "view_count", "primary_image_preview")
     ordering = ("-created_at", "name")
     list_per_page = 30
-    inlines = [ProductImageInline]
+    inlines = [ProductImageInline, ProductVariantInline]
 
     fieldsets = (
         ("Basic Information", {
@@ -223,3 +242,75 @@ class ProductAdmin(admin.ModelAdmin):
                 primary.image.url
             )
         return format_html('<span style="color: #999;">No image gallery assigned</span>')
+
+
+class ProductOptionValueInline(admin.TabularInline):
+    """
+    Inline values inside an Option group.
+    """
+    model = ProductOptionValue
+    extra = 2
+    fields = ("value", "display_order")
+    ordering = ("display_order", "id")
+
+
+@admin.register(ProductOption)
+class ProductOptionAdmin(admin.ModelAdmin):
+    list_display = ("display_name", "name", "sort_order", "is_active", "updated_at")
+    list_editable = ("sort_order", "is_active")
+    list_filter = ("is_active",)
+    search_fields = ("name", "display_name")
+    ordering = ("sort_order", "name")
+    inlines = [ProductOptionValueInline]
+
+
+class ProductVariantOptionInline(admin.TabularInline):
+    """
+    Inline option values assigned to a Variant.
+    """
+    model = ProductVariantOption
+    extra = 1
+    fields = ("option_value", "sort_order")
+    ordering = ("sort_order", "id")
+
+
+@admin.register(ProductVariant)
+class ProductVariantAdmin(admin.ModelAdmin):
+    list_display = (
+        "sku",
+        "product",
+        "options_summary",
+        "price_display",
+        "stock_status_badge",
+        "is_active",
+        "updated_at",
+    )
+    list_editable = ("is_active",)
+    list_filter = ("is_active", "product__category", "product__brand")
+    search_fields = ("sku", "barcode", "product__name")
+    readonly_fields = ("created_at", "updated_at")
+    ordering = ("product__name", "sku")
+    inlines = [ProductVariantOptionInline]
+
+    @admin.display(description="Options")
+    def options_summary(self, obj: ProductVariant) -> str:
+        return obj.get_description()
+
+    @admin.display(description="Price", ordering="price_override")
+    def price_display(self, obj: ProductVariant) -> str:
+        price = obj.get_price()
+        if obj.is_on_sale():
+            cmp = obj.get_compare_at_price()
+            return format_html(
+                '<span style="color: #b91c1c; font-weight: 600;">${}</span> <del style="color: #999; font-size: 11px;">${}</del>',
+                price, cmp
+            )
+        return format_html('<strong>${}</strong>', price)
+
+    @admin.display(description="Stock Status", ordering="stock_quantity")
+    def stock_status_badge(self, obj: ProductVariant) -> str:
+        if obj.stock_quantity == 0:
+            return format_html('<span style="color: #dc2626; font-weight: bold; background: #fee2e2; padding: 2px 6px; border-radius: 4px; font-size: 11px;">Out of Stock</span>')
+        if obj.low_stock():
+            return format_html('<span style="color: #d97706; font-weight: bold; background: #fef3c7; padding: 2px 6px; border-radius: 4px; font-size: 11px;">Low ({})</span>', obj.stock_quantity)
+        return format_html('<span style="color: #16a34a; font-weight: 500; background: #dcfce7; padding: 2px 6px; border-radius: 4px; font-size: 11px;">In Stock ({})</span>', obj.stock_quantity)

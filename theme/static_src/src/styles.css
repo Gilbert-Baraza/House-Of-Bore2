@@ -29,14 +29,30 @@
  * Path is relative to this file: theme/static_src/src/
  * Three ../../../ levels reach the project root.
  */
+@source "C:/Users/Engineer Jed/House-Of-Bore/templates/**/*.html";
+@source "C:/Users/Engineer Jed/House-Of-Bore/**/*.html";
+@source "C:/Users/Engineer Jed/House-Of-Bore/**/*.py";
+@source "C:/Users/Engineer Jed/House-Of-Bore/static/**/*.js";
 @source "../../../templates/**/*.html";
+@source "../../templates/**/*.html";
 @source "../../../**/templates/**/*.html";
+@source "../../**/templates/**/*.html";
 @source "../../../**/*.py";
+@source "../../**/*.py";
 @source "../../../static/**/*.js";
+@source "../../static/**/*.js";
+@source not "C:/Users/Engineer Jed/House-Of-Bore/**/node_modules/**";
+@source not "C:/Users/Engineer Jed/House-Of-Bore/**/venv/**";
+@source not "C:/Users/Engineer Jed/House-Of-Bore/**/staticfiles/**";
+@source not "C:/Users/Engineer Jed/House-Of-Bore/**/migrations/**";
 @source not "../../../**/node_modules/**";
+@source not "../../**/node_modules/**";
 @source not "../../../**/venv/**";
+@source not "../../**/venv/**";
 @source not "../../../**/staticfiles/**";
+@source not "../../**/staticfiles/**";
 @source not "../../../**/migrations/**";
+@source not "../../**/migrations/**";
 
 
 /* ─── 3. Brand Design Token System ─────────────────────────────────────────── */

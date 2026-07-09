@@ -10,7 +10,16 @@ from django.contrib import admin
 from django.core.exceptions import ValidationError
 from django.test import Client, TestCase
 from django.urls import resolve, reverse
-from products.models import Brand, Category, Product, ProductImage
+from products.models import (
+    Brand,
+    Category,
+    Product,
+    ProductImage,
+    ProductOption,
+    ProductOptionValue,
+    ProductVariant,
+    ProductVariantOption,
+)
 from products.selectors import (
     DEFAULT_SORT,
     SORT_OPTIONS,
@@ -1103,5 +1112,105 @@ class CatalogDiscoveryTests(TestCase):
         self.p1.name = "Updated Parka Name"
         self.p1.save()
         self.assertIsNone(cache.get("catalog_filter_options"))
+
+
+class ProductVariantTests(TestCase):
+    """
+    Test suite for Phase 4.3.6: Product Variant & Inventory Foundation.
+    Covers options, option values, variants, pricing rules, stock validations, and selectors.
+    """
+    def setUp(self):
+        self.brand = Brand.objects.create(name="Atelier Brand", slug="atelier-brand", is_active=True)
+        self.category = Category.objects.create(name="Suits", slug="suits", is_active=True)
+        self.product = Product.objects.create(
+            name="Tailored Wool Suit",
+            slug="tailored-wool-suit",
+            brand=self.brand,
+            category=self.category,
+            price=Decimal("450.00"),
+            stock_quantity=10,
+            is_active=True,
+        )
+        self.opt_size = ProductOption.objects.create(name="Size", display_name="Size", sort_order=1)
+        self.opt_color = ProductOption.objects.create(name="Color", display_name="Color", sort_order=2)
+        
+        self.val_40r = ProductOptionValue.objects.create(option=self.opt_size, value="40R", display_order=1)
+        self.val_42r = ProductOptionValue.objects.create(option=self.opt_size, value="42R", display_order=2)
+        self.val_navy = ProductOptionValue.objects.create(option=self.opt_color, value="Navy", display_order=1)
+        self.val_charcoal = ProductOptionValue.objects.create(option=self.opt_color, value="Charcoal", display_order=2)
+
+    def test_variant_creation_and_helpers(self):
+        """Verify variant creation, pricing computation, and stock helpers."""
+        variant = ProductVariant.objects.create(
+            product=self.product,
+            sku="TWS-40R-NVY",
+            price_override=Decimal("475.00"),
+            compare_at_price=Decimal("520.00"),
+            stock_quantity=10,
+            is_active=True
+        )
+        ProductVariantOption.objects.create(variant=variant, option_value=self.val_40r)
+        ProductVariantOption.objects.create(variant=variant, option_value=self.val_navy)
+
+        self.assertEqual(variant.get_price(), Decimal("475.00"))
+        self.assertEqual(variant.get_compare_at_price(), Decimal("520.00"))
+        self.assertTrue(variant.is_on_sale())
+        self.assertTrue(variant.in_stock())
+        self.assertFalse(variant.low_stock())
+        self.assertEqual(variant.get_options_summary(), "40R / Navy")
+
+    def test_variant_fallback_pricing(self):
+        """Verify variant falls back to parent product pricing when no override set."""
+        variant = ProductVariant.objects.create(
+            product=self.product,
+            sku="TWS-42R-NVY",
+            stock_quantity=2,
+            is_active=True
+        )
+        self.assertEqual(variant.get_price(), self.product.price)
+        self.assertIsNone(variant.get_compare_at_price())
+        self.assertFalse(variant.is_on_sale())
+        self.assertTrue(variant.low_stock())
+
+    def test_product_pricing_range_helpers(self):
+        """Verify Product.get_price_range and has_multiple_prices when variants exist."""
+        v1 = ProductVariant.objects.create(product=self.product, sku="V1", price_override=Decimal("400.00"), is_active=True)
+        v2 = ProductVariant.objects.create(product=self.product, sku="V2", price_override=Decimal("550.00"), is_active=True)
+        
+        self.assertTrue(self.product.has_multiple_prices())
+        self.assertEqual(self.product.get_starting_price(), Decimal("400.00"))
+        self.assertEqual(self.product.get_price_range(), (Decimal("400.00"), Decimal("550.00")))
+
+    def test_variant_sku_uniqueness_validation(self):
+        """Verify SKU uniqueness check across both Product and ProductVariant tables."""
+        ProductVariant.objects.create(product=self.product, sku="DUPLICATE-SKU", is_active=True)
+        
+        # Another variant trying same SKU
+        dup_var = ProductVariant(product=self.product, sku="DUPLICATE-SKU", is_active=True)
+        with self.assertRaises(ValidationError):
+            dup_var.clean()
+
+    def test_variant_selectors(self):
+        """Verify selectors correctly fetch variants and validate options."""
+        from products.selectors import get_product_variants, get_variant, get_variant_by_options, variant_inventory
+        
+        v1 = ProductVariant.objects.create(product=self.product, sku="V-40R-NVY", stock_quantity=4, is_active=True)
+        ProductVariantOption.objects.create(variant=v1, option_value=self.val_40r)
+        ProductVariantOption.objects.create(variant=v1, option_value=self.val_navy)
+
+        # get_product_variants
+        variants = get_product_variants(self.product)
+        self.assertEqual(list(variants), [v1])
+
+        # get_variant
+        self.assertEqual(get_variant(v1.id), v1)
+
+        # get_variant_by_options
+        matched = get_variant_by_options(self.product, [self.val_40r.id, self.val_navy.id])
+        self.assertEqual(matched, v1)
+
+        # variant_inventory
+        self.assertEqual(variant_inventory(v1)["stock_quantity"], 4)
+
 
 
