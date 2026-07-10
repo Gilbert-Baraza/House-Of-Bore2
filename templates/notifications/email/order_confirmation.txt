@@ -1,0 +1,26 @@
+{% extends "notifications/email/base_email.txt" %}
+
+{% block content %}
+ORDER CONFIRMED - #{{ order.order_number }}
+
+Dear {{ order.user.get_full_name|default:order.user.email|default:"Valued Client" }},
+
+Thank you for choosing House of Bore. Your order #{{ order.order_number }} has been successfully placed and is currently being processed by our atelier team.
+
+ORDER SUMMARY:
+{% for item in order.items.all %}
+* {{ item.product_name }} (SKU: {{ item.sku }}) x {{ item.quantity }} -> ${{ item.line_total|floatformat:2 }}
+{% empty %}
+* No items listed.
+{% endfor %}
+
+Subtotal: ${{ order.subtotal|floatformat:2 }}
+{% if order.discount_total and order.discount_total > 0 %}Discount: -${{ order.discount_total|floatformat:2 }}
+{% endif %}Shipping: ${{ order.shipping_total|floatformat:2 }}
+Tax: ${{ order.tax_total|floatformat:2 }}
+────────────────────────────────────────────────────────────────────────────────
+TOTAL AMOUNT: ${{ order.grand_total|floatformat:2 }} {{ order.currency }}
+────────────────────────────────────────────────────────────────────────────────
+
+You can inspect your order status and tracking details at any time from your account dashboard.
+{% endblock %}

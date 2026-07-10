@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% comment %}
+  templates/400.html
+  400 ERROR TEMPLATE (Bad Request)
+  ─────────────────────────────────────────────────────────────────────────────
+  Rendered when the server cannot or will not process the request due to an
+  apparent client error (e.g., malformed request syntax, invalid parameters).
+  ─────────────────────────────────────────────────────────────────────────────
+{% endcomment %}
+
+{% block title %}Bad Request — House of Bore{% endblock %}
+
+{% block content %}
+<div class="container-site py-20 lg:py-32 flex flex-col items-center justify-center text-center">
+  
+  {# Status code badge #}
+  <span class="badge badge-accent mb-4">Error 400</span>
+  
+  {# Main headline #}
+  <h1 class="font-serif text-4xl sm:text-5xl lg:text-6xl font-bold text-primary-900 mb-4 tracking-tight">
+    Invalid Request
+  </h1>
+  
+  {# Description #}
+  <p class="text-base sm:text-lg text-neutral-500 max-w-md leading-relaxed mb-8">
+    We couldn&rsquo;t process your request because the link or parameters appear to be malformed. Please check the URL or try starting over from our homepage.
+  </p>
+  
+  {# Actions #}
+  <div class="flex flex-col sm:flex-row items-center justify-center gap-4 w-full sm:w-auto">
+    <a href="/" class="btn btn-primary w-full sm:w-auto">
+      Return Home
+    </a>
+    <a href="{% url 'products:product_list' %}" class="btn btn-outline w-full sm:w-auto">
+      Explore Catalog
+    </a>
+  </div>
+
+</div>
+{% endblock %}

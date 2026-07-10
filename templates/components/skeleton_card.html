@@ -1,0 +1,33 @@
+{% comment %}
+  templates/components/skeleton_card.html
+  SKELETON PRODUCT CARD COMPONENT
+  ─────────────────────────────────────────────────────────────────────────────
+  Animated shimmer loading state matching the exact dimensions and layout of
+  `product_card.html`. Used during AJAX filtering and progressive rendering.
+  ─────────────────────────────────────────────────────────────────────────────
+{% endcomment %}
+
+<div class="card flex flex-col h-full bg-white border border-neutral-100 rounded-card p-0 overflow-hidden animate-pulse" aria-hidden="true">
+  {# Image Area Shimmer #}
+  <div class="w-full aspect-[3/4] bg-neutral-200 relative">
+    <div class="absolute top-3 left-3 w-12 h-5 bg-neutral-300 rounded-btn"></div>
+    <div class="absolute top-3 right-3 w-7 h-7 bg-neutral-300 rounded-full"></div>
+  </div>
+
+  {# Card Body Shimmer #}
+  <div class="card-body p-4 flex-1 flex flex-col justify-between">
+    <div>
+      {# Brand Shimmer #}
+      <div class="w-20 h-2.5 bg-neutral-200 rounded mb-2"></div>
+      {# Title Shimmer #}
+      <div class="w-3/4 h-4 bg-neutral-300 rounded mb-2"></div>
+      {# Category Shimmer #}
+      <div class="w-1/2 h-3 bg-neutral-200 rounded mb-4"></div>
+      {# Price Shimmer #}
+      <div class="w-24 h-4 bg-neutral-300 rounded mb-4"></div>
+    </div>
+
+    {# Action Button Shimmer #}
+    <div class="w-full h-10 bg-neutral-200 rounded-btn mt-auto"></div>
+  </div>
+</div>

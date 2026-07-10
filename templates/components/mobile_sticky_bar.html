@@ -1,0 +1,63 @@
+{% comment %}
+  templates/components/mobile_sticky_bar.html
+  MOBILE STICKY PURCHASING BAR
+  ─────────────────────────────────────────────────────────────────────────────
+  Fixed bottom purchasing bar visible exclusively on mobile/tablet viewports (`lg:hidden`).
+  Displays current product price and provides instant submission of the primary Add to Bag form.
+  ─────────────────────────────────────────────────────────────────────────────
+{% endcomment %}
+
+{% if product %}
+<div class="fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-md border-t border-neutral-200 px-4 py-3 shadow-2xl block lg:hidden animate-fade-in">
+  <div class="flex items-center justify-between gap-4 max-w-lg mx-auto">
+    
+    {# Price Display (mirrors dynamic price via ID or shows initial price) #}
+    <div class="flex flex-col">
+      <span class="text-[10px] font-bold uppercase tracking-wider text-neutral-400 truncate max-w-[140px]">{{ product.name }}</span>
+      <div class="flex items-baseline gap-1.5">
+        <span id="mobile-sticky-price" class="text-base font-bold text-primary-900 tabular-nums">
+          {% if product.is_on_sale %}${{ product.price }}{% else %}${{ product.price }}{% endif %}
+        </span>
+        {% if product.is_on_sale and product.compare_at_price %}
+          <del id="mobile-sticky-compare-price" class="text-xs text-neutral-400 tabular-nums">${{ product.compare_at_price }}</del>
+        {% endif %}
+      </div>
+    </div>
+
+    {# Trigger button that submits the main purchasing form via JS #}
+    <div class="flex items-center gap-2 flex-1 max-w-[200px]">
+      {% if product.in_stock %}
+        <button type="button"
+                onclick="var form = document.getElementById('add-to-cart-form'); if(form){ form.requestSubmit ? form.requestSubmit() : form.submit(); }"
+                id="mobile-sticky-submit-btn"
+                class="w-full inline-flex items-center justify-center gap-2 py-3 px-4 rounded-btn font-bold text-xs uppercase tracking-widest bg-primary-900 text-white hover:bg-accent-600 transition-colors shadow-md">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4 shrink-0">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5V6a3.75 3.75 0 1 0-7.5 0v4.5m11.356-1.993 1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 0 1-1.12-1.243l1.264-12A1.125 1.125 0 0 1 5.513 7.5h12.974c.576 0 1.059.435 1.119 1.007ZM8.625 10.5a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm7.5 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z"/>
+          </svg>
+          <span id="mobile-sticky-btn-text">Add to Bag</span>
+        </button>
+      {% else %}
+        <button type="button" disabled
+                class="w-full py-3 px-4 rounded-btn font-bold text-xs uppercase tracking-widest bg-neutral-200 text-neutral-500 cursor-not-allowed text-center">
+          Sold Out
+        </button>
+      {% endif %}
+    </div>
+
+  </div>
+</div>
+
+<script>
+  // Sync mobile sticky price dynamically whenever main price changes
+  document.addEventListener('DOMContentLoaded', function() {
+    var priceMain = document.getElementById('price-main');
+    var mobilePrice = document.getElementById('mobile-sticky-price');
+    if (priceMain && mobilePrice) {
+      var observer = new MutationObserver(function(mutations) {
+        mobilePrice.textContent = priceMain.textContent;
+      });
+      observer.observe(priceMain, { childList: true, characterData: true, subtree: true });
+    }
+  });
+</script>
+{% endif %}

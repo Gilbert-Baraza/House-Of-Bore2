@@ -1,0 +1,18 @@
+{% extends "notifications/email/base_email.txt" %}
+
+{% block content %}
+WELCOME TO THE ATELIER
+────────────────────────────────────────────────────────────────────────────────
+
+Dear {{ user.get_full_name|default:user.email|default:"Distinguished Client" }},
+
+We are honored to welcome you to the House of Bore Atelier. Your private client profile has been registered successfully.
+
+As a registered member, you now have access to our curated catalogue, bespoke wishlists, accelerated checkout procedures, and real-time order tracking.
+
+Should you require any assistance or personalized styling consultations, our concierge team remains entirely at your service.
+
+────────────────────────────────────────────────────────────────────────────────
+CLIENT PORTAL: https://www.houseofbore.com/account/
+────────────────────────────────────────────────────────────────────────────────
+{% endblock %}

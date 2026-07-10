@@ -20,7 +20,7 @@ from django.views.generic import ListView, View
 
 from products.models import Product
 from wishlist.selectors import get_user_wishlist, get_wishlist_products
-from wishlist.services import add_to_wishlist, clear_wishlist, remove_from_wishlist
+from wishlist.services import add_to_wishlist, clear_wishlist, move_wishlist_item_to_cart, remove_from_wishlist
 
 
 class WishlistView(LoginRequiredMixin, ListView):
@@ -94,3 +94,30 @@ class ClearWishlistView(LoginRequiredMixin, View):
             messages.info(request, "Your wishlist was already empty.")
 
         return redirect(reverse("wishlist:wishlist"))
+
+
+class MoveToCartView(LoginRequiredMixin, View):
+    """
+    Moves a saved product directly from the customer's wishlist into their active shopping cart.
+    Strictly accepts POST requests to guarantee CSRF validation.
+    """
+
+    def post(self, request: HttpRequest, product_id: int) -> HttpResponse:
+        product = get_object_or_404(Product, pk=product_id)
+        variant_id_raw = request.POST.get("variant_id")
+        variant_id = int(variant_id_raw) if variant_id_raw and variant_id_raw.isdigit() else None
+
+        success, reason = move_wishlist_item_to_cart(request, product, variant_id=variant_id)
+        if success:
+            messages.success(request, f'"{product.name}" has been moved to your shopping bag.')
+            return redirect(reverse("wishlist:wishlist"))
+        elif reason == "VARIANT_REQUIRED":
+            messages.info(request, f'Please select options for "{product.name}" before adding to bag.')
+            return redirect(product.get_absolute_url())
+        elif reason == "OUT_OF_STOCK":
+            messages.warning(request, f'"{product.name}" is currently out of stock or limited in quantity.')
+        else:
+            messages.error(request, f"Could not move item to bag: {reason}")
+
+        redirect_url = request.META.get("HTTP_REFERER") or reverse("wishlist:wishlist")
+        return redirect(redirect_url)

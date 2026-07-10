@@ -48,17 +48,18 @@ THIRD_PARTY_APPS = [
 ]
 
 LOCAL_APPS = [
-    "accounts",   # Custom user model, authentication, profiles
-    "core",       # Home page, static pages (about, contact)
-    "products",   # Product catalogue, categories, variants
-    "cart",       # Shopping cart (session-based)
-    "checkout",   # Checkout progress and session management
-    "pricing",    # Centralized pricing engine, promotions, coupons
-    "orders",     # Order management and history
-    "payments",   # Payment gateway integration
-    "reviews",    # Product reviews and ratings
-    "wishlist",   # User product wishlists
-    "dashboard",  # Staff/seller or customer account dashboard
+    "accounts",      # Custom user model, authentication, profiles
+    "core",          # Home page, static pages (about, contact)
+    "products",      # Product catalogue, categories, variants
+    "cart",          # Shopping cart (session-based)
+    "checkout",      # Checkout progress and session management
+    "pricing",       # Centralized pricing engine, promotions, coupons
+    "orders",        # Order management and history
+    "payments",      # Payment gateway integration
+    "reviews",       # Product reviews and ratings
+    "wishlist",      # User product wishlists
+    "dashboard",     # Staff/seller or customer account dashboard
+    "notifications", # Centralized, event-driven transactional communications
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -219,3 +220,20 @@ X_FRAME_OPTIONS = "DENY"
 # Prevents browsers from guessing (sniffing) the MIME type, which can lead
 # to security vulnerabilities when serving user-uploaded content.
 SECURE_CONTENT_TYPE_NOSNIFF = True
+
+
+# ─── Notifications & Email Defaults ─────────────────────────────────────────────
+DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", default="House of Bore <noreply@houseofbore.com>")
+
+
+# ─── Celery Configuration ───────────────────────────────────────────────────────
+CELERY_BROKER_URL = config("CELERY_BROKER_URL", default="redis://127.0.0.1:6379/0")
+CELERY_RESULT_BACKEND = config("CELERY_RESULT_BACKEND", default="redis://127.0.0.1:6379/0")
+# In development and automated tests, execute tasks eagerly without requiring a live Redis daemon
+CELERY_TASK_ALWAYS_EAGER = config("CELERY_TASK_ALWAYS_EAGER", default=True, cast=bool)
+CELERY_TASK_EAGER_PROPAGATES = True
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_SERIALIZER = "json"
+CELERY_TIMEZONE = TIME_ZONE
+

@@ -1,0 +1,11 @@
+{% extends "notifications/email/base_email.html" %}
+
+{% block title %}Welcome to House of Bore Atelier{% endblock %}
+
+{% block content %}
+<h2 class="email-heading">Welcome to the Atelier</h2>
+<p>Dear {{ user.get_full_name|default:user.email|default:"Distinguished Client" }},</p>
+<p>We are honored to welcome you to the House of Bore Atelier. Your private client profile has been registered successfully.</p>
+<p>As a registered member, you now have access to our curated catalogue, bespoke wishlists, accelerated checkout procedures, and real-time order tracking.</p>
+<p>Should you require any assistance or personalized styling consultations, our concierge team remains entirely at your service.</p>
+{% endblock %}

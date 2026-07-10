@@ -5,6 +5,7 @@ Designed for high scalability, clean merchandising control, and robust business 
 """
 
 from decimal import Decimal
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.text import slugify
@@ -805,6 +806,40 @@ class ProductVariantOption(models.Model):
 
     def __str__(self) -> str:
         return f"{self.variant.sku} -> {self.option_value.value}"
+
+
+class RecentlyViewedProduct(models.Model):
+    """
+    Tracks recently viewed products for authenticated users.
+    Maintained up to a maximum of 20 items per user via service layer pruning.
+    """
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="recently_viewed",
+        verbose_name="User"
+    )
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.CASCADE,
+        related_name="recently_viewed_by",
+        verbose_name="Product"
+    )
+    viewed_at = models.DateTimeField(auto_now=True, verbose_name="Viewed At")
+
+    class Meta:
+        verbose_name = "Recently Viewed Product"
+        verbose_name_plural = "Recently Viewed Products"
+        ordering = ["-viewed_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "product"],
+                name="unique_user_recently_viewed_product"
+            )
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.user} viewed {self.product.name}"
 
 
 # ─── Cache Invalidation Signals ──────────────────────────────────────────────

@@ -50,14 +50,12 @@
 {# ── Canonical URL ───────────────────────────────────────────────────────── #}
 <link rel="canonical" href="{{ request.scheme }}://{{ request.get_host }}{{ product.get_absolute_url }}">
 
-{# ── Structured Data Placeholder (JSON-LD for Schema.org Product) ────────── #}
-{# TODO (Phase 3+): Implement dynamic JSON-LD schema for Product, Offers, Brand, and AggregateRating #}
-<!--
+{# ── Structured Data (JSON-LD for Schema.org Product & BreadcrumbList) ── #}
 <script type="application/ld+json">
 {
   "@context": "https://schema.org/",
   "@type": "Product",
-  "name": "{{ product.name }}",
+  "name": "{{ product.name|escapejs }}",
   "image": [
     {% for img in product.images.all %}"{{ request.scheme }}://{{ request.get_host }}{{ img.image.url }}"{% if not forloop.last %}, {% endif %}{% endfor %}
   ],
@@ -65,7 +63,7 @@
   "sku": "HOB-{{ product.category.slug|slice:':3'|upper }}-{{ product.pk|stringformat:'04d' }}",
   "brand": {
     "@type": "Brand",
-    "name": "{{ product.brand.name|default:'House of Bore Atelier' }}"
+    "name": "{{ product.brand.name|default:'House of Bore Atelier'|escapejs }}"
   },
   "offers": {
     "@type": "Offer",
@@ -84,7 +82,32 @@
   }{% endif %}
 }
 </script>
--->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": "Home",
+      "item": "{{ request.scheme }}://{{ request.get_host }}/"
+    },
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "name": "Products",
+      "item": "{{ request.scheme }}://{{ request.get_host }}/products/"
+    }{% if product.category %},
+    {
+      "@type": "ListItem",
+      "position": 3,
+      "name": "{{ product.category.name|escapejs }}",
+      "item": "{{ request.scheme }}://{{ request.get_host }}{% url 'products:category_detail' product.category.slug %}"
+    }{% endif %}
+  ]
+}
+</script>
 {% endblock extra_head %}
 
 {% block content %}
@@ -410,6 +433,49 @@
             </ul>
           </div>
 
+          {# ── Share & Actions Panel ──────────────────────────────────── #}
+          <div class="mt-6 pt-6 border-t border-neutral-200 flex flex-wrap items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+              <span class="text-xs font-bold uppercase tracking-wider text-neutral-500">Share:</span>
+              <a href="https://api.whatsapp.com/send?text={{ product.name|urlencode }}%20-%20{{ request.scheme }}://{{ request.get_host }}{{ product.get_absolute_url|urlencode }}"
+                 target="_blank" rel="noopener noreferrer"
+                 class="w-8 h-8 rounded-full bg-neutral-100 hover:bg-neutral-200 text-neutral-700 flex items-center justify-center transition-colors"
+                 title="Share on WhatsApp" aria-label="Share on WhatsApp">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.006c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.086-.177.18-.076.354.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86s.28.072.383-.043c.104-.116.449-.52.569-.701.119-.181.239-.152.402-.092.164.06.104.494 1.04.522s1.446.701.86.355-.386.746.386.746-.144.405-.144.405z"/></svg>
+              </a>
+              <a href="https://www.facebook.com/sharer/sharer.php?u={{ request.scheme }}://{{ request.get_host }}{{ product.get_absolute_url|urlencode }}"
+                 target="_blank" rel="noopener noreferrer"
+                 class="w-8 h-8 rounded-full bg-neutral-100 hover:bg-neutral-200 text-neutral-700 flex items-center justify-center transition-colors"
+                 title="Share on Facebook" aria-label="Share on Facebook">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M22.675 0h-21.35c-.732 0-1.325.593-1.325 1.325v21.351c0 .731.593 1.324 1.325 1.324h11.495v-9.294h-3.128v-3.622h3.128v-2.671c0-3.1 1.893-4.788 4.659-4.788 1.325 0 2.463.099 2.795.143v3.24l-1.918.001c-1.504 0-1.795.715-1.795 1.763v2.313h3.587l-.467 3.622h-3.12v9.293h6.116c.73 0 1.323-.593 1.323-1.325v-21.35c0-.732-.593-1.325-1.325-1.325z"/></svg>
+              </a>
+              <a href="https://twitter.com/intent/tweet?text={{ product.name|urlencode }}&url={{ request.scheme }}://{{ request.get_host }}{{ product.get_absolute_url|urlencode }}"
+                 target="_blank" rel="noopener noreferrer"
+                 class="w-8 h-8 rounded-full bg-neutral-100 hover:bg-neutral-200 text-neutral-700 flex items-center justify-center transition-colors"
+                 title="Share on X" aria-label="Share on X">
+                <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+              </a>
+              <button type="button"
+                      onclick="navigator.clipboard.writeText(window.location.href); var t = document.getElementById('copy-toast'); t.classList.remove('hidden'); setTimeout(function(){ t.classList.add('hidden'); }, 2500);"
+                      class="w-8 h-8 rounded-full bg-neutral-100 hover:bg-neutral-200 text-neutral-700 flex items-center justify-center transition-colors relative"
+                      title="Copy Link" aria-label="Copy Link">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244"/></svg>
+                <span id="copy-toast" class="hidden absolute -top-8 left-1/2 -translate-x-1/2 bg-neutral-800 text-white text-[10px] py-1 px-2 rounded shadow-md whitespace-nowrap z-50">Copied!</span>
+              </button>
+            </div>
+
+            <div>
+              <form action="{% url 'products:toggle_comparison' product.id %}" method="post" class="inline">
+                {% csrf_token %}
+                <button type="submit"
+                        class="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-primary-900 hover:text-accent-600 transition-colors py-1.5 px-3 rounded-btn border border-neutral-300 hover:border-primary-900 bg-white shadow-sm">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M7.5 21 3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5"/></svg>
+                  <span>Compare</span>
+                </button>
+              </form>
+            </div>
+          </div>
+
         </div>
 
       </div>
@@ -618,7 +684,27 @@
       </section>
       {% endif %}
 
-      {# ── Recently Viewed Products (UI Placeholder Section) ─────────────── #}
+      {# ── Customers Also Viewed Section ────────────────────────────────── #}
+      {% if customers_also_viewed %}
+      <section class="mt-20 sm:mt-24 pt-16 border-t border-neutral-200" aria-labelledby="also-viewed-heading">
+        <div class="mb-8 sm:mb-10">
+          <h2 id="also-viewed-heading" class="font-serif text-2xl sm:text-3xl font-bold text-primary-900">
+            Customers Also Viewed
+          </h2>
+          <p class="text-sm text-neutral-500 mt-1">
+            Other items discerning clients explored alongside {{ product.name }}
+          </p>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {% for cav_product in customers_also_viewed %}
+            {% include "components/product_card.html" with product=cav_product %}
+          {% endfor %}
+        </div>
+      </section>
+      {% endif %}
+
+      {# ── Recently Viewed Products (Dynamic) ─────────────────────────────── #}
+      {% if recently_viewed_products %}
       <section class="mt-20 sm:mt-24 pt-16 border-t border-neutral-200" aria-labelledby="recently-viewed-heading">
         <div class="mb-8 sm:mb-10">
           <h2 id="recently-viewed-heading" class="font-serif text-2xl sm:text-3xl font-bold text-primary-900">
@@ -629,24 +715,14 @@
           </p>
         </div>
         
-        {# Placeholder Cards for Recently Viewed #}
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
              aria-label="Recently viewed products list">
-          {% for i in "1234" %}
-            <article class="card flex flex-col h-full bg-white border border-neutral-200 rounded-card p-4 opacity-60 hover:opacity-100 transition-opacity">
-              <div class="aspect-[3/4] bg-neutral-100 rounded-btn mb-3 flex flex-col items-center justify-center text-neutral-400">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1" stroke="currentColor" class="w-10 h-10 mb-1 text-neutral-300">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/>
-                </svg>
-                <span class="text-[10px] font-bold uppercase tracking-wider text-neutral-400">Browsing History</span>
-              </div>
-              <p class="text-[10px] font-bold uppercase tracking-widest text-neutral-400 mb-1">House of Bore</p>
-              <h3 class="font-serif text-sm font-semibold text-primary-900 mb-1 truncate">Curated Lifestyle Piece #{{ forloop.counter }}</h3>
-              <p class="text-xs text-neutral-500 font-medium tabular-nums">$000.00</p>
-            </article>
+          {% for rec_product in recently_viewed_products %}
+            {% include "components/product_card.html" with product=rec_product %}
           {% endfor %}
         </div>
       </section>
+      {% endif %}
 
     </div>
   </section>
@@ -757,5 +833,8 @@
       });
     </script>
   {% endif %}
+
+  {# ── Mobile Sticky Purchasing Bar ──────────────────────────────────────── #}
+  {% include "components/mobile_sticky_bar.html" with product=product %}
 
 {% endblock %}

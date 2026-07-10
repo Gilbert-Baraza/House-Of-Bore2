@@ -19,6 +19,7 @@ from products.models import (
     ProductOptionValue,
     ProductVariant,
     ProductVariantOption,
+    RecentlyViewedProduct,
 )
 from products.selectors import (
     DEFAULT_SORT,
@@ -715,6 +716,18 @@ class ProductDetailViewTests(TestCase):
         self.assertEqual(self.product.view_count, initial_count + 1)
 
     def test_product_detail_renders_new_sections(self):
+        p2 = Product.objects.create(
+            name="Oxford Shoes",
+            slug="oxford-shoes",
+            short_description="S",
+            description="D",
+            category=self.category,
+            price=Decimal("450.00"),
+            is_active=True
+        )
+        session = self.client.session
+        session["recently_viewed"] = [p2.pk]
+        session.save()
         response = self.client.get(reverse("products:product_detail", kwargs={"slug": "chelsea-boots"}))
         self.assertContains(response, "Product Specifications")
         self.assertContains(response, "Select Quantity")
@@ -1211,6 +1224,85 @@ class ProductVariantTests(TestCase):
 
         # variant_inventory
         self.assertEqual(variant_inventory(v1)["stock_quantity"], 4)
+
+
+class RecentlyViewedTests(TestCase):
+    """Test RecentlyViewedProduct model and tracking service."""
+    def setUp(self):
+        self.client = Client()
+        self.category = Category.objects.create(name="Shoes", slug="shoes")
+        self.p1 = Product.objects.create(name="Boot 1", slug="boot-1", price=Decimal("100"), category=self.category, is_active=True)
+        self.p2 = Product.objects.create(name="Boot 2", slug="boot-2", price=Decimal("200"), category=self.category, is_active=True)
+
+    def test_track_and_get_recently_viewed_session(self):
+        from products.recently_viewed import track_recently_viewed, get_recently_viewed
+        # Simulate request
+        response = self.client.get(reverse("products:product_detail", kwargs={"slug": "boot-1"}))
+        request = response.wsgi_request
+        track_recently_viewed(request, self.p1)
+        track_recently_viewed(request, self.p2)
+
+        items = get_recently_viewed(request)
+        self.assertEqual(len(items), 2)
+        # Most recently tracked item (p2) should be first
+        self.assertEqual(items[0], self.p2)
+        self.assertEqual(items[1], self.p1)
+
+
+class RecommendationTests(TestCase):
+    """Test heuristic recommendation services."""
+    def setUp(self):
+        self.category = Category.objects.create(name="Outerwear", slug="outerwear")
+        self.brand = Brand.objects.create(name="Atelier", slug="atelier")
+        self.p1 = Product.objects.create(name="Coat 1", slug="coat-1", price=Decimal("500"), category=self.category, brand=self.brand, is_active=True)
+        self.p2 = Product.objects.create(name="Coat 2", slug="coat-2", price=Decimal("600"), category=self.category, brand=self.brand, is_active=True)
+        self.p3 = Product.objects.create(name="Coat 3", slug="coat-3", price=Decimal("700"), category=self.category, is_active=True)
+
+    def test_customers_also_viewed_heuristics(self):
+        from products.recommendations import customers_also_viewed, related_products
+        recs = customers_also_viewed(self.p1, limit=4)
+        self.assertIn(self.p2, recs)
+        self.assertNotIn(self.p1, recs)
+
+        related = related_products(self.p1, limit=4)
+        self.assertIn(self.p2, related)
+        self.assertNotIn(self.p1, related)
+
+
+class ComparisonTests(TestCase):
+    """Test product comparison session service and matrix views."""
+    def setUp(self):
+        self.client = Client()
+        self.category = Category.objects.create(name="Accessories", slug="accessories")
+        self.p1 = Product.objects.create(name="Belt 1", slug="belt-1", price=Decimal("150"), category=self.category, is_active=True)
+        self.p2 = Product.objects.create(name="Belt 2", slug="belt-2", price=Decimal("180"), category=self.category, is_active=True)
+
+    def test_toggle_comparison(self):
+        # Add to comparison
+        url1 = reverse("products:toggle_comparison", kwargs={"product_id": self.p1.id})
+        response = self.client.post(url1)
+        self.assertRedirects(response, reverse("products:comparison_matrix"))
+        self.assertEqual(self.client.session.get("compare_list"), [self.p1.id])
+
+        # Toggle again removes it
+        response = self.client.post(url1)
+        self.assertEqual(self.client.session.get("compare_list"), [])
+
+    def test_comparison_matrix_view(self):
+        # Add two products
+        self.client.post(reverse("products:toggle_comparison", kwargs={"product_id": self.p1.id}))
+        self.client.post(reverse("products:toggle_comparison", kwargs={"product_id": self.p2.id}))
+
+        response = self.client.get(reverse("products:comparison_matrix"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Belt 1")
+        self.assertContains(response, "Belt 2")
+
+    def test_clear_comparison(self):
+        self.client.post(reverse("products:toggle_comparison", kwargs={"product_id": self.p1.id}))
+        self.client.post(reverse("products:clear_comparison"))
+        self.assertEqual(self.client.session.get("compare_list", []), [])
+
 
 
 

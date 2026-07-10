@@ -17,13 +17,21 @@ from products.views import (
     BrandListView,
     CategoryDetailView,
     CategoryListView,
+    ComparisonMatrixView,
+    ClearComparisonView,
     ProductDetailView,
     ProductListView,
+    ToggleComparisonView,
 )
 
 app_name = "products"
 
 urlpatterns = [
+    # Comparison Routes (must precede slug route)
+    path("products/compare/", ComparisonMatrixView.as_view(), name="comparison_matrix"),
+    path("products/compare/toggle/<int:product_id>/", ToggleComparisonView.as_view(), name="toggle_comparison"),
+    path("products/compare/clear/", ClearComparisonView.as_view(), name="clear_comparison"),
+
     # Products
     path("products/", ProductListView.as_view(), name="product_list"),
     path("products/<slug:slug>/", ProductDetailView.as_view(), name="product_detail"),

@@ -1,0 +1,23 @@
+{% extends "notifications/email/base_email.txt" %}
+
+{% block content %}
+PAYMENT SUCCESSFUL - REF #{{ payment.payment_reference }}
+────────────────────────────────────────────────────────────────────────────────
+
+Dear {{ order.user.get_full_name|default:order.user.email|default:"Valued Client" }},
+
+We are delighted to confirm that your payment for order #{{ order.order_number }} has been verified and successfully captured.
+
+RECEIPT DETAILS:
+* Payment Reference: {{ payment.payment_reference }}
+* Order Number: {{ order.order_number }}
+* Amount Paid: ${{ payment.amount|floatformat:2 }} {{ payment.currency }}
+* Payment Method: {{ payment.get_gateway_display }}
+* Status: COMPLETED
+
+Your items are now reserved and will enter dispatch shortly. We will notify you when shipment commences.
+
+────────────────────────────────────────────────────────────────────────────────
+ORDER TRACKING: https://www.houseofbore.com/account/orders/{{ order.order_number }}/
+────────────────────────────────────────────────────────────────────────────────
+{% endblock %}

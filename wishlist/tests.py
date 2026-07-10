@@ -272,3 +272,17 @@ class WishlistViewTests(WishlistBaseTestCase):
         # Check that context processor variables are present
         self.assertEqual(response.context["wishlist_count"], 1)
         self.assertIn(self.product1.pk, response.context["user_wishlist_ids"])
+
+    def test_move_to_cart_view(self):
+        self.client.force_login(self.user)
+        add_to_wishlist(self.user, self.product1)
+        url = reverse("wishlist:move_to_cart", args=[self.product1.pk])
+
+        response = self.client.post(url, follow=True)
+        self.assertEqual(response.status_code, 200)
+        # Verify item removed from wishlist
+        self.assertFalse(wishlist_contains(self.user, self.product1))
+        # Verify item added to cart
+        from cart.selectors import get_cart
+        cart = get_cart(response.wsgi_request)
+        self.assertTrue(cart.items.filter(product=self.product1).exists())

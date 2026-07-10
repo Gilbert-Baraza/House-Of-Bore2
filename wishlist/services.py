@@ -6,9 +6,11 @@ Business operations and mutating services for customer wishlists.
 ──────────────────────────────────────────────────────────────────────────────
 """
 
-from typing import Any, Tuple
+from typing import Any, Optional, Tuple
 from django.db import transaction
+from django.http import HttpRequest
 
+from cart.services import add_to_cart
 from products.models import Product
 from wishlist.models import Wishlist, WishlistItem
 from wishlist.selectors import invalidate_user_wishlist_cache
@@ -84,3 +86,32 @@ def clear_wishlist(user: Any) -> int:
     if count > 0:
         invalidate_user_wishlist_cache(user)
     return count
+
+
+@transaction.atomic
+def move_wishlist_item_to_cart(request: HttpRequest, product: Product, variant_id: Optional[int] = None) -> Tuple[bool, str]:
+    """
+    Safely transfers a wishlist item directly to the active shopping cart and removes it from the wishlist upon success.
+    
+    Returns:
+        Tuple[bool, str]: (success status, status code/reason e.g. "SUCCESS", "VARIANT_REQUIRED", "OUT_OF_STOCK")
+    """
+    if not hasattr(request, "user") or not request.user.is_authenticated:
+        return False, "UNAUTHENTICATED"
+    if not product or not getattr(product, "is_active", True):
+        return False, "INACTIVE_PRODUCT"
+
+    # Check if product requires variant selection when variant_id is not specified
+    if not variant_id and product.variants.filter(is_active=True).exists():
+        return False, "VARIANT_REQUIRED"
+
+    try:
+        add_to_cart(request, product_id=product.pk, quantity=1, variant_id=variant_id)
+    except Exception as exc:
+        err_msg = str(exc)
+        if "stock" in err_msg.lower() or "unavailable" in err_msg.lower():
+            return False, "OUT_OF_STOCK"
+        return False, err_msg
+
+    remove_from_wishlist(request.user, product)
+    return True, "SUCCESS"

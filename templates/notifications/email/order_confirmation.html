@@ -1,0 +1,51 @@
+{% extends "notifications/email/base_email.html" %}
+
+{% block title %}Order Confirmation - {{ order.order_number }}{% endblock %}
+
+{% block content %}
+<h2 class="email-heading">Order Confirmed</h2>
+<p>Dear {{ order.user.get_full_name|default:order.user.email|default:"Valued Client" }},</p>
+<p>Thank you for choosing House of Bore. Your order <strong>{{ order.order_number }}</strong> has been successfully placed and is currently being processed by our atelier team.</p>
+
+<table class="table-details" role="table" aria-label="Order summary">
+    <thead>
+        <tr>
+            <th scope="col">Item</th>
+            <th scope="col" class="text-right">Qty</th>
+            <th scope="col" class="text-right">Price</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for item in order.items.all %}
+        <tr>
+            <td>
+                <span class="font-semibold">{{ item.product_name }}</span><br>
+                <small style="color: #71717a;">SKU: {{ item.sku }}</small>
+                {% if item.variant_description %}
+                <br><small style="color: #52525b;">{{ item.variant_description }}</small>
+                {% endif %}
+            </td>
+            <td class="text-right">{{ item.quantity }}</td>
+            <td class="text-right">${{ item.line_total|floatformat:2 }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="3">No items listed.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<div style="background-color: #fafafa; padding: 16px; border-radius: 6px; margin: 20px 0;">
+    <p style="margin: 4px 0;"><strong>Subtotal:</strong> ${{ order.subtotal|floatformat:2 }}</p>
+    {% if order.discount_total and order.discount_total > 0 %}
+    <p style="margin: 4px 0; color: #16a34a;"><strong>Discount:</strong> -${{ order.discount_total|floatformat:2 }}</p>
+    {% endif %}
+    <p style="margin: 4px 0;"><strong>Shipping:</strong> ${{ order.shipping_total|floatformat:2 }}</p>
+    <p style="margin: 4px 0;"><strong>Tax:</strong> ${{ order.tax_total|floatformat:2 }}</p>
+    <hr style="border: none; border-top: 1px solid #e4e4e7; margin: 8px 0;">
+    <p style="margin: 4px 0; font-size: 16px;"><strong>Total Amount:</strong> <span style="color: #d4af37; font-weight: 700;">${{ order.grand_total|floatformat:2 }} {{ order.currency }}</span></p>
+</div>
+
+<p>You can inspect your order status and tracking details at any time from your account dashboard.</p>
+{% endblock %}

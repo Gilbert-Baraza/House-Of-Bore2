@@ -12,3 +12,7 @@ Django>=5.1
 # Reads .env files and maps variables to Python settings cleanly.
 # Supports casting (booleans, lists, ints) — avoids manual os.environ.get() calls.
 python-decouple>=3.8
+
+# Asynchronous task queue and broker clients for event-driven notifications
+celery>=5.4
+redis>=5.0

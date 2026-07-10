@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}House of Bore Notification{% endblock %}</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f4f4f5;
+            color: #18181b;
+            line-height: 1.6;
+        }
+        .email-wrapper {
+            width: 100%;
+            background-color: #f4f4f5;
+            padding: 30px 15px;
+        }
+        .email-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+        .email-header {
+            background-color: #18181b;
+            color: #d4af37;
+            text-align: center;
+            padding: 24px 20px;
+            border-bottom: 2px solid #d4af37;
+        }
+        .email-header h1 {
+            margin: 0;
+            font-size: 22px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            font-weight: 700;
+        }
+        .email-body {
+            padding: 32px 28px;
+        }
+        .email-heading {
+            color: #18181b;
+            font-size: 20px;
+            font-weight: 600;
+            margin-top: 0;
+            margin-bottom: 16px;
+        }
+        .email-footer {
+            background-color: #fafafa;
+            color: #71717a;
+            font-size: 13px;
+            text-align: center;
+            padding: 20px 24px;
+            border-top: 1px solid #e4e4e7;
+        }
+        .email-footer p {
+            margin: 4px 0;
+        }
+        .btn-primary {
+            display: inline-block;
+            background-color: #18181b;
+            color: #ffffff;
+            text-decoration: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-weight: 600;
+            margin: 16px 0;
+            border: 1px solid #18181b;
+        }
+        .table-details {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 14px;
+        }
+        .table-details th {
+            text-align: left;
+            padding: 10px;
+            border-bottom: 2px solid #e4e4e7;
+            color: #52525b;
+            font-weight: 600;
+        }
+        .table-details td {
+            padding: 10px;
+            border-bottom: 1px solid #f4f4f5;
+        }
+        .text-right {
+            text-align: right;
+        }
+        .font-semibold {
+            font-weight: 600;
+        }
+        @media only screen and (max-width: 480px) {
+            .email-body {
+                padding: 20px 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="email-wrapper">
+        <div class="email-container">
+            <header class="email-header" role="banner">
+                <h1>HOUSE OF BORE</h1>
+            </header>
+            <main class="email-body" role="main">
+                {% block content %}{% endblock %}
+            </main>
+            <footer class="email-footer" role="contentinfo">
+                <p>&copy; {% now "Y" %} House of Bore Atelier. All rights reserved.</p>
+                <p>This is an automated transactional notification. Please do not reply to this address.</p>
+            </footer>
+        </div>
+    </div>
+</body>
+</html>

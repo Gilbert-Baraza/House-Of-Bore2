@@ -4,9 +4,11 @@ Class-based views for the public product catalog.
 Views are kept thin — all ORM logic is encapsulated in selectors.py.
 """
 
+from django.contrib import messages
 from django.core.paginator import Paginator
-from django.http import Http404
-from django.views.generic import DetailView, ListView
+from django.http import Http404, JsonResponse, HttpResponseRedirect
+from django.shortcuts import redirect, get_object_or_404
+from django.views.generic import DetailView, ListView, TemplateView, View
 
 from core.templatetags.query_helpers import is_truthy
 from products.models import Brand, Category, Product
@@ -30,6 +32,9 @@ from products.selectors import (
     sort_products,
 )
 from products.services import increment_product_views
+from products.recently_viewed import get_recently_viewed, track_recently_viewed
+from products.recommendations import customers_also_viewed
+from products.comparison import toggle_comparison_product, get_comparison_products, clear_comparison_list
 
 
 # ─── Products ─────────────────────────────────────────────────────────────────
@@ -176,6 +181,7 @@ class ProductDetailView(DetailView):
     def get(self, request, *args, **kwargs):
         self.object = self.get_object()
         increment_product_views(self.object)
+        track_recently_viewed(request, self.object)
         context = self.get_context_data(object=self.object)
         return self.render_to_response(context)
 
@@ -183,6 +189,8 @@ class ProductDetailView(DetailView):
         context = super().get_context_data(**kwargs)
         product = context["product"]
         context["related_products"] = get_related_products(product, limit=4)
+        context["customers_also_viewed"] = customers_also_viewed(product, limit=4)
+        context["recently_viewed_products"] = get_recently_viewed(self.request, limit=4, exclude_product=product)
         
         # Reviews & Ratings
         review_summary = get_review_summary(product)
@@ -387,3 +395,61 @@ class BrandDetailView(ListView):
             {"label": self.brand.name, "url": None},
         ]
         return context
+
+
+# ─── Product Comparison ───────────────────────────────────────────────────────
+
+class ToggleComparisonView(View):
+    """
+    Toggles a product in the session comparison list.
+    Supports both traditional POST redirection and AJAX JSON responses.
+    """
+    def post(self, request, product_id, *args, **kwargs):
+        added, message, count = toggle_comparison_product(request, product_id)
+        
+        if request.headers.get("x-requested-with") == "XMLHttpRequest":
+            return JsonResponse({
+                "status": "ok",
+                "added": added,
+                "message": message,
+                "count": count
+            })
+
+        if added:
+            messages.success(request, message)
+        else:
+            messages.info(request, message)
+
+        referer = request.META.get("HTTP_REFERER")
+        if referer:
+            return HttpResponseRedirect(referer)
+        return redirect("products:comparison_matrix")
+
+
+class ComparisonMatrixView(TemplateView):
+    """
+    Renders the side-by-side product comparison matrix table.
+    Ensures up to 4 products can be evaluated on key merchandising attributes.
+    """
+    template_name = "products/comparison.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        products = get_comparison_products(self.request)
+        context["comparison_products"] = products
+        context["breadcrumbs"] = [
+            {"label": "Home", "url": "/"},
+            {"label": "Products", "url": "/products/"},
+            {"label": "Product Comparison", "url": None},
+        ]
+        return context
+
+
+class ClearComparisonView(View):
+    """
+    Clears all products from the session comparison list.
+    """
+    def post(self, request, *args, **kwargs):
+        clear_comparison_list(request)
+        messages.info(request, "Comparison list cleared.")
+        return redirect("products:comparison_matrix")

@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% comment %}
+  templates/403.html
+  403 ERROR TEMPLATE (Forbidden)
+  ─────────────────────────────────────────────────────────────────────────────
+  Rendered when a client does not have access rights to the content.
+  ─────────────────────────────────────────────────────────────────────────────
+{% endcomment %}
+
+{% block title %}Access Forbidden — House of Bore{% endblock %}
+
+{% block content %}
+<div class="container-site py-20 lg:py-32 flex flex-col items-center justify-center text-center">
+  
+  {# Status code badge #}
+  <span class="badge badge-accent mb-4">Error 403</span>
+  
+  {# Main headline #}
+  <h1 class="font-serif text-4xl sm:text-5xl lg:text-6xl font-bold text-primary-900 mb-4 tracking-tight">
+    Access Restricted
+  </h1>
+  
+  {# Description #}
+  <p class="text-base sm:text-lg text-neutral-500 max-w-md leading-relaxed mb-8">
+    You do not have permission to access this area or resource. If you believe this is an error, please sign in with an authorized client account or contact our concierge team.
+  </p>
+  
+  {# Actions #}
+  <div class="flex flex-col sm:flex-row items-center justify-center gap-4 w-full sm:w-auto">
+    {% if not user.is_authenticated %}
+      <a href="{% url 'accounts:login' %}?next={{ request.path }}" class="btn btn-primary w-full sm:w-auto">
+        Sign In
+      </a>
+    {% endif %}
+    <a href="/" class="btn {% if user.is_authenticated %}btn-primary{% else %}btn-outline{% endif %} w-full sm:w-auto">
+      Return Home
+    </a>
+  </div>
+
+</div>
+{% endblock %}

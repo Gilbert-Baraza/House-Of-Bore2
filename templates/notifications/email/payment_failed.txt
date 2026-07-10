@@ -1,0 +1,21 @@
+{% extends "notifications/email/base_email.txt" %}
+
+{% block content %}
+PAYMENT AUTHORIZATION FAILED - ORDER #{{ order.order_number }}
+────────────────────────────────────────────────────────────────────────────────
+
+Dear {{ order.user.get_full_name|default:order.user.email|default:"Valued Client" }},
+
+We attempted to process your payment for order #{{ order.order_number }}, but the transaction could not be completed.
+
+TRANSACTION DETAILS:
+* Order Number: {{ order.order_number }}
+* Attempted Amount: ${{ payment.amount|floatformat:2 }} {{ payment.currency }}
+* Reason: {{ payment.error_message|default:"Gateway authorization declined or timed out." }}
+
+Your order remains saved in our system. To finalize your acquisition, please log into your account and select an alternative payment method.
+
+────────────────────────────────────────────────────────────────────────────────
+COMPLETE PAYMENT: https://www.houseofbore.com/account/orders/{{ order.order_number }}/
+────────────────────────────────────────────────────────────────────────────────
+{% endblock %}

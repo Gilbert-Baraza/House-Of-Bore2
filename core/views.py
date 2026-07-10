@@ -7,6 +7,7 @@ from django.contrib import messages
 from django.urls import reverse_lazy
 from django.views.generic import FormView, TemplateView
 from core.forms import ContactForm
+from products.recently_viewed import get_recently_viewed
 
 
 class HomeView(TemplateView):
@@ -18,6 +19,7 @@ class HomeView(TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        context["recently_viewed_products"] = get_recently_viewed(self.request, limit=4)
 
         # 1. Featured Categories (6 cards)
         context["featured_categories"] = [

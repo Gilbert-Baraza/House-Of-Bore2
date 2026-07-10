@@ -219,6 +219,34 @@
 
 
 {# ═══════════════════════════════════════════════════════════════════════ #}
+{# SECTION 4.5 — Recently Viewed Products (if any) #}
+{# ═══════════════════════════════════════════════════════════════════════ #}
+{% if recently_viewed_products %}
+<section class="py-16 lg:py-24 bg-neutral-50/80 border-t border-neutral-200" aria-labelledby="recently-viewed-headline">
+  <div class="container-site">
+    <div class="flex items-center justify-between mb-10">
+      <div>
+        <span class="badge badge-neutral mb-2">Your History</span>
+        <h2 id="recently-viewed-headline" class="font-serif text-2xl sm:text-3xl font-bold text-primary-900">
+          Recently Viewed
+        </h2>
+      </div>
+      <a href="{% url 'products:product_list' %}" class="text-sm font-semibold text-primary-900 hover:text-accent-600 transition-colors inline-flex items-center gap-1">
+        <span>Explore Catalog</span>
+        <span aria-hidden="true">&rarr;</span>
+      </a>
+    </div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      {% for product in recently_viewed_products %}
+        {% include "components/product_card.html" with product=product %}
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+
+{# ═══════════════════════════════════════════════════════════════════════ #}
 {# SECTION 5 — Promotional Banner #}
 {# ═══════════════════════════════════════════════════════════════════════ #}
 {% include "components/promo_banner.html" %}
