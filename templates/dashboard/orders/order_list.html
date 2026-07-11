@@ -1,0 +1,199 @@
+{% extends 'dashboard/base.html' %}
+{% block title %}Customer Orders Management — House of Bore Admin{% endblock %}
+{% block section_title %}Customer Orders Management{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <!-- Header Bar -->
+  <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div>
+      <h2 class="text-xl font-bold text-neutral-900 tracking-tight">Customer Orders & Financial Ledger</h2>
+      <p class="text-xs text-neutral-500 mt-0.5">Supervise order placement, payment verification, status lifecycles, and fulfillment initiation across all channels.</p>
+    </div>
+    <div class="flex items-center space-x-3">
+      <a href="{% url 'dashboard:orders' %}?status=paid" class="inline-flex items-center space-x-2 px-3.5 py-2 rounded-lg border border-emerald-300 bg-emerald-50 hover:bg-emerald-100 text-xs font-semibold text-emerald-900 transition-colors shadow-sm" aria-label="Filter paid awaiting processing">
+        <svg class="h-4 w-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        <span>Paid — Awaiting Processing ({% if stats.paid_awaiting %}{{ stats.paid_awaiting }}{% else %}0{% endif %})</span>
+      </a>
+      <a href="{% url 'dashboard:orders' %}?status=processing" class="inline-flex items-center space-x-2 px-3.5 py-2 rounded-lg border border-blue-300 bg-blue-50 hover:bg-blue-100 text-xs font-semibold text-blue-900 transition-colors shadow-sm" aria-label="Filter processing orders">
+        <svg class="h-4 w-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+        <span>In Processing ({% if stats.processing %}{{ stats.processing }}{% else %}0{% endif %})</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- KPI Cards Grid -->
+  <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+    <div class="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm relative overflow-hidden">
+      <span class="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Total Orders</span>
+      <p class="text-2xl font-black text-neutral-900 mt-1.5">{{ stats.total_orders|default:"0" }}</p>
+      <p class="text-[11px] text-neutral-400 mt-1">System-wide lifetime</p>
+    </div>
+    <div class="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm relative overflow-hidden">
+      <span class="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Pending Payment</span>
+      <p class="text-2xl font-black {% if stats.pending_payment > 0 %}text-amber-600{% else %}text-neutral-900{% endif %} mt-1.5">{{ stats.pending_payment|default:"0" }}</p>
+      <p class="text-[11px] text-neutral-400 mt-1">Awaiting customer payment</p>
+    </div>
+    <div class="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm relative overflow-hidden">
+      <span class="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Paid (Unfulfilled)</span>
+      <p class="text-2xl font-black {% if stats.paid_awaiting > 0 %}text-emerald-600{% else %}text-neutral-900{% endif %} mt-1.5">{{ stats.paid_awaiting|default:"0" }}</p>
+      <p class="text-[11px] text-neutral-400 mt-1">Ready for warehouse pick</p>
+    </div>
+    <div class="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm relative overflow-hidden">
+      <span class="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Processing</span>
+      <p class="text-2xl font-black {% if stats.processing > 0 %}text-blue-600{% else %}text-neutral-900{% endif %} mt-1.5">{{ stats.processing|default:"0" }}</p>
+      <p class="text-[11px] text-neutral-400 mt-1">In warehouse queue</p>
+    </div>
+    <div class="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm relative overflow-hidden">
+      <span class="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Shipped / Delivered</span>
+      <p class="text-2xl font-black text-neutral-900 mt-1.5">{{ stats.shipped|add:stats.delivered|default:"0" }}</p>
+      <p class="text-[11px] text-neutral-400 mt-1">Dispatched to customer</p>
+    </div>
+    <div class="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm relative overflow-hidden">
+      <span class="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Cancelled / Refunded</span>
+      <p class="text-2xl font-black {% if stats.cancelled_refunded > 0 %}text-rose-600{% else %}text-neutral-900{% endif %} mt-1.5">{{ stats.cancelled_refunded|default:"0" }}</p>
+      <p class="text-[11px] text-neutral-400 mt-1">Terminated or returned</p>
+    </div>
+  </div>
+
+  <!-- Search & Filter Controls -->
+  <div class="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm space-y-4">
+    <form method="get" action="{% url 'dashboard:orders' %}" class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div class="flex flex-wrap items-center gap-2">
+        <span class="text-xs font-semibold text-neutral-600 mr-1">Status:</span>
+        <a href="{% url 'dashboard:orders' %}?status=all&payment_status={{ payment_filter }}&search={{ search_query }}" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors {% if status_filter == 'all' %}bg-neutral-900 text-white{% else %}bg-neutral-100 text-neutral-600 hover:bg-neutral-200{% endif %}">All</a>
+        <a href="{% url 'dashboard:orders' %}?status=pending&payment_status={{ payment_filter }}&search={{ search_query }}" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors {% if status_filter == 'pending' %}bg-amber-600 text-white{% else %}bg-amber-50 text-amber-800 hover:bg-amber-100{% endif %}">Pending</a>
+        <a href="{% url 'dashboard:orders' %}?status=paid&payment_status={{ payment_filter }}&search={{ search_query }}" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors {% if status_filter == 'paid' %}bg-emerald-600 text-white{% else %}bg-emerald-50 text-emerald-800 hover:bg-emerald-100{% endif %}">Paid</a>
+        <a href="{% url 'dashboard:orders' %}?status=processing&payment_status={{ payment_filter }}&search={{ search_query }}" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors {% if status_filter == 'processing' %}bg-blue-600 text-white{% else %}bg-blue-50 text-blue-800 hover:bg-blue-100{% endif %}">Processing</a>
+        <a href="{% url 'dashboard:orders' %}?status=shipped&payment_status={{ payment_filter }}&search={{ search_query }}" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors {% if status_filter == 'shipped' %}bg-purple-600 text-white{% else %}bg-purple-50 text-purple-800 hover:bg-purple-100{% endif %}">Shipped</a>
+        <a href="{% url 'dashboard:orders' %}?status=delivered&payment_status={{ payment_filter }}&search={{ search_query }}" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors {% if status_filter == 'delivered' %}bg-neutral-800 text-white{% else %}bg-neutral-100 text-neutral-800 hover:bg-neutral-200{% endif %}">Delivered</a>
+        <a href="{% url 'dashboard:orders' %}?status=cancelled&payment_status={{ payment_filter }}&search={{ search_query }}" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors {% if status_filter == 'cancelled' %}bg-rose-600 text-white{% else %}bg-rose-50 text-rose-800 hover:bg-rose-100{% endif %}">Cancelled</a>
+      </div>
+
+      <div class="flex items-center space-x-2">
+        <div class="relative w-full md:w-64">
+          <input type="hidden" name="status" value="{{ status_filter }}">
+          <input type="hidden" name="payment_status" value="{{ payment_filter }}">
+          <input type="text" name="search" value="{{ search_query }}" placeholder="Search Order #, email, recipient..." class="w-full pl-8 pr-3 py-1.5 rounded-lg border border-neutral-300 text-xs focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
+          <svg class="h-4 w-4 text-neutral-400 absolute left-2.5 top-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+        </div>
+        <button type="submit" class="px-3 py-1.5 bg-neutral-900 text-white text-xs font-semibold rounded-lg hover:bg-neutral-800 transition-colors shadow-sm">Search</button>
+        {% if search_query or status_filter != 'all' or payment_filter != 'all' %}
+          <a href="{% url 'dashboard:orders' %}" class="px-2.5 py-1.5 bg-neutral-100 text-neutral-600 text-xs font-semibold rounded-lg hover:bg-neutral-200 transition-colors">Reset</a>
+        {% endif %}
+      </div>
+    </form>
+  </div>
+
+  <!-- Orders Table -->
+  <div class="rounded-xl border border-neutral-200 bg-white shadow-sm overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full text-left border-collapse">
+        <thead>
+          <tr class="border-b border-neutral-200 bg-neutral-50 text-neutral-500 text-[11px] font-bold uppercase tracking-wider">
+            <th class="py-3 px-4">Order Reference</th>
+            <th class="py-3 px-4">Date / Time</th>
+            <th class="py-3 px-4">Customer & Recipient</th>
+            <th class="py-3 px-4 text-center">Items</th>
+            <th class="py-3 px-4 text-right">Grand Total</th>
+            <th class="py-3 px-4 text-center">Payment Status</th>
+            <th class="py-3 px-4 text-center">Workflow Status</th>
+            <th class="py-3 px-4 text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-neutral-100 text-xs text-neutral-700">
+          {% for order in orders %}
+            <tr class="hover:bg-neutral-50/80 transition-colors">
+              <td class="py-3.5 px-4 font-mono font-bold text-neutral-900">
+                <a href="{% url 'dashboard:order_detail' order.order_number %}" class="hover:text-amber-700 underline decoration-neutral-300 hover:decoration-amber-700 transition-colors">
+                  {{ order.order_number }}
+                </a>
+              </td>
+              <td class="py-3.5 px-4 text-neutral-500 whitespace-nowrap">
+                <div class="font-medium text-neutral-900">{{ order.created_at|date:"M d, Y" }}</div>
+                <div class="text-[10px] text-neutral-400">{{ order.created_at|time:"H:i:s" }}</div>
+              </td>
+              <td class="py-3.5 px-4">
+                {% if order.user %}
+                  <div class="font-bold text-neutral-900">{{ order.user.get_full_name|default:order.user.email }}</div>
+                  <div class="text-[11px] text-neutral-500">{{ order.user.email }}</div>
+                {% else %}
+                  <div class="font-bold text-neutral-900">{{ order.shipping_address_snapshot.recipient_name|default:"Guest Patron" }}</div>
+                  <div class="text-[11px] text-amber-700 font-medium">Guest Checkout</div>
+                {% endif %}
+              </td>
+              <td class="py-3.5 px-4 text-center font-bold text-neutral-900">
+                {{ order.item_count }} <span class="text-[10px] font-normal text-neutral-400">unit(s)</span>
+              </td>
+              <td class="py-3.5 px-4 text-right font-black text-neutral-900">
+                ${{ order.grand_total }} <span class="text-[10px] font-normal text-neutral-400">{{ order.currency }}</span>
+              </td>
+              <td class="py-3.5 px-4 text-center">
+                {% if order.payment_status == 'paid' %}
+                  <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-600 mr-1"></span> Paid
+                  </span>
+                {% elif order.payment_status == 'awaiting_payment' %}
+                  <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">
+                    <span class="w-1.5 h-1.5 rounded-full bg-amber-500 mr-1 animate-pulse"></span> Awaiting
+                  </span>
+                {% elif order.payment_status == 'refunded' %}
+                  <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800">Refunded</span>
+                {% else %}
+                  <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-neutral-100 text-neutral-700">{{ order.get_payment_status_display }}</span>
+                {% endif %}
+              </td>
+              <td class="py-3.5 px-4 text-center">
+                {% if order.status == 'paid' %}
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">Paid — Awaiting Processing</span>
+                {% elif order.status == 'processing' %}
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-800 border border-blue-200">Processing</span>
+                {% elif order.status == 'shipped' %}
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-50 text-purple-800 border border-purple-200">Shipped</span>
+                {% elif order.status == 'delivered' %}
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-neutral-900 text-white">Delivered</span>
+                {% elif order.status == 'cancelled' %}
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-800 border border-rose-200">Cancelled</span>
+                {% else %}
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-neutral-100 text-neutral-700">{{ order.get_status_display }}</span>
+                {% endif %}
+              </td>
+              <td class="py-3.5 px-4 text-right">
+                <a href="{% url 'dashboard:order_detail' order.order_number %}" class="inline-flex items-center space-x-1 px-2.5 py-1 rounded-md bg-neutral-900 hover:bg-neutral-800 text-white text-[11px] font-semibold transition-colors shadow-sm">
+                  <span>Inspect</span>
+                  <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                </a>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="8" class="py-12 text-center text-neutral-400">
+                <svg class="h-10 w-10 mx-auto text-neutral-300 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                <p class="font-semibold text-neutral-600">No customer orders matched your criteria.</p>
+                <p class="text-xs text-neutral-400 mt-1">Try adjusting status filters or clearing keyword search terms.</p>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if is_paginated %}
+      <div class="px-4 py-3 border-t border-neutral-200 bg-neutral-50 flex items-center justify-between text-xs text-neutral-600">
+        <div>
+          Page <span class="font-bold text-neutral-900">{{ page_obj.number }}</span> of <span class="font-bold text-neutral-900">{{ page_obj.paginator.num_pages }}</span>
+        </div>
+        <div class="flex items-center space-x-2">
+          {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}&status={{ status_filter }}&payment_status={{ payment_filter }}&search={{ search_query }}" class="px-3 py-1.5 rounded-lg border border-neutral-300 bg-white font-semibold hover:bg-neutral-100 transition-colors">Previous</a>
+          {% endif %}
+          {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}&status={{ status_filter }}&payment_status={{ payment_filter }}&search={{ search_query }}" class="px-3 py-1.5 rounded-lg border border-neutral-300 bg-white font-semibold hover:bg-neutral-100 transition-colors">Next</a>
+          {% endif %}
+        </div>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

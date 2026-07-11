@@ -1,0 +1,116 @@
+<!-- templates/dashboard/base.html -->
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-neutral-50 {% if preferences.dark_mode %}dark{% endif %}">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-fit, initial-scale=1.0" />
+  <title>{% block title %}Administration Dashboard{% endblock %} — House of Bore</title>
+  <meta name="description" content="House of Bore Enterprise Operations & Business Intelligence Portal." />
+  <!-- Use project Tailwind styling / core styles -->
+  <link rel="stylesheet" href="{% static 'css/dist/styles.css' %}" onerror="this.onerror=null;this.href='https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css';" />
+  <style>
+    /* Custom admin transition and focus enhancements */
+    :focus-visible { outline: 2px solid #171717; outline-offset: 2px; }
+  </style>
+  {% block extra_head %}{% endblock %}
+</head>
+<body class="h-full text-neutral-900 antialiased selection:bg-amber-500 selection:text-white flex flex-col md:flex-row overflow-hidden bg-neutral-100">
+
+  <!-- Left Sidebar -->
+  {% include "dashboard/sidebar.html" %}
+
+  <!-- Mobile Sidebar Drawer Backdrop -->
+  <div id="mobileBackdrop" class="fixed inset-0 bg-neutral-900/60 z-30 hidden backdrop-blur-sm transition-opacity md:hidden" aria-hidden="true"></div>
+
+  <!-- Main Administrative Wrapper -->
+  <div class="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
+    <!-- Top Navigation Bar -->
+    {% include "dashboard/navbar.html" %}
+
+    <!-- Flash Messages Container -->
+    {% if messages %}
+      <div class="px-4 lg:px-8 pt-4 z-10" role="status" aria-live="polite">
+        <div class="max-w-7xl mx-auto space-y-2">
+          {% for message in messages %}
+            <div class="p-3.5 rounded-lg border flex items-center justify-between text-sm shadow-sm transition-all {% if message.tags == 'error' %}bg-red-50 border-red-200 text-red-800{% elif message.tags == 'success' %}bg-emerald-50 border-emerald-200 text-emerald-800{% else %}bg-blue-50 border-blue-200 text-blue-800{% endif %}">
+              <div class="flex items-center space-x-2.5">
+                {% if message.tags == 'error' %}
+                  <svg class="h-5 w-5 text-red-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                {% elif message.tags == 'success' %}
+                  <svg class="h-5 w-5 text-emerald-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                {% else %}
+                  <svg class="h-5 w-5 text-blue-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                {% endif %}
+                <span>{{ message }}</span>
+              </div>
+              <button type="button" onclick="this.parentElement.remove()" class="text-neutral-400 hover:text-neutral-700 font-bold ml-4" aria-label="Dismiss message">×</button>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    {% endif %}
+
+    <!-- Scrollable Main Content Area -->
+    <main class="flex-1 overflow-y-auto px-4 py-6 lg:px-8 lg:py-8 focus:outline-none" id="mainContent" tabindex="-1">
+      <div class="max-w-7xl mx-auto space-y-8">
+        {% block content %}{% endblock %}
+      </div>
+    </main>
+
+    <!-- Dashboard Footer -->
+    <footer class="bg-white border-t border-neutral-200 py-4 px-4 lg:px-8 shrink-0">
+      <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between text-xs text-neutral-500 gap-2">
+        <div>
+          <span>&copy; {% now "Y" %} House of Bore. All rights reserved.</span>
+          <span class="mx-2 text-neutral-300">|</span>
+          <span>Enterprise Administration Engine</span>
+        </div>
+        <div class="flex items-center space-x-3">
+          <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold tracking-wider uppercase {% if debug %}bg-amber-100 text-amber-800 border border-amber-300{% else %}bg-emerald-100 text-emerald-800 border border-emerald-300{% endif %}">
+            {% if debug %}Environment: Development{% else %}Environment: Production{% endif %}
+          </span>
+          <span class="text-neutral-400">v2.4.0</span>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Accessible Interactive & Keyboard Scripts -->
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      const mobileBtn = document.getElementById("mobileMenuBtn");
+      const sidebar = document.getElementById("adminSidebar");
+      const backdrop = document.getElementById("mobileBackdrop");
+      const searchInput = document.getElementById("adminSearch");
+
+      if (mobileBtn && sidebar && backdrop) {
+        mobileBtn.addEventListener("click", function() {
+          sidebar.classList.toggle("hidden");
+          sidebar.classList.toggle("fixed");
+          sidebar.classList.toggle("inset-y-0");
+          sidebar.classList.toggle("left-0");
+          sidebar.classList.toggle("z-40");
+          backdrop.classList.toggle("hidden");
+        });
+        backdrop.addEventListener("click", function() {
+          sidebar.classList.add("hidden");
+          sidebar.classList.remove("fixed", "inset-y-0", "left-0", "z-40");
+          backdrop.classList.add("hidden");
+        });
+      }
+
+      // Keyboard navigation: press '/' to focus global search
+      if (searchInput) {
+        document.addEventListener("keydown", function(e) {
+          if (e.key === "/" && document.activeElement !== searchInput && !["INPUT", "TEXTAREA"].includes(document.activeElement.tagName)) {
+            e.preventDefault();
+            searchInput.focus();
+          }
+        });
+      }
+    });
+  </script>
+  {% block extra_scripts %}{% endblock %}
+</body>
+</html>

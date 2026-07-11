@@ -1,0 +1,320 @@
+{% extends 'dashboard/base.html' %}
+{% block title %}360° Patron Profile: {{ profile.full_name }} — House of Bore CRM{% endblock %}
+{% block section_title %}360° Patron Inspection & Concierge Profile{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <!-- Header & Actions -->
+  <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-neutral-200 pb-5">
+    <div class="flex items-center space-x-4">
+      <div class="h-14 w-14 rounded-2xl bg-neutral-900 text-amber-400 flex items-center justify-center text-xl font-black shadow-md border border-neutral-700">
+        {{ profile.first_name|first|default:profile.email|first|upper }}
+      </div>
+      <div>
+        <div class="flex items-center space-x-2.5">
+          <h2 class="text-2xl font-black text-neutral-900 tracking-tight">{{ profile.full_name }}</h2>
+          {% if profile.lifetime_value >= 1000 %}
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-[11px] font-bold bg-amber-100 text-amber-900 border border-amber-300 uppercase tracking-wider">
+              VIP High-Spend
+            </span>
+          {% endif %}
+          {% if not profile.is_active %}
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-[11px] font-bold bg-rose-100 text-rose-800 uppercase tracking-wider">
+              Suspended
+            </span>
+          {% endif %}
+        </div>
+        <div class="text-xs text-neutral-500 flex items-center space-x-3 mt-1">
+          <span>{{ profile.email }}</span>
+          <span>&bull;</span>
+          <span>Member since {{ profile.date_joined|date:"F d, Y" }}</span>
+          {% if profile.phone_number %}
+            <span>&bull;</span>
+            <span class="font-semibold text-neutral-800">{{ profile.phone_number }}</span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="flex flex-wrap items-center gap-2">
+      <a href="{% url 'crm:customer_list' %}" class="px-3.5 py-2 rounded-xl border border-neutral-300 bg-white hover:bg-neutral-50 text-xs font-semibold text-neutral-700 transition-colors shadow-sm">
+        &larr; Directory
+      </a>
+      <a href="{% url 'crm:customer_timeline' customer.pk %}" class="px-4 py-2 rounded-xl border border-neutral-300 bg-white hover:bg-neutral-50 text-xs font-bold text-neutral-900 transition-colors shadow-sm inline-flex items-center space-x-1.5">
+        <svg class="h-4 w-4 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        <span>Inspect Full Timeline</span>
+      </a>
+      {% if can_export %}
+        <a href="{% url 'crm:customer_export' customer.pk %}" class="px-4 py-2 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-white text-xs font-bold transition-colors shadow-sm inline-flex items-center space-x-1.5">
+          <svg class="h-4 w-4 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+          <span>Export 360° JSON Bundle</span>
+        </a>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Executive Financial & Engagement Ledger (3 Pillar Grid) -->
+  <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
+    <div class="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm relative overflow-hidden">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-bold text-neutral-500 uppercase tracking-wider">Lifetime Revenue (LTV)</span>
+        <span class="h-8 w-8 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center font-bold text-sm">$</span>
+      </div>
+      <p class="text-3xl font-black text-neutral-900 mt-2">${{ profile.lifetime_value }} <span class="text-sm font-normal text-neutral-400">USD</span></p>
+      <p class="text-[11px] text-neutral-400 mt-1.5">Across {{ profile.total_orders }} verified transactions</p>
+    </div>
+    <div class="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm relative overflow-hidden">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-bold text-neutral-500 uppercase tracking-wider">Average Order Value (AOV)</span>
+        <span class="h-8 w-8 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center font-bold text-sm">A</span>
+      </div>
+      <p class="text-3xl font-black text-neutral-900 mt-2">${{ profile.average_order_value }} <span class="text-sm font-normal text-neutral-400">USD</span></p>
+      <p class="text-[11px] text-neutral-400 mt-1.5">Preferred payment: {{ profile.preferred_payment }}</p>
+    </div>
+    <div class="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm relative overflow-hidden">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-bold text-neutral-500 uppercase tracking-wider">Catalog Engagement</span>
+        <span class="h-8 w-8 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center font-bold text-sm">C</span>
+      </div>
+      <p class="text-3xl font-black text-neutral-900 mt-2">{{ profile.wishlist_count }} <span class="text-sm font-normal text-neutral-400">saved items</span></p>
+      <p class="text-[11px] text-neutral-400 mt-1.5">{{ profile.recent_reviews|length }} product reviews submitted</p>
+    </div>
+  </div>
+
+  <!-- 360° Profile Layout (3 Column Grid) -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Left Column: Identity, Communication & Address Book -->
+    <div class="space-y-6">
+      <!-- Contact & Communication Card -->
+      <div class="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm space-y-4">
+        <h3 class="text-sm font-bold text-neutral-900 uppercase tracking-wider border-b border-neutral-100 pb-3">Patron Identity & Preferences</h3>
+        <div class="space-y-3 text-xs">
+          <div class="flex justify-between">
+            <span class="text-neutral-500 font-medium">Account Status:</span>
+            <span class="font-bold text-neutral-900">{% if profile.is_active %}Active Valid Account{% else %}Deactivated / Restricted{% endif %}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-neutral-500 font-medium">Primary Email:</span>
+            <span class="font-bold text-neutral-900">{{ profile.email }}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-neutral-500 font-medium">Contact Phone:</span>
+            <span class="font-bold text-neutral-900">{{ profile.phone_number|default:"Not Provided" }}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-neutral-500 font-medium">Marketing Communications:</span>
+            {% if profile.receive_marketing %}
+              <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">Subscribed to Exclusives</span>
+            {% else %}
+              <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-neutral-100 text-neutral-600">Opted Out</span>
+            {% endif %}
+          </div>
+          <div class="flex justify-between">
+            <span class="text-neutral-500 font-medium">Last Login:</span>
+            <span class="font-bold text-neutral-900">{{ profile.last_login|date:"M d, Y H:i"|default:"Never" }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Saved Address Book -->
+      <div class="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm space-y-4">
+        <div class="flex items-center justify-between border-b border-neutral-100 pb-3">
+          <h3 class="text-sm font-bold text-neutral-900 uppercase tracking-wider">Address Book ({{ profile.addresses|length }})</h3>
+        </div>
+        <div class="space-y-3">
+          {% for addr in profile.addresses %}
+            <div class="rounded-xl border border-neutral-200 bg-neutral-50/60 p-3 text-xs space-y-1">
+              <div class="flex items-center justify-between font-bold text-neutral-900">
+                <span>{{ addr.label }} ({{ addr.get_address_type_display }})</span>
+                <span class="text-[10px] text-neutral-500 uppercase">{{ addr.country }}</span>
+              </div>
+              <p class="text-neutral-700 font-semibold">{{ addr.recipient_name }} &bull; {{ addr.phone_number }}</p>
+              <p class="text-neutral-500">{{ addr.address_line_1 }} {% if addr.address_line_2 %}, {{ addr.address_line_2 }}{% endif %}</p>
+              <p class="text-neutral-500">{{ addr.city }}, {{ addr.county_or_state }} {{ addr.postal_code }}</p>
+            </div>
+          {% empty %}
+            <p class="text-xs text-neutral-400 italic py-2">No saved delivery or billing addresses.</p>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Center Column: Recent Order Ledger & Catalog Activity -->
+    <div class="lg:col-span-2 space-y-6">
+      <!-- Recent Orders Ledger -->
+      <div class="rounded-2xl border border-neutral-200 bg-white shadow-sm overflow-hidden">
+        <div class="p-5 border-b border-neutral-100 flex items-center justify-between bg-neutral-50/50">
+          <div>
+            <h3 class="text-sm font-bold text-neutral-900 uppercase tracking-wider">Order History Ledger</h3>
+            <p class="text-xs text-neutral-500 mt-0.5">Complete financial transaction and fulfillment record for this patron.</p>
+          </div>
+          <span class="text-xs font-bold text-neutral-900 bg-neutral-200/80 px-2.5 py-1 rounded-md">{{ profile.total_orders }} Orders</span>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="border-b border-neutral-200 bg-neutral-50 text-neutral-500 text-[11px] font-bold uppercase tracking-wider">
+                <th class="py-3 px-4">Order #</th>
+                <th class="py-3 px-4">Date</th>
+                <th class="py-3 px-4 text-center">Status</th>
+                <th class="py-3 px-4 text-right">Grand Total</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-neutral-100 text-xs text-neutral-800">
+              {% for ord_obj in customer.orders.all|slice:":8" %}
+                <tr class="hover:bg-neutral-50/80 transition-colors">
+                  <td class="py-3.5 px-4 font-bold text-neutral-900">
+                    <a href="{% url 'dashboard:order_detail' ord_obj.order_number %}" class="hover:text-amber-700 underline decoration-neutral-300 transition-colors">
+                      #{{ ord_obj.order_number }}
+                    </a>
+                  </td>
+                  <td class="py-3.5 px-4 text-neutral-500">{{ ord_obj.created_at|date:"M d, Y" }}</td>
+                  <td class="py-3.5 px-4 text-center">
+                    <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold {% if ord_obj.status == 'delivered' %}bg-emerald-100 text-emerald-800{% elif ord_obj.status == 'paid' %}bg-blue-100 text-blue-800{% elif ord_obj.status == 'cancelled' %}bg-rose-100 text-rose-800{% else %}bg-amber-100 text-amber-800{% endif %}">
+                      {{ ord_obj.get_status_display }}
+                    </span>
+                  </td>
+                  <td class="py-3.5 px-4 text-right font-black text-neutral-900">${{ ord_obj.grand_total }}</td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="4" class="py-8 text-center text-neutral-400 italic">No historical orders recorded.</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Private Staff Notes & Concierge Interactions Section -->
+      {% if can_note %}
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- Private Administrative Notes -->
+          <div class="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm space-y-4">
+            <div class="flex items-center justify-between border-b border-neutral-100 pb-3">
+              <h3 class="text-sm font-bold text-neutral-900 uppercase tracking-wider flex items-center space-x-1.5">
+                <svg class="h-4 w-4 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                <span>Private Staff Notes ({{ staff_notes|length }})</span>
+              </h3>
+            </div>
+
+            <!-- Note Creation Form -->
+            <form method="post" action="{% url 'crm:staff_note_add' customer.pk %}" class="space-y-3 bg-neutral-50 p-3 rounded-xl border border-neutral-200">
+              {% csrf_token %}
+              <div>
+                <label class="block text-[11px] font-bold text-neutral-700 mb-1">Category & Observation</label>
+                {{ note_form.category }}
+              </div>
+              <div>
+                {{ note_form.note }}
+              </div>
+              <div class="flex items-center justify-between">
+                <label class="inline-flex items-center space-x-2 text-xs text-neutral-700 font-medium">
+                  {{ note_form.is_pinned }}
+                  <span>Pin to Top of Profile</span>
+                </label>
+                <button type="submit" class="px-3 py-1.5 rounded-lg bg-neutral-900 hover:bg-neutral-800 text-white text-xs font-bold transition-colors shadow-sm">
+                  Add Note
+                </button>
+              </div>
+            </form>
+
+            <!-- Notes List -->
+            <div class="space-y-3 max-h-80 overflow-y-auto pr-1">
+              {% for note in staff_notes %}
+                <div class="rounded-xl border {% if note.is_pinned %}border-amber-400 bg-amber-50/40{% else %}border-neutral-200 bg-white{% endif %} p-3.5 text-xs space-y-1.5 shadow-sm">
+                  <div class="flex items-center justify-between">
+                    <span class="font-bold text-neutral-900 flex items-center space-x-1">
+                      {% if note.is_pinned %}<span class="text-amber-600 font-black">[PINNED]</span>{% endif %}
+                      <span>{{ note.get_category_display }}</span>
+                    </span>
+                    <span class="text-[10px] text-neutral-400">{{ note.created_at|date:"M d, H:i" }}</span>
+                  </div>
+                  <p class="text-neutral-700 font-normal whitespace-pre-wrap">{{ note.note }}</p>
+                  <div class="text-[10px] text-neutral-500 italic pt-1 border-t border-neutral-100 flex items-center justify-between">
+                    <span>Logged by {{ note.author.email|default:"System Admin" }}</span>
+                  </div>
+                </div>
+              {% empty %}
+                <p class="text-xs text-neutral-400 italic py-2 text-center">No internal staff observations on file.</p>
+              {% endfor %}
+            </div>
+          </div>
+
+          <!-- Concierge Interaction Logging -->
+          <div class="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm space-y-4">
+            <div class="flex items-center justify-between border-b border-neutral-100 pb-3">
+              <h3 class="text-sm font-bold text-neutral-900 uppercase tracking-wider flex items-center space-x-1.5">
+                <svg class="h-4 w-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
+                <span>Concierge Contact Logs ({{ interactions|length }})</span>
+              </h3>
+            </div>
+
+            <!-- Interaction Form -->
+            <form method="post" action="{% url 'crm:interaction_add' customer.pk %}" class="space-y-3 bg-neutral-50 p-3 rounded-xl border border-neutral-200">
+              {% csrf_token %}
+              <div>
+                <label class="block text-[11px] font-bold text-neutral-700 mb-1">Interaction Channel</label>
+                {{ interaction_form.interaction_type }}
+              </div>
+              <div>
+                {{ interaction_form.summary }}
+              </div>
+              <div>
+                {{ interaction_form.details }}
+              </div>
+              <div class="flex justify-end">
+                <button type="submit" class="px-3 py-1.5 rounded-lg bg-neutral-900 hover:bg-neutral-800 text-white text-xs font-bold transition-colors shadow-sm">
+                  Log Interaction
+                </button>
+              </div>
+            </form>
+
+            <!-- Interactions List -->
+            <div class="space-y-3 max-h-80 overflow-y-auto pr-1">
+              {% for irec in interactions %}
+                <div class="rounded-xl border border-neutral-200 bg-white p-3.5 text-xs space-y-1 shadow-sm">
+                  <div class="flex items-center justify-between font-bold text-neutral-900">
+                    <span>{{ irec.get_interaction_type_display }}</span>
+                    <span class="text-[10px] text-neutral-400">{{ irec.timestamp|date:"M d, H:i" }}</span>
+                  </div>
+                  <p class="font-semibold text-neutral-800">{{ irec.summary }}</p>
+                  {% if irec.details %}
+                    <p class="text-neutral-600 text-[11px]">{{ irec.details }}</p>
+                  {% endif %}
+                  <p class="text-[10px] text-neutral-400 italic pt-1 border-t border-neutral-100">By {{ irec.performed_by.email|default:"Staff Concierge" }}</p>
+                </div>
+              {% empty %}
+                <p class="text-xs text-neutral-400 italic py-2 text-center">No manual concierge interactions recorded yet.</p>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+      {% endif %}
+
+      <!-- Recent Unified Timeline Preview -->
+      <div class="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm space-y-4">
+        <div class="flex items-center justify-between border-b border-neutral-100 pb-3">
+          <h3 class="text-sm font-bold text-neutral-900 uppercase tracking-wider">Chronological Activity Stream (Preview)</h3>
+          <a href="{% url 'crm:customer_timeline' customer.pk %}" class="text-xs font-bold text-amber-700 hover:underline">Full Timeline ({{ timeline|length }}+) &rarr;</a>
+        </div>
+        <div class="space-y-4 pl-3 border-l-2 border-neutral-200 ml-2">
+          {% for ev in timeline|slice:":6" %}
+            <div class="relative pl-4 space-y-1">
+              <span class="absolute -left-[1.35rem] top-1 h-3 w-3 rounded-full border-2 border-white {% if ev.badge_color == 'emerald' %}bg-emerald-500{% elif ev.badge_color == 'amber' %}bg-amber-500{% elif ev.badge_color == 'rose' %}bg-rose-500{% elif ev.badge_color == 'purple' %}bg-purple-500{% else %}bg-blue-500{% endif %}"></span>
+              <div class="flex items-center justify-between text-xs">
+                <span class="font-bold text-neutral-900">{{ ev.title }}</span>
+                <span class="text-[10px] font-semibold text-neutral-400">{{ ev.timestamp|date:"M d, Y H:i" }}</span>
+              </div>
+              <p class="text-xs text-neutral-600">{{ ev.description }}</p>
+            </div>
+          {% empty %}
+            <p class="text-xs text-neutral-400 italic py-2">No timeline events recorded.</p>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

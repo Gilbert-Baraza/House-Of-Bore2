@@ -1,0 +1,148 @@
+{% extends 'dashboard/base.html' %}
+{% block title %}CRM Executive Dashboard — House of Bore Admin{% endblock %}
+{% block section_title %}Customer Relationship Management (CRM){% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <!-- Header Bar -->
+  <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-neutral-200 pb-5">
+    <div>
+      <h2 class="text-xl font-bold text-neutral-900 tracking-tight">360° Patron Relationship Portal</h2>
+      <p class="text-xs text-neutral-500 mt-0.5">Supervise lifetime patron value, segment cohorts, concierge interactions, and retention analytics.</p>
+    </div>
+    <div class="flex items-center space-x-3">
+      <a href="{% url 'crm:customer_list' %}" class="inline-flex items-center space-x-2 px-4 py-2 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-white text-xs font-bold transition-colors shadow-sm">
+        <svg class="h-4 w-4 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+        <span>Browse All Patrons</span>
+      </a>
+      {% if can_view_analytics %}
+        <a href="{% url 'crm:customer_segments' %}" class="inline-flex items-center space-x-2 px-4 py-2 rounded-xl border border-neutral-300 bg-white hover:bg-neutral-50 text-neutral-800 text-xs font-bold transition-colors shadow-sm">
+          <span>Behavioral Cohorts</span>
+        </a>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Quick Customer Search Box -->
+  <div class="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm">
+    <form method="get" action="{% url 'crm:customer_list' %}" class="flex flex-col sm:flex-row items-center gap-3">
+      <div class="relative flex-1 w-full">
+        <input type="text" name="search" placeholder="Search patron by email, full name, phone number, or order reference..." class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-neutral-300 text-xs focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
+        <svg class="h-4 w-4 text-neutral-400 absolute left-3.5 top-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+      </div>
+      <button type="submit" class="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-white font-bold text-xs transition-colors shadow-sm">
+        Deep Search &rarr;
+      </button>
+    </form>
+  </div>
+
+  <!-- System KPI Cards (6 Grid) -->
+  <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+    <div class="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm relative overflow-hidden">
+      <span class="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Total Patrons</span>
+      <p class="text-2xl font-black text-neutral-900 mt-1.5">{{ stats.total_customers|default:"0" }}</p>
+      <p class="text-[11px] text-emerald-600 font-semibold mt-1">+{{ stats.new_customers_30d }} past 30d</p>
+    </div>
+    <div class="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm relative overflow-hidden">
+      <span class="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Active Patrons (90d)</span>
+      <p class="text-2xl font-black text-blue-600 mt-1.5">{{ stats.active_customers_90d|default:"0" }}</p>
+      <p class="text-[11px] text-neutral-400 mt-1">Purchased recently</p>
+    </div>
+    <div class="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm relative overflow-hidden">
+      <span class="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Avg Order Value</span>
+      <p class="text-2xl font-black text-neutral-900 mt-1.5">${{ stats.average_order_value|default:"0.00" }}</p>
+      <p class="text-[11px] text-neutral-400 mt-1">Per transaction</p>
+    </div>
+    <div class="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm relative overflow-hidden">
+      <span class="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Repeat Rate</span>
+      <p class="text-2xl font-black text-purple-600 mt-1.5">{{ stats.repeat_purchase_rate|default:"0" }}%</p>
+      <p class="text-[11px] text-neutral-400 mt-1">2+ valid orders</p>
+    </div>
+    <div class="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm relative overflow-hidden">
+      <span class="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Return Rate</span>
+      <p class="text-2xl font-black {% if stats.return_rate > 5 %}text-rose-600{% else %}text-neutral-900{% endif %} mt-1.5">{{ stats.return_rate|default:"0" }}%</p>
+      <p class="text-[11px] text-neutral-400 mt-1">Refunds & RMAs</p>
+    </div>
+    <div class="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm relative overflow-hidden">
+      <span class="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Lifetime Revenue</span>
+      <p class="text-2xl font-black text-amber-700 mt-1.5">${{ stats.total_revenue|default:"0.00" }}</p>
+      <p class="text-[11px] text-neutral-400 mt-1">Total patron spend</p>
+    </div>
+  </div>
+
+  <!-- Behavioral Segment Snapshot Grid -->
+  <div class="space-y-3">
+    <h3 class="text-sm font-bold text-neutral-900 uppercase tracking-wider">Dynamic Behavioral Cohorts</h3>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {% for code, seg in segments.items %}
+        <a href="{% url 'crm:customer_list' %}?segment={{ seg.code }}" class="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm hover:border-amber-400 transition-colors block">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-neutral-900">{{ seg.title }}</span>
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider {% if seg.badge_color == 'emerald' %}bg-emerald-100 text-emerald-800{% elif seg.badge_color == 'amber' %}bg-amber-100 text-amber-800{% elif seg.badge_color == 'blue' %}bg-blue-100 text-blue-800{% elif seg.badge_color == 'rose' %}bg-rose-100 text-rose-800{% else %}bg-neutral-100 text-neutral-700{% endif %}">
+              {{ seg.count }} Patrons
+            </span>
+          </div>
+          <p class="text-[11px] text-neutral-500 mt-1.5">{{ seg.description }}</p>
+        </a>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Recently Registered Patrons Table -->
+  <div class="rounded-2xl border border-neutral-200 bg-white shadow-sm overflow-hidden">
+    <div class="p-5 border-b border-neutral-100 flex items-center justify-between bg-neutral-50/50">
+      <div>
+        <h3 class="text-sm font-bold text-neutral-900 uppercase tracking-wider">Recently Registered Patrons</h3>
+        <p class="text-xs text-neutral-500 mt-0.5">Patrons who initialized accounts or completed guest checkout in the last 30 days.</p>
+      </div>
+      <a href="{% url 'crm:customer_list' %}?segment=new" class="text-xs font-bold text-amber-700 hover:underline">View All New Patrons &rarr;</a>
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="w-full text-left border-collapse">
+        <thead>
+          <tr class="border-b border-neutral-200 bg-neutral-50 text-neutral-500 text-[11px] font-bold uppercase tracking-wider">
+            <th class="py-3 px-4">Patron Account</th>
+            <th class="py-3 px-4">Registration Date</th>
+            <th class="py-3 px-4 text-center">Status</th>
+            <th class="py-3 px-4 text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-neutral-100 text-xs text-neutral-700">
+          {% for patron in recent_patrons %}
+            <tr class="hover:bg-neutral-50/80 transition-colors">
+              <td class="py-3.5 px-4 font-bold text-neutral-900">
+                <a href="{% url 'crm:customer_detail' patron.pk %}" class="hover:text-amber-700 underline decoration-neutral-300 transition-colors">
+                  {{ patron.get_full_name|default:patron.email }}
+                </a>
+                <div class="text-[11px] font-normal text-neutral-400">{{ patron.email }}</div>
+              </td>
+              <td class="py-3.5 px-4 text-neutral-500">
+                {{ patron.date_joined|date:"M d, Y at H:i" }}
+              </td>
+              <td class="py-3.5 px-4 text-center">
+                {% if patron.is_active %}
+                  <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">Active</span>
+                {% else %}
+                  <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800">Suspended</span>
+                {% endif %}
+              </td>
+              <td class="py-3.5 px-4 text-right">
+                <a href="{% url 'crm:customer_detail' patron.pk %}" class="inline-flex items-center space-x-1 px-2.5 py-1 rounded-md bg-neutral-900 hover:bg-neutral-800 text-white text-[11px] font-semibold transition-colors">
+                  <span>Inspect 360°</span>
+                </a>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="4" class="py-10 text-center text-neutral-400">
+                No recent patron registrations discovered.
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

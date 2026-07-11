@@ -13,7 +13,7 @@
 #   cookiecutter:            creates the theme app via manage.py tailwind init
 #   honcho:                  runs Django + Tailwind watcher simultaneously with manage.py tailwind dev
 #   django-browser-reload:   auto-refreshes the browser on file changes (dev only)
-"django-tailwind[cookiecutter,honcho,reload]>=4.5.0"
+django-tailwind[cookiecutter,honcho,reload]>=4.5.0
 
 # Django Debug Toolbar — adds an in-browser panel showing SQL queries,
 # request/response info, cache hits, and template context. Invaluable for

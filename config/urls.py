@@ -27,6 +27,10 @@ urlpatterns = [
     path("", include("orders.urls", namespace="orders")),
     path("payments/", include("payments.urls", namespace="payments")),
     path("", include("accounts.urls", namespace="accounts")),
+    path("", include("inventory.urls", namespace="inventory")),
+    path("", include("fulfillment.urls", namespace="fulfillment")),
+    path("dashboard/crm/", include("crm.urls", namespace="crm")),
+    path("dashboard/", include("dashboard.urls", namespace="dashboard")),
 ]
 
 # ─── Development-only URLs ────────────────────────────────────────────────────

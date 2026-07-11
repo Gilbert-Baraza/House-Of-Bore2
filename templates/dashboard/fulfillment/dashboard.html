@@ -1,0 +1,277 @@
+{% extends 'dashboard/base.html' %}
+{% block title %}Order Fulfillment & Shipping Dashboard{% endblock %}
+{% block section_title %}Fulfillment Operations Hub{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <!-- Top Action & KPI Bar -->
+  <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div>
+      <h2 class="text-xl font-bold text-neutral-900 tracking-tight">Post-Payment Fulfillment & Logistics Command Center</h2>
+      <p class="text-xs text-neutral-500 mt-0.5">Supervise warehouse picking queues, packing verification, courier dispatch, and active shipments.</p>
+    </div>
+    <div class="flex items-center space-x-3">
+      <a href="{% url 'fulfillment:queue' %}?queue=picking" class="inline-flex items-center space-x-2 px-3.5 py-2 rounded-lg border border-amber-300 bg-amber-50 hover:bg-amber-100 text-xs font-semibold text-amber-900 transition-colors shadow-sm" aria-label="View picking queue">
+        <svg class="h-4 w-4 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+        <span>Picking Queue ({% if stats.awaiting_pick %}{{ stats.awaiting_pick }}{% else %}0{% endif %})</span>
+      </a>
+      <a href="{% url 'fulfillment:queue' %}?queue=packing" class="inline-flex items-center space-x-2 px-3.5 py-2 rounded-lg border border-blue-300 bg-blue-50 hover:bg-blue-100 text-xs font-semibold text-blue-900 transition-colors shadow-sm" aria-label="View packing queue">
+        <svg class="h-4 w-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+        <span>Packing Queue ({% if stats.awaiting_pack %}{{ stats.awaiting_pack }}{% else %}0{% endif %})</span>
+      </a>
+      <a href="{% url 'fulfillment:queue' %}?queue=dispatch" class="inline-flex items-center space-x-2 px-3.5 py-2 rounded-lg bg-neutral-900 hover:bg-neutral-800 text-xs font-semibold text-white transition-colors shadow-sm" aria-label="View dispatch queue">
+        <svg class="h-4 w-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+        <span>Ready for Dispatch ({% if stats.ready_dispatch %}{{ stats.ready_dispatch }}{% else %}0{% endif %})</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- KPI Grid -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+    <!-- Total Active -->
+    <div class="rounded-xl border border-neutral-200 bg-white p-5 shadow-sm relative overflow-hidden">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-bold text-neutral-500 uppercase tracking-wider">Awaiting Pick</span>
+        <div class="p-2 rounded-lg bg-amber-50 text-amber-600">
+          <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        </div>
+      </div>
+      <p class="text-2xl font-black {% if stats.awaiting_pick > 0 %}text-amber-600{% else %}text-neutral-900{% endif %} mt-2">{{ stats.awaiting_pick|default:"0" }} <span class="text-sm font-medium text-neutral-500">orders</span></p>
+      <p class="text-[11px] text-neutral-400 mt-1">Orders paid and awaiting item pick</p>
+    </div>
+
+    <!-- Awaiting Pack -->
+    <div class="rounded-xl border border-neutral-200 bg-white p-5 shadow-sm relative overflow-hidden">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-bold text-neutral-500 uppercase tracking-wider">Awaiting Pack</span>
+        <div class="p-2 rounded-lg bg-blue-50 text-blue-600">
+          <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+        </div>
+      </div>
+      <p class="text-2xl font-black {% if stats.awaiting_pack > 0 %}text-blue-600{% else %}text-neutral-900{% endif %} mt-2">{{ stats.awaiting_pack|default:"0" }} <span class="text-sm font-medium text-neutral-500">orders</span></p>
+      <p class="text-[11px] text-neutral-400 mt-1">Items picked, ready for boxing</p>
+    </div>
+
+    <!-- Ready for Dispatch -->
+    <div class="rounded-xl border border-neutral-200 bg-white p-5 shadow-sm relative overflow-hidden">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-bold text-neutral-500 uppercase tracking-wider">Ready Dispatch</span>
+        <div class="p-2 rounded-lg bg-emerald-50 text-emerald-600">
+          <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+        </div>
+      </div>
+      <p class="text-2xl font-black {% if stats.ready_dispatch > 0 %}text-emerald-600{% else %}text-neutral-900{% endif %} mt-2">{{ stats.ready_dispatch|default:"0" }} <span class="text-sm font-medium text-neutral-500">orders</span></p>
+      <p class="text-[11px] text-neutral-400 mt-1">Packed, labeled & awaiting carrier</p>
+    </div>
+
+    <!-- In Transit -->
+    <div class="rounded-xl border border-neutral-200 bg-white p-5 shadow-sm relative overflow-hidden">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-bold text-neutral-500 uppercase tracking-wider">In Transit</span>
+        <div class="p-2 rounded-lg bg-purple-50 text-purple-600">
+          <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0"/></svg>
+        </div>
+      </div>
+      <p class="text-2xl font-black text-neutral-900 mt-2">{{ stats.in_transit|default:"0" }} <span class="text-sm font-medium text-neutral-500">shipments</span></p>
+      <p class="text-[11px] text-neutral-400 mt-1">Dispatched via carrier network</p>
+    </div>
+
+    <!-- Delivery Exceptions -->
+    <div class="rounded-xl border border-neutral-200 bg-white p-5 shadow-sm relative overflow-hidden">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-bold text-neutral-500 uppercase tracking-wider">Exceptions / RMA</span>
+        <div class="p-2 rounded-lg bg-red-50 text-red-600">
+          <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+        </div>
+      </div>
+      <p class="text-2xl font-black {% if stats.exceptions > 0 %}text-red-600{% else %}text-neutral-900{% endif %} mt-2">{{ stats.exceptions|default:"0" }} <span class="text-sm font-medium text-neutral-500">alerts</span></p>
+      <p class="text-[11px] text-neutral-400 mt-1">Carrier delays or RMAs requiring review</p>
+    </div>
+  </div>
+
+  <!-- Middle Grid: Queue Overview & Quick Processing -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- Pending Picking Queue Panel -->
+    <div class="rounded-xl border border-neutral-200 bg-white shadow-sm overflow-hidden flex flex-col">
+      <div class="px-5 py-4 border-b border-neutral-200 bg-neutral-50/50 flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+          <span class="h-2 w-2 rounded-full bg-amber-500"></span>
+          <h3 class="font-bold text-sm text-neutral-900">Immediate Picking Queue</h3>
+        </div>
+        <a href="{% url 'fulfillment:queue' %}?queue=picking" class="text-xs font-semibold text-neutral-600 hover:text-neutral-900 transition-colors">View Full Queue &rarr;</a>
+      </div>
+      <div class="p-5 flex-1 overflow-x-auto">
+        {% if pending_picks %}
+          <table class="min-w-full text-left text-xs" aria-label="Pending picks table">
+            <thead>
+              <tr class="border-b border-neutral-200 text-neutral-500 uppercase tracking-wider font-bold">
+                <th class="pb-3">Order #</th>
+                <th class="pb-3">Priority</th>
+                <th class="pb-3">Assigned Picker</th>
+                <th class="pb-3">Status</th>
+                <th class="pb-3 text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-neutral-100">
+              {% for fo in pending_picks %}
+              <tr class="hover:bg-neutral-50/60 transition-colors">
+                <td class="py-3.5 font-bold text-neutral-900">
+                  <a href="{% url 'fulfillment:picking' fo.pk %}" class="hover:underline text-amber-900">{{ fo.order.order_number }}</a>
+                  <div class="text-[11px] text-neutral-400 font-normal">{{ fo.created_at|date:"M d, H:i" }}</div>
+                </td>
+                <td class="py-3.5">
+                  {% if fo.priority == 1 %}
+                    <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-red-100 text-red-800">Urgent</span>
+                  {% elif fo.priority == 2 %}
+                    <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800">High</span>
+                  {% else %}
+                    <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-neutral-100 text-neutral-700">Normal</span>
+                  {% endif %}
+                </td>
+                <td class="py-3.5 text-neutral-600 font-medium">
+                  {{ fo.assigned_picker.email|default:"-- Unassigned --" }}
+                </td>
+                <td class="py-3.5">
+                  <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                    {{ fo.get_fulfillment_status_display }}
+                  </span>
+                </td>
+                <td class="py-3.5 text-right">
+                  <a href="{% url 'fulfillment:picking' fo.pk %}" class="inline-flex items-center px-2.5 py-1 rounded border border-neutral-300 bg-white hover:bg-neutral-50 text-xs font-semibold text-neutral-800 transition-colors shadow-sm">
+                    Start Pick &rarr;
+                  </a>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        {% else %}
+          <div class="text-center py-8 text-neutral-400">
+            <p class="text-xs font-medium">No orders currently awaiting picking.</p>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Ready for Dispatch / Packing Panel -->
+    <div class="rounded-xl border border-neutral-200 bg-white shadow-sm overflow-hidden flex flex-col">
+      <div class="px-5 py-4 border-b border-neutral-200 bg-neutral-50/50 flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+          <span class="h-2 w-2 rounded-full bg-blue-500"></span>
+          <h3 class="font-bold text-sm text-neutral-900">Packing & Dispatch Readiness</h3>
+        </div>
+        <a href="{% url 'fulfillment:queue' %}?queue=packing" class="text-xs font-semibold text-neutral-600 hover:text-neutral-900 transition-colors">View All &rarr;</a>
+      </div>
+      <div class="p-5 flex-1 overflow-x-auto">
+        {% if pending_packs or ready_dispatch %}
+          <table class="min-w-full text-left text-xs" aria-label="Packing and dispatch readiness table">
+            <thead>
+              <tr class="border-b border-neutral-200 text-neutral-500 uppercase tracking-wider font-bold">
+                <th class="pb-3">Order #</th>
+                <th class="pb-3">Assigned Packer</th>
+                <th class="pb-3">Progress</th>
+                <th class="pb-3">Status</th>
+                <th class="pb-3 text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-neutral-100">
+              {% for fo in pending_packs %}
+              <tr class="hover:bg-neutral-50/60 transition-colors">
+                <td class="py-3.5 font-bold text-neutral-900">
+                  <a href="{% url 'fulfillment:packing' fo.pk %}" class="hover:underline text-blue-900">{{ fo.order.order_number }}</a>
+                </td>
+                <td class="py-3.5 text-neutral-600 font-medium">
+                  {{ fo.assigned_packer.email|default:"-- Unassigned --" }}
+                </td>
+                <td class="py-3.5">
+                  <span class="text-neutral-700 font-semibold">{{ fo.packing_progress_percentage }}% Packed</span>
+                </td>
+                <td class="py-3.5">
+                  <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-800 border border-blue-200">
+                    {{ fo.get_fulfillment_status_display }}
+                  </span>
+                </td>
+                <td class="py-3.5 text-right">
+                  <a href="{% url 'fulfillment:packing' fo.pk %}" class="inline-flex items-center px-2.5 py-1 rounded border border-blue-300 bg-blue-50 hover:bg-blue-100 text-xs font-semibold text-blue-900 transition-colors shadow-sm">
+                    Pack Box &rarr;
+                  </a>
+                </td>
+              </tr>
+              {% endfor %}
+              {% for fo in ready_dispatch %}
+              <tr class="hover:bg-neutral-50/60 transition-colors">
+                <td class="py-3.5 font-bold text-neutral-900">
+                  <a href="{% url 'fulfillment:shipment_detail' fo.pk %}" class="hover:underline text-emerald-900">{{ fo.order.order_number }}</a>
+                </td>
+                <td class="py-3.5 text-neutral-600 font-medium">
+                  {{ fo.assigned_packer.email|default:"Completed" }}
+                </td>
+                <td class="py-3.5">
+                  <span class="text-emerald-700 font-bold">100% Packed</span>
+                </td>
+                <td class="py-3.5">
+                  <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                    Ready Dispatch
+                  </span>
+                </td>
+                <td class="py-3.5 text-right">
+                  <a href="{% url 'fulfillment:shipment_detail' fo.pk %}" class="inline-flex items-center px-2.5 py-1 rounded bg-neutral-900 hover:bg-neutral-800 text-xs font-semibold text-white transition-colors shadow-sm">
+                    Shipment & Dispatch &rarr;
+                  </a>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        {% else %}
+          <div class="text-center py-8 text-neutral-400">
+            <p class="text-xs font-medium">No orders currently waiting for packing or dispatch.</p>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom Section: Recent Operational Audit Trail -->
+  <div class="rounded-xl border border-neutral-200 bg-white p-6 shadow-sm">
+    <div class="flex items-center justify-between mb-4">
+      <div>
+        <h3 class="font-bold text-base text-neutral-900">Recent Operational Event Log</h3>
+        <p class="text-xs text-neutral-500">Real-time immutable tracking of warehouse pick verifications, box pack checks, and carrier handoffs.</p>
+      </div>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="min-w-full text-left text-xs" aria-label="Recent fulfillment audit events">
+        <thead>
+          <tr class="border-b border-neutral-200 text-neutral-500 uppercase tracking-wider font-bold">
+            <th class="pb-3">Timestamp</th>
+            <th class="pb-3">Order #</th>
+            <th class="pb-3">Event Type</th>
+            <th class="pb-3">Performed By</th>
+            <th class="pb-3">Description</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-neutral-100">
+          {% for ev in recent_events %}
+          <tr class="hover:bg-neutral-50/60 transition-colors">
+            <td class="py-3 text-neutral-500 whitespace-nowrap font-mono text-[11px]">{{ ev.created_at|date:"Y-m-d H:i:s" }}</td>
+            <td class="py-3 font-bold text-neutral-900">
+              <a href="{% url 'fulfillment:timeline' ev.fulfillment_order.pk %}" class="hover:underline text-amber-900">{{ ev.fulfillment_order.order.order_number }}</a>
+            </td>
+            <td class="py-3">
+              <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-neutral-100 text-neutral-800 font-mono">{{ ev.event_type }}</span>
+            </td>
+            <td class="py-3 text-neutral-700 font-medium">{{ ev.performed_by.email|default:"System / Automated" }}</td>
+            <td class="py-3 text-neutral-600">{{ ev.description }}</td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="5" class="py-6 text-center text-neutral-400 font-medium">No recent fulfillment events recorded yet.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

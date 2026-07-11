@@ -1,0 +1,141 @@
+{% extends 'dashboard/base.html' %}
+{% block title %}Fulfillment Timeline — {{ fulfillment.order.order_number }}{% endblock %}
+{% block section_title %}Order Fulfillment Timeline & Audit History{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <!-- Header Bar -->
+  <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between bg-white p-5 rounded-xl border border-neutral-200 shadow-sm">
+    <div>
+      <div class="flex items-center space-x-2">
+        <a href="{% url 'fulfillment:dashboard' %}" class="text-xs font-semibold text-neutral-500 hover:text-neutral-900">&larr; Back to Fulfillment Hub</a>
+      </div>
+      <h2 class="text-xl font-bold text-neutral-900 mt-1 tracking-tight">Lifecycle Timeline for Order {{ fulfillment.order.order_number }}</h2>
+      <p class="text-xs text-neutral-500 mt-0.5">Current Phase: <span class="font-bold text-amber-800 uppercase">{{ fulfillment.get_fulfillment_status_display }}</span> | Created: {{ fulfillment.created_at|date:"Y-m-d H:i" }}</p>
+    </div>
+    <div class="flex items-center space-x-3">
+      {% if fulfillment.fulfillment_status in 'paid,processing,picking' %}
+        <a href="{% url 'fulfillment:picking' fulfillment.pk %}" class="px-4 py-2 rounded-lg bg-amber-600 hover:bg-amber-500 text-white font-semibold text-xs shadow-sm">
+          Picking Phase &rarr;
+        </a>
+      {% elif fulfillment.fulfillment_status in 'picked,packing' %}
+        <a href="{% url 'fulfillment:packing' fulfillment.pk %}" class="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs shadow-sm">
+          Packing Phase &rarr;
+        </a>
+      {% elif fulfillment.fulfillment_status == 'ready_for_dispatch' %}
+        <a href="{% url 'fulfillment:shipment_detail' fulfillment.pk %}" class="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs shadow-sm">
+          Shipment Phase &rarr;
+        </a>
+      {% endif %}
+      {% if not fulfillment.is_terminal_state %}
+        <form action="{% url 'fulfillment:cancel_fulfillment' fulfillment.pk %}" method="post" onsubmit="return confirm('Are you sure you want to cancel this fulfillment?');">
+          {% csrf_token %}
+          <input type="hidden" name="reason" value="Cancelled from timeline view">
+          <button type="submit" class="px-3.5 py-2 rounded-lg border border-red-300 bg-red-50 hover:bg-red-100 text-red-800 font-semibold text-xs transition-colors">
+            Cancel Fulfillment
+          </button>
+        </form>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Main Timeline Progression Column -->
+    <div class="lg:col-span-2 space-y-6">
+      <!-- Visual Step Timeline -->
+      <div class="rounded-xl border border-neutral-200 bg-white p-6 shadow-sm">
+        <h3 class="font-bold text-sm text-neutral-900 mb-6">Chronological Progress Tracker</h3>
+        <div class="relative pl-6 space-y-8 border-l-2 border-neutral-200 ml-3">
+          {% for step in timeline %}
+          <div class="relative group">
+            <!-- Step Indicator Dot -->
+            <span class="absolute -left-[31px] top-0.5 flex h-6 w-6 items-center justify-center rounded-full {% if step.is_completed %}bg-emerald-600 text-white shadow-sm{% elif step.is_active %}bg-amber-500 text-white ring-4 ring-amber-100 shadow-sm animate-pulse{% else %}bg-neutral-200 text-neutral-500{% endif %}">
+              <span class="text-[11px] font-bold">{{ step.step }}</span>
+            </span>
+            <div>
+              <div class="flex items-center justify-between">
+                <h4 class="font-bold text-sm {% if step.is_completed %}text-emerald-900{% elif step.is_active %}text-amber-900 font-extrabold{% else %}text-neutral-500{% endif %}">{{ step.title }}</h4>
+                {% if step.timestamp %}
+                  <span class="text-[11px] font-mono text-neutral-400">{{ step.timestamp|date:"M d, H:i" }}</span>
+                {% endif %}
+              </div>
+              <p class="text-xs text-neutral-600 mt-1">{{ step.description }}</p>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Immutable Operational Audit Events Table -->
+      <div class="rounded-xl border border-neutral-200 bg-white p-6 shadow-sm">
+        <h3 class="font-bold text-sm text-neutral-900 mb-4">Detailed Audit Log & Staff Activity</h3>
+        <div class="overflow-x-auto">
+          <table class="min-w-full text-left text-xs" aria-label="Order fulfillment audit events">
+            <thead>
+              <tr class="border-b border-neutral-200 text-neutral-500 uppercase tracking-wider font-bold">
+                <th class="pb-3">Time</th>
+                <th class="pb-3">Action Type</th>
+                <th class="pb-3">Performed By</th>
+                <th class="pb-3">Description</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-neutral-100">
+              {% for ev in fulfillment.events.all %}
+              <tr class="hover:bg-neutral-50/60 transition-colors">
+                <td class="py-3 font-mono text-[11px] text-neutral-500 whitespace-nowrap">{{ ev.created_at|date:"Y-m-d H:i:s" }}</td>
+                <td class="py-3 font-mono font-bold text-neutral-800">{{ ev.event_type }}</td>
+                <td class="py-3 text-neutral-700 font-medium">{{ ev.performed_by.email|default:"System" }}</td>
+                <td class="py-3 text-neutral-600">{{ ev.description }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column: Line Items & RMA Initiation -->
+    <div class="space-y-6">
+      <!-- Order Items Box -->
+      <div class="rounded-xl border border-neutral-200 bg-white p-5 shadow-sm space-y-4">
+        <h3 class="font-bold text-sm text-neutral-900">Items Overview</h3>
+        <div class="space-y-3 divide-y divide-neutral-100">
+          {% for item in fulfillment.items.all %}
+          <div class="pt-2 first:pt-0 flex items-center justify-between text-xs">
+            <div>
+              <p class="font-bold text-neutral-900">{{ item.order_item.product_name }}</p>
+              <p class="text-[11px] text-neutral-400 font-mono">SKU: {{ item.order_item.sku }}</p>
+            </div>
+            <div class="text-right">
+              <span class="font-black text-neutral-900">{{ item.picked_quantity }}/{{ item.quantity }}</span>
+              <div class="text-[10px] {% if item.is_packed %}text-emerald-600 font-bold{% else %}text-amber-600{% endif %}">{% if item.is_packed %}Packed{% else %}Pending Pack{% endif %}</div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- RMA Initiation Form -->
+      {% if fulfillment.fulfillment_status == 'shipped' or fulfillment.fulfillment_status == 'out_for_delivery' or fulfillment.fulfillment_status == 'delivered' or fulfillment.fulfillment_status == 'completed' %}
+      <div class="rounded-xl border border-neutral-200 bg-white p-5 shadow-sm space-y-4">
+        <h3 class="font-bold text-sm text-neutral-900">Initiate RMA (Return / Exchange)</h3>
+        <form action="{% url 'fulfillment:initiate_return' fulfillment.pk %}" method="post" class="space-y-3">
+          {% csrf_token %}
+          <div>
+            <label class="block text-xs font-semibold text-neutral-700 mb-1">Stated Return/Exchange Reason</label>
+            <input type="text" name="reason" placeholder="e.g. Defective item, wrong size received..." class="w-full px-3 py-2 rounded-lg border border-neutral-300 text-xs required">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-neutral-700 mb-1">Customer / Inspection Notes</label>
+            <textarea name="notes" rows="2" placeholder="Enter RMA request details..." class="w-full rounded-lg border border-neutral-300 p-2 text-xs"></textarea>
+          </div>
+          <button type="submit" class="w-full px-4 py-2 rounded-lg bg-neutral-900 hover:bg-neutral-800 text-white font-bold text-xs transition-colors shadow-sm">
+            Create Return Request &rarr;
+          </button>
+        </form>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

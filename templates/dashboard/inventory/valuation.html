@@ -1,0 +1,82 @@
+{% extends 'dashboard/base.html' %}
+{% block title %}Inventory Valuation Report{% endblock %}
+{% block section_title %}Inventory Valuation Breakdown{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div>
+      <h2 class="text-xl font-bold text-neutral-900 tracking-tight">Financial Stock Valuation Report</h2>
+      <p class="text-xs text-neutral-500 mt-0.5">Real-time valuation of all sellable inventory calculated at recorded cost price.</p>
+    </div>
+    <div class="flex items-center space-x-3">
+      <a href="{% url 'inventory:dashboard' %}" class="inline-flex items-center space-x-2 px-3.5 py-2 rounded-lg border border-neutral-300 bg-white hover:bg-neutral-50 text-xs font-semibold text-neutral-700 transition-colors shadow-sm" aria-label="Return to inventory dashboard">
+        <span>&larr; Back to Dashboard</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Summary Cards -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+    <div class="rounded-xl border border-neutral-200 bg-white p-5 shadow-sm flex items-center justify-between">
+      <div>
+        <span class="text-xs font-bold text-neutral-500 uppercase tracking-wider">Total Warehouse Valuation</span>
+        <p class="text-3xl font-black text-emerald-600 mt-2">${{ total_value|floatformat:2 }}</p>
+      </div>
+      <div class="p-3 rounded-xl bg-emerald-50 text-emerald-600">
+        <svg class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      </div>
+    </div>
+
+    <div class="rounded-xl border border-neutral-200 bg-white p-5 shadow-sm flex items-center justify-between">
+      <div>
+        <span class="text-xs font-bold text-neutral-500 uppercase tracking-wider">Tracked Product Variants</span>
+        <p class="text-3xl font-black text-neutral-900 mt-2">{{ inventory_count }} <span class="text-sm font-semibold text-neutral-500">active SKU records</span></p>
+      </div>
+      <div class="p-3 rounded-xl bg-blue-50 text-blue-600">
+        <svg class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+      </div>
+    </div>
+  </div>
+
+  <div class="rounded-xl border border-neutral-200 bg-white shadow-sm overflow-hidden">
+    <div class="px-5 py-4 border-b border-neutral-200 bg-neutral-50/50">
+      <h3 class="font-bold text-sm text-neutral-900">Variant Valuation Breakdown</h3>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="min-w-full text-left text-xs" aria-label="Inventory valuation breakdown table">
+        <thead>
+          <tr class="border-b border-neutral-200 bg-neutral-50 text-neutral-500 uppercase tracking-wider font-bold">
+            <th class="px-5 py-3.5">Product Variant</th>
+            <th class="px-5 py-3.5">SKU</th>
+            <th class="px-5 py-3.5 text-right">Available Stock</th>
+            <th class="px-5 py-3.5 text-right">Unit Cost Price</th>
+            <th class="px-5 py-3.5 text-right">Total Valuation</th>
+            <th class="px-5 py-3.5 text-right">Action</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-neutral-100">
+          {% for inventory in inventories %}
+            <tr class="hover:bg-neutral-50/60 transition-colors">
+              <td class="px-5 py-3.5 font-bold text-neutral-900">
+                <a href="{% url 'inventory:product_inventory' inventory.pk %}" class="hover:underline">{{ inventory.product_variant.product.name }}</a>
+              </td>
+              <td class="px-5 py-3.5 font-mono text-neutral-500">{{ inventory.product_variant.sku }}</td>
+              <td class="px-5 py-3.5 text-right font-bold text-neutral-900">{{ inventory.available_quantity }} units</td>
+              <td class="px-5 py-3.5 text-right text-neutral-600">${{ inventory.product_variant.cost_price|default_if_none:'0.00' }}</td>
+              <td class="px-5 py-3.5 text-right font-black text-emerald-600">${{ inventory.valuation|floatformat:2 }}</td>
+              <td class="px-5 py-3.5 text-right">
+                <a href="{% url 'inventory:adjustment_form' inventory.pk %}" class="inline-flex items-center px-2.5 py-1 rounded bg-neutral-100 hover:bg-neutral-200 text-neutral-700 font-semibold transition-colors">Adjust</a>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="6" class="px-5 py-12 text-center text-neutral-400 italic">No inventory records available for valuation.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -60,6 +60,9 @@ LOCAL_APPS = [
     "wishlist",      # User product wishlists
     "dashboard",     # Staff/seller or customer account dashboard
     "notifications", # Centralized, event-driven transactional communications
+    "inventory",     # Inventory management, ledger, and stock controls
+    "fulfillment",   # Order fulfillment, picking, packing, shipping, and returns workflow
+    "crm",           # Customer Relationship Management (CRM) 360° profile & timeline
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS

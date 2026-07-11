@@ -8,9 +8,9 @@ optimizes relationship fetching with `select_related()` and `prefetch_related()`
 ──────────────────────────────────────────────────────────────────────────────
 """
 
-from typing import Any, Optional
-from django.db.models import QuerySet
-from orders.models import Order, OrderItem
+from typing import Any, Dict, Optional
+from django.db.models import Count, Q, QuerySet
+from orders.models import Order, OrderItem, OrderStatus, PaymentStatus
 
 
 def get_order(order_number: str, user: Optional[Any] = None, session_key: Optional[str] = None) -> Optional[Order]:
@@ -84,3 +84,49 @@ def recent_orders(limit: int = 10) -> QuerySet[Order]:
         .prefetch_related("items")
         .order_by("-created_at")[:limit]
     )
+
+
+def get_admin_orders(status: str = "all", payment_status: str = "all", search: str = "") -> QuerySet[Order]:
+    """
+    Administrative query for retrieving and filtering customer orders with full relationship prefetching.
+    Ensures zero N+1 queries.
+    """
+    qs = (
+        Order.objects.all()
+        .select_related("user", "checkout_session", "fulfillment_order")
+        .prefetch_related("items", "items__product")
+        .order_by("-created_at")
+    )
+    if status and status != "all":
+        qs = qs.filter(status=status)
+    if payment_status and payment_status != "all":
+        qs = qs.filter(payment_status=payment_status)
+    if search:
+        search = search.strip()
+        qs = qs.filter(
+            Q(order_number__icontains=search)
+            | Q(user__email__icontains=search)
+            | Q(user__first_name__icontains=search)
+            | Q(user__last_name__icontains=search)
+            | Q(shipping_address_snapshot__recipient_name__icontains=search)
+        ).distinct()
+    return qs
+
+
+def get_admin_order_statistics() -> Dict[str, Any]:
+    """
+    Aggregate administrative KPI metrics for customer orders.
+    """
+    qs = Order.objects.all()
+    stats = qs.aggregate(
+        total_orders=Count("id"),
+        pending_payment=Count("id", filter=Q(status=OrderStatus.PENDING) | Q(payment_status=PaymentStatus.AWAITING_PAYMENT)),
+        paid_awaiting=Count("id", filter=Q(status=OrderStatus.PAID)),
+        processing=Count("id", filter=Q(status=OrderStatus.PROCESSING)),
+        shipped=Count("id", filter=Q(status=OrderStatus.SHIPPED)),
+        delivered=Count("id", filter=Q(status=OrderStatus.DELIVERED)),
+        cancelled_refunded=Count("id", filter=Q(status__in=[OrderStatus.CANCELLED, OrderStatus.FAILED]) | Q(payment_status=PaymentStatus.REFUNDED)),
+    )
+    for k in stats:
+        stats[k] = stats[k] or 0
+    return stats

@@ -1,0 +1,137 @@
+{% extends 'dashboard/base.html' %}
+{% block title %}Picking Checklist — {{ fulfillment.order.order_number }}{% endblock %}
+{% block section_title %}Warehouse Picking Phase{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <!-- Top Navigation & Order Summary -->
+  <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between bg-white p-5 rounded-xl border border-neutral-200 shadow-sm">
+    <div>
+      <div class="flex items-center space-x-2">
+        <a href="{% url 'fulfillment:queue' %}?queue=picking" class="text-xs font-semibold text-neutral-500 hover:text-neutral-900">&larr; Back to Picking Queue</a>
+      </div>
+      <h2 class="text-xl font-bold text-neutral-900 mt-1 tracking-tight">Picking Checklist for Order {{ fulfillment.order.order_number }}</h2>
+      <p class="text-xs text-neutral-500 mt-0.5">Warehouse status: <span class="font-bold text-amber-800">{{ fulfillment.get_fulfillment_status_display }}</span> | Priority: <span class="font-bold text-neutral-800">{{ fulfillment.get_priority_display }}</span></p>
+    </div>
+    <div class="flex items-center space-x-3">
+      {% if fulfillment.fulfillment_status != 'picking' %}
+      <form action="{% url 'fulfillment:start_picking' fulfillment.pk %}" method="post">
+        {% csrf_token %}
+        <button type="submit" class="px-4 py-2 rounded-lg bg-amber-600 hover:bg-amber-500 text-white font-semibold text-xs shadow-sm transition-colors">
+          Begin Picking Phase
+        </button>
+      </form>
+      {% endif %}
+      <a href="{% url 'fulfillment:timeline' fulfillment.pk %}" class="px-4 py-2 rounded-lg border border-neutral-300 bg-white hover:bg-neutral-50 text-neutral-700 font-semibold text-xs shadow-sm transition-colors">
+        View Timeline
+      </a>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Main Checklist Column -->
+    <div class="lg:col-span-2 space-y-6">
+      <div class="rounded-xl border border-neutral-200 bg-white shadow-sm overflow-hidden">
+        <div class="px-5 py-4 border-b border-neutral-200 bg-neutral-50/50 flex items-center justify-between">
+          <h3 class="font-bold text-sm text-neutral-900">Line Items to Locate & Pick</h3>
+          <span class="text-xs font-semibold text-neutral-600">Total Items: {{ fulfillment.items.count }}</span>
+        </div>
+        <form action="{% url 'fulfillment:complete_picking' fulfillment.pk %}" method="post" class="p-5 space-y-6">
+          {% csrf_token %}
+          <div class="overflow-x-auto">
+            <table class="min-w-full text-left text-xs" aria-label="Order line items picking verification">
+              <thead>
+                <tr class="border-b border-neutral-200 text-neutral-500 uppercase tracking-wider font-bold">
+                  <th class="pb-3">Product / SKU</th>
+                  <th class="pb-3 text-right">Target Qty</th>
+                  <th class="pb-3 text-right">Picked Qty</th>
+                  <th class="pb-3 text-right">Missing Qty</th>
+                  <th class="pb-3">Notes / Discrepancies</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-neutral-100">
+                {% for item in fulfillment.items.all %}
+                <tr class="hover:bg-neutral-50/60 transition-colors">
+                  <td class="py-3.5 font-bold text-neutral-900">
+                    <div>{{ item.order_item.product_name }}</div>
+                    <div class="text-[11px] text-neutral-500 font-normal mt-0.5">SKU: <span class="font-mono text-neutral-700">{{ item.order_item.sku }}</span></div>
+                    {% if item.order_item.variant_description %}
+                      <div class="text-[10px] text-amber-800 font-medium mt-0.5">{{ item.order_item.variant_description }}</div>
+                    {% endif %}
+                  </td>
+                  <td class="py-3.5 text-right font-black text-base text-neutral-900">
+                    {{ item.quantity }}
+                  </td>
+                  <td class="py-3.5 text-right">
+                    <input type="number" name="picked_qty_{{ item.pk }}" value="{{ item.picked_quantity|default:item.quantity }}" min="0" max="{{ item.quantity }}" class="w-20 px-2 py-1 rounded border border-neutral-300 text-right text-xs font-semibold focus:ring-2 focus:ring-amber-500" required>
+                  </td>
+                  <td class="py-3.5 text-right">
+                    <input type="number" name="missing_qty_{{ item.pk }}" value="{{ item.missing_quantity|default:0 }}" min="0" max="{{ item.quantity }}" class="w-20 px-2 py-1 rounded border border-neutral-300 text-right text-xs font-semibold text-red-600 focus:ring-2 focus:ring-red-500">
+                  </td>
+                  <td class="py-3.5">
+                    <input type="text" name="item_notes_{{ item.pk }}" value="{{ item.notes }}" placeholder="Notes on location / substitutions..." class="w-full px-2.5 py-1 rounded border border-neutral-300 text-xs focus:ring-2 focus:ring-amber-500">
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+
+          <!-- General Picking Notes -->
+          <div class="space-y-2 pt-4 border-t border-neutral-200">
+            <label for="picking_notes" class="block font-bold text-xs text-neutral-700 uppercase tracking-wider">Overall Picking Verification Notes</label>
+            <textarea name="picking_notes" id="picking_notes" rows="2" placeholder="Enter notes regarding bin locations, box damage, or inventory shortages..." class="w-full rounded-lg border border-neutral-300 p-3 text-xs focus:ring-2 focus:ring-amber-500"></textarea>
+          </div>
+
+          <div class="flex items-center justify-end space-x-3 pt-2">
+            <a href="{% url 'fulfillment:queue' %}?queue=picking" class="px-4 py-2 rounded-lg border border-neutral-300 bg-white hover:bg-neutral-50 text-xs font-semibold text-neutral-700">
+              Cancel
+            </a>
+            <button type="submit" class="px-5 py-2.5 rounded-lg bg-neutral-900 hover:bg-neutral-800 text-white font-bold text-xs shadow-sm transition-colors">
+              Verify & Complete Picking &rarr;
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Right Column: Assignment & Details -->
+    <div class="space-y-6">
+      <!-- Staff Assignment -->
+      <div class="rounded-xl border border-neutral-200 bg-white p-5 shadow-sm space-y-4">
+        <h3 class="font-bold text-sm text-neutral-900">Assigned Warehouse Picker</h3>
+        <form action="{% url 'fulfillment:assign' fulfillment.pk %}" method="post" class="space-y-4">
+          {% csrf_token %}
+          <input type="hidden" name="role" value="picker">
+          <div>
+            <label for="id_staff_user" class="block text-xs font-semibold text-neutral-600 mb-1">Select Picker Staff</label>
+            {{ assignment_form.staff_user }}
+          </div>
+          <button type="submit" class="w-full px-4 py-2 rounded-lg bg-neutral-100 hover:bg-neutral-200 text-neutral-800 font-bold text-xs transition-colors">
+            Update Picker Assignment
+          </button>
+        </form>
+      </div>
+
+      <!-- Customer & Order Context -->
+      <div class="rounded-xl border border-neutral-200 bg-white p-5 shadow-sm space-y-3">
+        <h3 class="font-bold text-sm text-neutral-900">Shipping Destination Snapshot</h3>
+        <div class="text-xs text-neutral-600 space-y-1">
+          <p class="font-bold text-neutral-900">{{ fulfillment.order.shipping_address_snapshot.recipient_name }}</p>
+          <p>{{ fulfillment.order.shipping_address_snapshot.address_line_1 }}</p>
+          {% if fulfillment.order.shipping_address_snapshot.address_line_2 %}
+            <p>{{ fulfillment.order.shipping_address_snapshot.address_line_2 }}</p>
+          {% endif %}
+          <p>{{ fulfillment.order.shipping_address_snapshot.city }}, {{ fulfillment.order.shipping_address_snapshot.county_or_state }} {{ fulfillment.order.shipping_address_snapshot.postal_code }}</p>
+          <p class="font-semibold text-neutral-800 mt-2">Phone: {{ fulfillment.order.shipping_address_snapshot.phone_number|default:"N/A" }}</p>
+        </div>
+        {% if fulfillment.notes %}
+        <div class="mt-3 p-3 rounded-lg bg-amber-50 border border-amber-200 text-xs text-amber-900">
+          <span class="font-bold">Customer Notes:</span> {{ fulfillment.notes }}
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

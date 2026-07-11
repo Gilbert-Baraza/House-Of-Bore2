@@ -16,6 +16,8 @@ from django.utils import timezone
 
 from checkout.models import CheckoutSession
 from checkout.services import validate_checkout
+from inventory.models import Inventory, InventoryMovement, MovementType
+from inventory.services import fulfill_reserved_stock, release_stock, reserve_stock
 from orders.models import (
     FulfillmentStatus,
     Order,
@@ -24,6 +26,7 @@ from orders.models import (
     PaymentStatus,
 )
 from pricing.services import pricing_breakdown
+from products.models import ProductVariant
 
 
 def generate_order_number() -> str:
@@ -105,6 +108,45 @@ def calculate_order_totals(checkout_session: CheckoutSession) -> Dict[str, Decim
         "tax_total": breakdown.get("tax", Decimal("0.00")),
         "grand_total": breakdown.get("grand_total", Decimal("0.00")),
     }
+
+
+def _inventory_for_order_item(item: OrderItem) -> Inventory | None:
+    variant = None
+    if item.sku:
+        variant = ProductVariant.objects.filter(sku=item.sku).first()
+    if not variant and item.product_id:
+        variant = ProductVariant.objects.filter(product=item.product).order_by("id").first()
+    if not variant:
+        return None
+    inventory, _ = Inventory.objects.get_or_create(
+        product_variant=variant,
+        defaults={
+            "available_quantity": variant.stock_quantity or 0,
+            "reorder_level": variant.low_stock_threshold or 0,
+            "reorder_quantity": max(variant.low_stock_threshold or 0, 1),
+        },
+    )
+    return inventory
+
+
+def _apply_order_inventory_action(order: Order, action: str) -> None:
+    for item in order.items.select_related("product").all():
+        inventory = _inventory_for_order_item(item)
+        if not inventory:
+            continue
+        reference_id = str(order.pk)
+        if action == "reserve":
+            if InventoryMovement.objects.filter(inventory=inventory, reference_type="order", reference_id=reference_id, movement_type=MovementType.RESERVATION).exists():
+                continue
+            reserve_stock(inventory, item.quantity, performed_by=None, notes=f"Reserved for order {order.order_number}", reference_type="order", reference_id=reference_id)
+        elif action == "release":
+            if InventoryMovement.objects.filter(inventory=inventory, reference_type="order", reference_id=reference_id, movement_type=MovementType.RESERVATION_RELEASED).exists():
+                continue
+            release_stock(inventory, item.quantity, performed_by=None, notes=f"Released for cancelled order {order.order_number}", reference_type="order", reference_id=reference_id)
+        elif action == "fulfill":
+            if InventoryMovement.objects.filter(inventory=inventory, reference_type="order", reference_id=reference_id, movement_type=MovementType.SALE).exists():
+                continue
+            fulfill_reserved_stock(inventory, item.quantity, performed_by=None, notes=f"Fulfilled order {order.order_number}", reference_type="order", reference_id=reference_id)
 
 
 def snapshot_products(order: Order, cart: Any) -> List[OrderItem]:
@@ -228,6 +270,7 @@ def transition_order_status(order: Order, new_status: str, note: str = "") -> Or
     if new_status not in valid_statuses:
         raise ValidationError(f"Invalid order status: {new_status}")
 
+    previous_status = order.status
     order.status = new_status
     if new_status == OrderStatus.PAID:
         order.payment_status = PaymentStatus.PAID
@@ -236,6 +279,14 @@ def transition_order_status(order: Order, new_status: str, note: str = "") -> Or
             order.payment_status = PaymentStatus.REFUNDED
     elif new_status == OrderStatus.DELIVERED:
         order.fulfillment_status = FulfillmentStatus.FULFILLED
+
+    if previous_status != new_status:
+        if new_status == OrderStatus.PAID:
+            _apply_order_inventory_action(order, "reserve")
+        elif new_status in {OrderStatus.CANCELLED, OrderStatus.FAILED}:
+            _apply_order_inventory_action(order, "release")
+        elif new_status in {OrderStatus.SHIPPED, OrderStatus.DELIVERED}:
+            _apply_order_inventory_action(order, "fulfill")
 
     if note:
         order.customer_notes = f"{order.customer_notes}\n[{timezone.now().strftime('%Y-%m-%d %H:%M')}] {note}".strip()

@@ -1,0 +1,121 @@
+<!-- templates/dashboard/sidebar.html -->
+<aside aria-label="Staff Administration Sidebar" class="w-64 bg-neutral-900 text-neutral-300 flex flex-col justify-between shrink-0 hidden md:flex min-h-screen border-r border-neutral-800 transition-all duration-300" id="adminSidebar">
+  <!-- Sidebar Header & Logo -->
+  <div class="p-6 border-b border-neutral-800 flex items-center justify-between">
+    <a href="{% url 'dashboard:home' %}" class="flex items-center space-x-3 focus:outline-none focus:ring-2 focus:ring-amber-500 rounded-md">
+      <div class="h-9 w-9 bg-gradient-to-br from-amber-400 to-amber-600 rounded-lg flex items-center justify-center text-neutral-950 font-bold text-lg shadow-md">
+        HB
+      </div>
+      <div>
+        <span class="block text-base font-semibold text-white tracking-wider font-serif">HOUSE OF BORE</span>
+        <span class="block text-[10px] uppercase tracking-widest text-amber-400 font-sans">Administration</span>
+      </div>
+    </a>
+  </div>
+
+  <!-- Sidebar Navigation Links -->
+  <nav class="flex-1 px-4 py-6 space-y-1 overflow-y-auto" aria-label="Primary Staff Navigation">
+    <!-- Dashboard -->
+    <a href="{% url 'dashboard:home' %}" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg font-medium text-sm transition-colors {% if active_nav == 'dashboard' %}bg-amber-500/10 text-amber-400 border-l-4 border-amber-400{% else %}text-neutral-400 hover:text-white hover:bg-neutral-800/60{% endif %}" aria-current="{% if active_nav == 'dashboard' %}page{% else %}false{% endif %}">
+      <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+      </svg>
+      <span>Dashboard</span>
+    </a>
+
+    <!-- Orders -->
+    <a href="{% url 'dashboard:orders' %}" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg font-medium text-sm transition-colors {% if active_nav == 'orders' %}bg-amber-500/10 text-amber-400 border-l-4 border-amber-400{% else %}text-neutral-400 hover:text-white hover:bg-neutral-800/60{% endif %}" aria-current="{% if active_nav == 'orders' %}page{% else %}false{% endif %}">
+      <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+      </svg>
+      <span>Orders</span>
+    </a>
+
+    <!-- Products -->
+    <a href="{% url 'dashboard:products' %}" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg font-medium text-sm transition-colors {% if active_nav == 'products' %}bg-amber-500/10 text-amber-400 border-l-4 border-amber-400{% else %}text-neutral-400 hover:text-white hover:bg-neutral-800/60{% endif %}" aria-current="{% if active_nav == 'products' %}page{% else %}false{% endif %}">
+      <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+      </svg>
+      <span>Products</span>
+    </a>
+
+    <!-- Inventory -->
+    <a href="{% url 'inventory:dashboard' %}" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg font-medium text-sm transition-colors {% if active_nav == 'inventory' %}bg-amber-500/10 text-amber-400 border-l-4 border-amber-400{% else %}text-neutral-400 hover:text-white hover:bg-neutral-800/60{% endif %}" aria-current="{% if active_nav == 'inventory' %}page{% else %}false{% endif %}">
+      <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+      </svg>
+      <span>Inventory</span>
+    </a>
+
+    <!-- Fulfillment & Logistics -->
+    <a href="{% url 'fulfillment:dashboard' %}" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg font-medium text-sm transition-colors {% if active_nav == 'fulfillment' %}bg-amber-500/10 text-amber-400 border-l-4 border-amber-400{% else %}text-neutral-400 hover:text-white hover:bg-neutral-800/60{% endif %}" aria-current="{% if active_nav == 'fulfillment' %}page{% else %}false{% endif %}">
+      <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z" />
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" />
+      </svg>
+      <span>Fulfillment</span>
+    </a>
+
+    <!-- Customers -->
+    <a href="{% url 'dashboard:customers' %}" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg font-medium text-sm transition-colors {% if active_nav == 'customers' %}bg-amber-500/10 text-amber-400 border-l-4 border-amber-400{% else %}text-neutral-400 hover:text-white hover:bg-neutral-800/60{% endif %}" aria-current="{% if active_nav == 'customers' %}page{% else %}false{% endif %}">
+      <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+      </svg>
+      <span>Customers</span>
+    </a>
+
+    <!-- Marketing -->
+    <a href="{% url 'dashboard:marketing' %}" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg font-medium text-sm transition-colors {% if active_nav == 'marketing' %}bg-amber-500/10 text-amber-400 border-l-4 border-amber-400{% else %}text-neutral-400 hover:text-white hover:bg-neutral-800/60{% endif %}" aria-current="{% if active_nav == 'marketing' %}page{% else %}false{% endif %}">
+      <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
+      </svg>
+      <span>Marketing</span>
+    </a>
+
+    <!-- Reports -->
+    <a href="{% url 'dashboard:reports' %}" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg font-medium text-sm transition-colors {% if active_nav == 'reports' %}bg-amber-500/10 text-amber-400 border-l-4 border-amber-400{% else %}text-neutral-400 hover:text-white hover:bg-neutral-800/60{% endif %}" aria-current="{% if active_nav == 'reports' %}page{% else %}false{% endif %}">
+      <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+      </svg>
+      <span>Reports</span>
+    </a>
+
+    <!-- Settings -->
+    <a href="{% url 'dashboard:settings' %}" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg font-medium text-sm transition-colors {% if active_nav == 'settings' %}bg-amber-500/10 text-amber-400 border-l-4 border-amber-400{% else %}text-neutral-400 hover:text-white hover:bg-neutral-800/60{% endif %}" aria-current="{% if active_nav == 'settings' %}page{% else %}false{% endif %}">
+      <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+      </svg>
+      <span>Settings</span>
+    </a>
+
+    <!-- Users (RBAC) -->
+    <a href="{% url 'dashboard:users' %}" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg font-medium text-sm transition-colors {% if active_nav == 'users' %}bg-amber-500/10 text-amber-400 border-l-4 border-amber-400{% else %}text-neutral-400 hover:text-white hover:bg-neutral-800/60{% endif %}" aria-current="{% if active_nav == 'users' %}page{% else %}false{% endif %}">
+      <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 008 4.07M3 15.364c.64-1.319 1-2.8 1-4.364 0-1.457.39-2.823 1.07-4" />
+      </svg>
+      <span>Users & RBAC</span>
+    </a>
+  </nav>
+
+  <!-- Sidebar Footer / Storefront Link -->
+  <div class="p-4 border-t border-neutral-800 space-y-3">
+    <a href="{% url 'core:home' %}" target="_blank" class="flex items-center justify-between px-3 py-2 rounded-lg bg-neutral-800/80 hover:bg-neutral-800 text-neutral-300 hover:text-white text-xs font-medium transition-colors">
+      <span class="flex items-center space-x-2">
+        <svg class="h-4 w-4 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+        </svg>
+        <span>View Storefront</span>
+      </span>
+      <span class="text-[10px] bg-neutral-700 text-neutral-300 px-1.5 py-0.5 rounded">Live</span>
+    </a>
+    <div class="flex items-center justify-between text-[11px] text-neutral-500 px-1">
+      <span>v2.4.0-PROD</span>
+      <span class="inline-flex items-center space-x-1">
+        <span class="h-1.5 w-1.5 rounded-full {% if debug %}bg-amber-500{% else %}bg-emerald-500{% endif %}"></span>
+        <span>{% if debug %}Development{% else %}Production{% endif %}</span>
+      </span>
+    </div>
+  </div>
+</aside>

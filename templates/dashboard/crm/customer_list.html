@@ -1,0 +1,146 @@
+{% extends 'dashboard/base.html' %}
+{% block title %}Patron Directory — House of Bore CRM{% endblock %}
+{% block section_title %}Patron Directory & Behavioral Cohorts{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <!-- Top Navigation & Cohort Pills Bar -->
+  <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div>
+      <h2 class="text-xl font-bold text-neutral-900 tracking-tight">Customer Accounts & Ledger</h2>
+      <p class="text-xs text-neutral-500 mt-0.5">Filter by dynamic behavioral segmentation, purchase velocity, and lifetime revenue.</p>
+    </div>
+    <div class="flex items-center space-x-2">
+      <a href="{% url 'crm:dashboard' %}" class="px-3 py-1.5 rounded-lg border border-neutral-300 bg-white hover:bg-neutral-50 text-xs font-semibold text-neutral-700 transition-colors">
+        &larr; CRM Dashboard
+      </a>
+    </div>
+  </div>
+
+  <!-- Multi-Dimensional Search & Segment Form -->
+  <div class="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm space-y-4">
+    <!-- Segment Tabs -->
+    <div class="flex flex-wrap items-center gap-2 border-b border-neutral-100 pb-4">
+      <span class="text-xs font-bold text-neutral-500 uppercase tracking-wider mr-2">Cohort:</span>
+      <a href="?segment=all&search={{ search_query }}&sort_by={{ sort_by }}" class="px-3 py-1.5 rounded-xl text-xs font-bold transition-colors {% if segment_filter == 'all' %}bg-neutral-900 text-white shadow-sm{% else %}bg-neutral-100 text-neutral-600 hover:bg-neutral-200{% endif %}">All Patrons</a>
+      <a href="?segment=new&search={{ search_query }}&sort_by={{ sort_by }}" class="px-3 py-1.5 rounded-xl text-xs font-bold transition-colors {% if segment_filter == 'new' %}bg-emerald-600 text-white shadow-sm{% else %}bg-emerald-50 text-emerald-800 hover:bg-emerald-100{% endif %}">New (30d)</a>
+      <a href="?segment=active&search={{ search_query }}&sort_by={{ sort_by }}" class="px-3 py-1.5 rounded-xl text-xs font-bold transition-colors {% if segment_filter == 'active' %}bg-blue-600 text-white shadow-sm{% else %}bg-blue-50 text-blue-800 hover:bg-blue-100{% endif %}">Active (90d)</a>
+      <a href="?segment=vip&search={{ search_query }}&sort_by={{ sort_by }}" class="px-3 py-1.5 rounded-xl text-xs font-bold transition-colors {% if segment_filter == 'vip' %}bg-amber-600 text-white shadow-sm{% else %}bg-amber-50 text-amber-800 hover:bg-amber-100{% endif %}">VIP High-Spend</a>
+      <a href="?segment=frequent&search={{ search_query }}&sort_by={{ sort_by }}" class="px-3 py-1.5 rounded-xl text-xs font-bold transition-colors {% if segment_filter == 'frequent' %}bg-purple-600 text-white shadow-sm{% else %}bg-purple-50 text-purple-800 hover:bg-purple-100{% endif %}">Frequent Buyers</a>
+      <a href="?segment=inactive&search={{ search_query }}&sort_by={{ sort_by }}" class="px-3 py-1.5 rounded-xl text-xs font-bold transition-colors {% if segment_filter == 'inactive' %}bg-neutral-700 text-white shadow-sm{% else %}bg-neutral-100 text-neutral-700 hover:bg-neutral-200{% endif %}">Inactive (>180d)</a>
+      <a href="?segment=pending_returns&search={{ search_query }}&sort_by={{ sort_by }}" class="px-3 py-1.5 rounded-xl text-xs font-bold transition-colors {% if segment_filter == 'pending_returns' %}bg-rose-600 text-white shadow-sm{% else %}bg-rose-50 text-rose-800 hover:bg-rose-100{% endif %}">Pending Returns</a>
+    </div>
+
+    <!-- Keyword Search & Sorting -->
+    <form method="get" action="{% url 'crm:customer_list' %}" class="flex flex-col md:flex-row items-center justify-between gap-4">
+      <input type="hidden" name="segment" value="{{ segment_filter }}">
+      
+      <div class="relative w-full md:w-80">
+        <input type="text" name="search" value="{{ search_query }}" placeholder="Search name, email, phone, order #..." class="w-full pl-9 pr-3 py-2 rounded-xl border border-neutral-300 text-xs focus:ring-2 focus:ring-amber-500">
+        <svg class="h-4 w-4 text-neutral-400 absolute left-3 top-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+      </div>
+
+      <div class="flex items-center space-x-3 w-full md:w-auto">
+        <label class="text-xs font-semibold text-neutral-600 whitespace-nowrap">Sort By:</label>
+        <select name="sort_by" onchange="this.form.submit()" class="rounded-xl border border-neutral-300 py-1.5 px-3 text-xs font-semibold text-neutral-800 focus:ring-2 focus:ring-amber-500">
+          <option value="registered_desc" {% if sort_by == 'registered_desc' %}selected{% endif %}>Newest Registered</option>
+          <option value="spend_desc" {% if sort_by == 'spend_desc' %}selected{% endif %}>Highest Lifetime Spend</option>
+          <option value="orders_desc" {% if sort_by == 'orders_desc' %}selected{% endif %}>Most Orders Placed</option>
+          <option value="last_active_desc" {% if sort_by == 'last_active_desc' %}selected{% endif %}>Most Recently Active</option>
+        </select>
+        <button type="submit" class="px-4 py-2 bg-neutral-900 text-white text-xs font-bold rounded-xl hover:bg-neutral-800 transition-colors shadow-sm">Apply</button>
+        {% if search_query or segment_filter != 'all' or sort_by != 'registered_desc' %}
+          <a href="{% url 'crm:customer_list' %}" class="px-3 py-2 bg-neutral-100 text-neutral-600 text-xs font-bold rounded-xl hover:bg-neutral-200 transition-colors">Reset</a>
+        {% endif %}
+      </div>
+    </form>
+  </div>
+
+  <!-- Patrons Table -->
+  <div class="rounded-2xl border border-neutral-200 bg-white shadow-sm overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full text-left border-collapse">
+        <thead>
+          <tr class="border-b border-neutral-200 bg-neutral-50 text-neutral-500 text-[11px] font-bold uppercase tracking-wider">
+            <th class="py-3.5 px-4">Patron Identity & Account</th>
+            <th class="py-3.5 px-4 text-center">Orders</th>
+            <th class="py-3.5 px-4 text-right">Lifetime Revenue</th>
+            <th class="py-3.5 px-4">Last Order Date</th>
+            <th class="py-3.5 px-4 text-center">Account Status</th>
+            <th class="py-3.5 px-4 text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-neutral-100 text-xs text-neutral-800">
+          {% for patron in customers %}
+            <tr class="hover:bg-neutral-50/80 transition-colors">
+              <td class="py-4 px-4 font-bold text-neutral-900">
+                <a href="{% url 'crm:customer_detail' patron.pk %}" class="text-sm font-bold hover:text-amber-700 underline decoration-neutral-300 hover:decoration-amber-700 transition-colors">
+                  {{ patron.get_full_name|default:patron.email }}
+                </a>
+                <div class="text-[11px] font-normal text-neutral-500 mt-0.5">{{ patron.email }}</div>
+                {% if patron.lifetime_spent >= 1000 %}
+                  <span class="inline-flex items-center px-2 py-0.5 mt-1 rounded text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300">VIP Client</span>
+                {% endif %}
+              </td>
+              <td class="py-4 px-4 text-center font-bold text-neutral-900 text-sm">
+                {{ patron.total_orders_count|default:"0" }}
+              </td>
+              <td class="py-4 px-4 text-right font-black text-neutral-900 text-sm">
+                ${{ patron.lifetime_spent|default:"0.00" }} <span class="text-[10px] font-normal text-neutral-400">USD</span>
+              </td>
+              <td class="py-4 px-4 text-neutral-500">
+                {% if patron.last_order_date %}
+                  <div class="font-medium text-neutral-900">{{ patron.last_order_date|date:"M d, Y" }}</div>
+                  <div class="text-[10px] text-neutral-400">{{ patron.last_order_date|time:"H:i" }}</div>
+                {% else %}
+                  <span class="text-neutral-400 italic">No completed orders</span>
+                {% endif %}
+              </td>
+              <td class="py-4 px-4 text-center">
+                {% if patron.is_active %}
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-600 mr-1.5"></span> Active
+                  </span>
+                {% else %}
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800">Suspended</span>
+                {% endif %}
+              </td>
+              <td class="py-4 px-4 text-right">
+                <a href="{% url 'crm:customer_detail' patron.pk %}" class="inline-flex items-center space-x-1 px-3 py-1.5 rounded-lg bg-neutral-900 hover:bg-neutral-800 text-white text-xs font-bold transition-colors shadow-sm">
+                  <span>360° Inspection</span>
+                  <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                </a>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="6" class="py-12 text-center text-neutral-400">
+                <svg class="h-10 w-10 mx-auto text-neutral-300 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                <p class="font-bold text-neutral-600">No patron accounts matched your search criteria.</p>
+                <p class="text-xs text-neutral-400 mt-1">Try resetting cohort filters or modifying your keyword query.</p>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if is_paginated %}
+      <div class="px-4 py-3 border-t border-neutral-200 bg-neutral-50 flex items-center justify-between text-xs text-neutral-600">
+        <div>
+          Page <span class="font-bold text-neutral-900">{{ page_obj.number }}</span> of <span class="font-bold text-neutral-900">{{ page_obj.paginator.num_pages }}</span>
+        </div>
+        <div class="flex items-center space-x-2">
+          {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}&segment={{ segment_filter }}&search={{ search_query }}&sort_by={{ sort_by }}" class="px-3 py-1.5 rounded-lg border border-neutral-300 bg-white font-semibold hover:bg-neutral-100 transition-colors">Previous</a>
+          {% endif %}
+          {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}&segment={{ segment_filter }}&search={{ search_query }}&sort_by={{ sort_by }}" class="px-3 py-1.5 rounded-lg border border-neutral-300 bg-white font-semibold hover:bg-neutral-100 transition-colors">Next</a>
+          {% endif %}
+        </div>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

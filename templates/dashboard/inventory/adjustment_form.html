@@ -1,0 +1,83 @@
+{% extends 'dashboard/base.html' %}
+{% block title %}Adjust Inventory: {{ inventory.product_variant.sku }}{% endblock %}
+{% block section_title %}Inventory Stock Adjustment{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl space-y-6">
+  <div class="flex items-center justify-between">
+    <div>
+      <h2 class="text-xl font-bold text-neutral-900 tracking-tight">Adjust Stock Level</h2>
+      <p class="text-xs text-neutral-500 mt-0.5">Every adjustment requires an explicit reason and is permanently recorded in the immutable ledger and audit log.</p>
+    </div>
+    <a href="{% url 'inventory:dashboard' %}" class="inline-flex items-center space-x-2 px-3 py-1.5 rounded-lg border border-neutral-300 bg-white hover:bg-neutral-50 text-xs font-semibold text-neutral-700 transition-colors shadow-sm" aria-label="Return to inventory dashboard">
+      <span>&larr; Back</span>
+    </a>
+  </div>
+
+  <!-- Current Variant Summary Card -->
+  <div class="rounded-xl border border-neutral-200 bg-neutral-50 p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div>
+      <span class="text-[10px] font-bold uppercase tracking-wider text-amber-600 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">Target Variant</span>
+      <h3 class="text-lg font-bold text-neutral-900 mt-1.5">{{ inventory.product_variant.product.name }}</h3>
+      <p class="text-xs font-mono text-neutral-500">SKU: {{ inventory.product_variant.sku }} | Cost Price: ${{ inventory.product_variant.cost_price|default:"0.00" }}</p>
+    </div>
+    <div class="flex items-center space-x-6 text-right">
+      <div>
+        <span class="block text-[10px] font-bold uppercase text-neutral-400">Available</span>
+        <span class="text-xl font-black text-neutral-900">{{ inventory.available_quantity }}</span>
+      </div>
+      <div>
+        <span class="block text-[10px] font-bold uppercase text-neutral-400">Reserved</span>
+        <span class="text-xl font-black text-blue-600">{{ inventory.reserved_quantity }}</span>
+      </div>
+      <div>
+        <span class="block text-[10px] font-bold uppercase text-neutral-400">Damaged</span>
+        <span class="text-xl font-black text-red-600">{{ inventory.damaged_quantity }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Adjustment Form -->
+  <form method="post" class="rounded-xl border border-neutral-200 bg-white p-6 shadow-sm space-y-5" novalidate>
+    {% csrf_token %}
+    {% if form.non_field_errors %}
+      <div class="rounded-lg border border-red-200 bg-red-50 p-4 text-xs font-semibold text-red-700" role="alert">
+        {{ form.non_field_errors }}
+      </div>
+    {% endif %}
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+      <div class="space-y-1.5">
+        <label for="{{ form.action.id_for_label }}" class="block text-xs font-bold uppercase tracking-wider text-neutral-700">{{ form.action.label }} <span class="text-red-500">*</span></label>
+        {{ form.action }}
+        {% if form.action.errors %}<p class="text-xs font-semibold text-red-600">{{ form.action.errors|join:", " }}</p>{% endif %}
+      </div>
+
+      <div class="space-y-1.5">
+        <label for="{{ form.quantity.id_for_label }}" class="block text-xs font-bold uppercase tracking-wider text-neutral-700">{{ form.quantity.label }} <span class="text-red-500">*</span></label>
+        {{ form.quantity }}
+        {% if form.quantity.errors %}<p class="text-xs font-semibold text-red-600">{{ form.quantity.errors|join:", " }}</p>{% endif %}
+      </div>
+    </div>
+
+    <div class="space-y-1.5">
+      <label for="{{ form.reason.id_for_label }}" class="block text-xs font-bold uppercase tracking-wider text-neutral-700">{{ form.reason.label }} <span class="text-red-500">*</span></label>
+      {{ form.reason }}
+      <p class="text-[11px] text-neutral-400">Required: Specify why this inventory change is being executed (e.g., Physical cycle count, Warehouse audit discrepancy).</p>
+      {% if form.reason.errors %}<p class="text-xs font-semibold text-red-600">{{ form.reason.errors|join:", " }}</p>{% endif %}
+    </div>
+
+    <div class="space-y-1.5">
+      <label for="{{ form.notes.id_for_label }}" class="block text-xs font-bold uppercase tracking-wider text-neutral-700">{{ form.notes.label }}</label>
+      {{ form.notes }}
+      <p class="text-[11px] text-neutral-400">Optional: Additional reference notes or internal tracking numbers.</p>
+      {% if form.notes.errors %}<p class="text-xs font-semibold text-red-600">{{ form.notes.errors|join:", " }}</p>{% endif %}
+    </div>
+
+    <div class="pt-4 border-t border-neutral-100 flex items-center justify-end space-x-3">
+      <a href="{% url 'inventory:dashboard' %}" class="px-4 py-2 rounded-lg border border-neutral-300 bg-white hover:bg-neutral-50 text-xs font-semibold text-neutral-700 transition-colors">Cancel</a>
+      <button type="submit" class="px-5 py-2 rounded-lg bg-neutral-900 hover:bg-neutral-800 text-xs font-bold text-white shadow-sm transition-colors">Submit Adjustment & Audit</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

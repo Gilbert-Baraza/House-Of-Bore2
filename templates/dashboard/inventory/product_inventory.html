@@ -1,0 +1,111 @@
+{% extends 'dashboard/base.html' %}
+{% block title %}Variant Inventory: {{ inventory.product_variant.sku }}{% endblock %}
+{% block section_title %}Product Variant Stock Details{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div>
+      <div class="flex items-center space-x-2">
+        <span class="text-[10px] font-bold uppercase tracking-wider bg-neutral-900 text-white px-2 py-0.5 rounded">SKU: {{ inventory.product_variant.sku }}</span>
+        {% if inventory.is_out_of_stock %}
+          <span class="text-[10px] font-bold uppercase tracking-wider bg-red-600 text-white px-2 py-0.5 rounded">Out of Stock</span>
+        {% elif inventory.is_low_stock %}
+          <span class="text-[10px] font-bold uppercase tracking-wider bg-amber-500 text-white px-2 py-0.5 rounded">Low Stock Alert</span>
+        {% else %}
+          <span class="text-[10px] font-bold uppercase tracking-wider bg-emerald-600 text-white px-2 py-0.5 rounded">Healthy Stock</span>
+        {% endif %}
+      </div>
+      <h2 class="text-xl font-bold text-neutral-900 tracking-tight mt-1.5">{{ inventory.product_variant.product.name }}</h2>
+      <p class="text-xs text-neutral-500 mt-0.5">{{ inventory.product_variant.get_description|default:"Standard product configuration" }}</p>
+    </div>
+    <div class="flex items-center space-x-3">
+      <a href="{% url 'inventory:dashboard' %}" class="inline-flex items-center space-x-2 px-3.5 py-2 rounded-lg border border-neutral-300 bg-white hover:bg-neutral-50 text-xs font-semibold text-neutral-700 transition-colors shadow-sm" aria-label="Return to dashboard">
+        <span>&larr; Back</span>
+      </a>
+      <a href="{% url 'inventory:adjustment_form' inventory.pk %}" class="inline-flex items-center space-x-2 px-3.5 py-2 rounded-lg bg-neutral-900 hover:bg-neutral-800 text-xs font-bold text-white shadow-sm transition-colors" aria-label="Adjust stock for {{ inventory.product_variant.sku }}">
+        <svg class="h-4 w-4 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
+        <span>Adjust Stock Level</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- KPI Cards -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="rounded-xl border border-neutral-200 bg-white p-5 shadow-sm">
+      <span class="text-xs font-bold text-neutral-500 uppercase tracking-wider">Available (Sellable)</span>
+      <p class="text-2xl font-black {% if inventory.available_quantity <= 0 %}text-red-600{% elif inventory.is_low_stock %}text-amber-600{% else %}text-emerald-600{% endif %} mt-2">{{ inventory.available_quantity }} units</p>
+      <p class="text-[11px] text-neutral-400 mt-1">Ready for customer fulfillment</p>
+    </div>
+
+    <div class="rounded-xl border border-neutral-200 bg-white p-5 shadow-sm">
+      <span class="text-xs font-bold text-neutral-500 uppercase tracking-wider">Reserved Stock</span>
+      <p class="text-2xl font-black text-blue-600 mt-2">{{ inventory.reserved_quantity }} units</p>
+      <p class="text-[11px] text-neutral-400 mt-1">Allocated to pending orders</p>
+    </div>
+
+    <div class="rounded-xl border border-neutral-200 bg-white p-5 shadow-sm">
+      <span class="text-xs font-bold text-neutral-500 uppercase tracking-wider">Damaged / Unusable</span>
+      <p class="text-2xl font-black text-red-600 mt-2">{{ inventory.damaged_quantity }} units</p>
+      <p class="text-[11px] text-neutral-400 mt-1">Isolated from sellable pool</p>
+    </div>
+
+    <div class="rounded-xl border border-neutral-200 bg-white p-5 shadow-sm">
+      <span class="text-xs font-bold text-neutral-500 uppercase tracking-wider">Reorder Threshold</span>
+      <p class="text-2xl font-black text-neutral-900 mt-2">{{ inventory.reorder_level }} units</p>
+      <p class="text-[11px] text-neutral-400 mt-1">Suggested replenishment: +{{ inventory.reorder_quantity }}</p>
+    </div>
+  </div>
+
+  <!-- Variant Movements Ledger -->
+  <div class="rounded-xl border border-neutral-200 bg-white shadow-sm overflow-hidden">
+    <div class="px-5 py-4 border-b border-neutral-200 bg-neutral-50/50 flex items-center justify-between">
+      <h3 class="font-bold text-sm text-neutral-900">Recent Ledger Mutations for {{ inventory.product_variant.sku }}</h3>
+      <a href="{% url 'inventory:stock_history_for_inventory' inventory.pk %}" class="text-xs font-semibold text-neutral-600 hover:text-neutral-900 transition-colors">View All Variant History &rarr;</a>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="min-w-full text-left text-xs" aria-label="Variant stock movement history">
+        <thead>
+          <tr class="border-b border-neutral-200 bg-neutral-50 text-neutral-500 uppercase tracking-wider font-bold">
+            <th class="px-5 py-3.5">Timestamp</th>
+            <th class="px-5 py-3.5">Movement Type</th>
+            <th class="px-5 py-3.5 text-right">Delta</th>
+            <th class="px-5 py-3.5 text-right">Previous</th>
+            <th class="px-5 py-3.5 text-right">New Balance</th>
+            <th class="px-5 py-3.5">Reference & Notes</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-neutral-100">
+          {% for movement in movements %}
+            <tr class="hover:bg-neutral-50/60 transition-colors">
+              <td class="px-5 py-3.5 text-neutral-500 whitespace-nowrap">{{ movement.created_at|date:"M d, Y H:i:s" }}</td>
+              <td class="px-5 py-3.5 whitespace-nowrap">
+                <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase
+                  {% if movement.quantity > 0 %}bg-emerald-100 text-emerald-800
+                  {% elif movement.quantity < 0 %}bg-amber-100 text-amber-800
+                  {% else %}bg-neutral-100 text-neutral-800{% endif %}">
+                  {{ movement.get_movement_type_display }}
+                </span>
+              </td>
+              <td class="px-5 py-3.5 text-right font-black {% if movement.quantity > 0 %}text-emerald-600{% elif movement.quantity < 0 %}text-amber-600{% else %}text-neutral-600{% endif %}">
+                {% if movement.quantity > 0 %}+{% endif %}{{ movement.quantity }}
+              </td>
+              <td class="px-5 py-3.5 text-right text-neutral-500">{{ movement.previous_quantity }}</td>
+              <td class="px-5 py-3.5 text-right font-bold text-neutral-900">{{ movement.new_quantity }}</td>
+              <td class="px-5 py-3.5 text-neutral-600 max-w-xs truncate">
+                {% if movement.reference_type %}<span class="font-mono text-[10px] bg-neutral-100 px-1.5 py-0.5 rounded mr-1">{{ movement.reference_type }}: #{{ movement.reference_id }}</span>{% endif %}
+                {% if movement.performed_by %}<span class="font-semibold text-neutral-800">{{ movement.performed_by.email }}</span> — {% endif %}
+                {{ movement.notes|default:"-" }}
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="6" class="px-5 py-12 text-center text-neutral-400 italic">No movement mutations recorded for this variant.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

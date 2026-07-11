@@ -1,0 +1,74 @@
+<!-- templates/dashboard/navbar.html -->
+<header class="h-16 bg-white border-b border-neutral-200 flex items-center justify-between px-4 lg:px-8 shrink-0 z-20 shadow-sm">
+  <!-- Left Side: Mobile Menu Toggle & Breadcrumbs -->
+  <div class="flex items-center space-x-4">
+    <button type="button" id="mobileMenuBtn" class="p-2 -ml-2 rounded-md text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 md:hidden focus:outline-none focus:ring-2 focus:ring-neutral-900" aria-label="Open staff navigation drawer" aria-expanded="false" aria-controls="adminSidebar">
+      <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+      </svg>
+    </button>
+    {% include "dashboard/breadcrumbs.html" %}
+  </div>
+
+  <!-- Center/Right Side: Global Search -->
+  <div class="hidden sm:flex flex-1 max-w-md mx-6">
+    <form action="{% url 'dashboard:home' %}" method="get" class="w-full relative">
+      <label for="adminSearch" class="sr-only">Search dashboard records</label>
+      <div class="relative rounded-md shadow-sm">
+        <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+          <svg class="h-4 w-4 text-neutral-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        </div>
+        <input type="search" name="q" id="adminSearch" class="block w-full rounded-lg border border-neutral-300 bg-neutral-50/50 py-1.5 pl-9 pr-3 text-sm placeholder:text-neutral-400 focus:border-neutral-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-neutral-900" placeholder="Search orders, products, customers... (Press '/' to focus)" />
+      </div>
+    </form>
+  </div>
+
+  <!-- Right Side: Action Icons & User Menu -->
+  <div class="flex items-center space-x-3 sm:space-x-4">
+    <!-- Theme Toggle (Foundation) -->
+    <button type="button" title="Toggle dark theme (foundation)" class="p-2 rounded-lg text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100 transition-colors focus:outline-none focus:ring-2 focus:ring-neutral-900">
+      <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+      </svg>
+    </button>
+
+    <!-- Messages (Placeholder) -->
+    <button type="button" title="Staff messages & inquiries (Coming soon)" class="relative p-2 rounded-lg text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100 transition-colors focus:outline-none focus:ring-2 focus:ring-neutral-900">
+      <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+      </svg>
+      <span class="absolute top-1.5 right-1.5 block h-2 w-2 rounded-full bg-amber-500 ring-2 ring-white"></span>
+    </button>
+
+    <!-- Notifications Center Link -->
+    <a href="{% url 'dashboard:notifications' %}" title="View notification center" class="relative p-2 rounded-lg text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100 transition-colors focus:outline-none focus:ring-2 focus:ring-neutral-900">
+      <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+      </svg>
+      {% if notifications %}
+        <span class="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-600 text-[10px] font-bold text-white ring-2 ring-white">{{ notifications|length }}</span>
+      {% endif %}
+    </a>
+
+    <!-- User Profile & Dropdown -->
+    <div class="relative border-l border-neutral-200 pl-3 sm:pl-4">
+      <a href="{% url 'dashboard:profile' %}" class="flex items-center space-x-3 p-1 rounded-lg hover:bg-neutral-100 transition-colors focus:outline-none focus:ring-2 focus:ring-neutral-900" id="userMenuBtn" aria-haspopup="true">
+        {% if user.profile.avatar %}
+          <img class="h-8 w-8 rounded-full object-cover border border-neutral-300" src="{{ user.profile.avatar.url }}" alt="{{ user.email }} avatar" />
+        {% else %}
+          <div class="h-8 w-8 rounded-full bg-neutral-900 text-white flex items-center justify-center font-semibold text-xs uppercase shadow-sm">
+            {{ user.email|slice:":2" }}
+          </div>
+        {% endif %}
+        <div class="hidden xl:block text-left">
+          <span class="block text-xs font-semibold text-neutral-900 leading-tight">{{ user.full_name }}</span>
+          <span class="block text-[10px] text-amber-600 font-medium uppercase tracking-wider">
+            {% if user.is_superuser %}Super Administrator{% else %}Staff Operator{% endif %}
+          </span>
+        </div>
+      </a>
+    </div>
+  </div>
+</header>

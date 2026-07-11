@@ -1,0 +1,225 @@
+{% extends 'dashboard/base.html' %}
+{% block title %}Order {{ order.order_number }} — Administrative Inspection{% endblock %}
+{% block section_title %}Order Inspection & Lifecycle Control{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <!-- Top Navigation & Action Header -->
+  <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-neutral-200 pb-5">
+    <div class="flex items-center space-x-3">
+      <a href="{% url 'dashboard:orders' %}" class="p-2 rounded-lg border border-neutral-300 bg-white hover:bg-neutral-50 text-neutral-600 transition-colors shadow-sm" aria-label="Back to orders queue">
+        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+      </a>
+      <div>
+        <div class="flex items-center space-x-2.5">
+          <h2 class="text-2xl font-black text-neutral-900 tracking-tight font-mono">{{ order.order_number }}</h2>
+          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold {% if order.status == 'paid' %}bg-emerald-100 text-emerald-800{% elif order.status == 'processing' %}bg-blue-100 text-blue-800{% elif order.status == 'shipped' %}bg-purple-100 text-purple-800{% elif order.status == 'delivered' %}bg-neutral-900 text-white{% elif order.status == 'cancelled' %}bg-rose-100 text-rose-800{% else %}bg-amber-100 text-amber-800{% endif %}">
+            {{ order.get_status_display }}
+          </span>
+          <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider {% if order.payment_status == 'paid' %}bg-emerald-50 text-emerald-700 border border-emerald-200{% else %}bg-neutral-100 text-neutral-600{% endif %}">
+            Payment: {{ order.get_payment_status_display }}
+          </span>
+        </div>
+        <p class="text-xs text-neutral-500 mt-1">Placed on <span class="font-medium text-neutral-900">{{ order.created_at|date:"F d, Y at H:i:s" }}</span> across checkout session <code class="bg-neutral-100 px-1.5 py-0.5 rounded text-[11px] font-mono">{{ order.checkout_session.session_id|default:"Direct" }}</code></p>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="flex items-center space-x-3">
+      {% if fulfillment %}
+        <a href="{% url 'fulfillment:timeline' fulfillment.pk %}" class="inline-flex items-center space-x-2 px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-neutral-950 font-bold text-xs transition-colors shadow-sm">
+          <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+          <span>Fulfillment Timeline ({{ fulfillment.get_fulfillment_status_display }})</span>
+        </a>
+      {% elif can_change_order and order.status in 'paid,processing' %}
+        <form method="post" action="{% url 'dashboard:order_create_fulfillment' order.order_number %}">
+          {% csrf_token %}
+          <button type="submit" class="inline-flex items-center space-x-2 px-4 py-2 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-white font-bold text-xs transition-colors shadow-sm">
+            <svg class="h-4 w-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+            <span>Initiate Fulfillment Workflow</span>
+          </button>
+        </form>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Left 2 Columns: Line Items & Lifecycle Control -->
+    <div class="lg:col-span-2 space-y-6">
+      <!-- Line Items Table -->
+      <div class="rounded-2xl border border-neutral-200 bg-white shadow-sm overflow-hidden">
+        <div class="p-5 border-b border-neutral-100 flex items-center justify-between bg-neutral-50/50">
+          <div>
+            <h3 class="text-sm font-bold text-neutral-900 uppercase tracking-wider">Order Line Items Snapshot</h3>
+            <p class="text-xs text-neutral-500 mt-0.5">Physical garment selections snapshotted at exact time of order placement.</p>
+          </div>
+          <span class="px-2.5 py-1 rounded-lg bg-neutral-900 text-white text-xs font-bold">{{ order.item_count }} Unit(s)</span>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="border-b border-neutral-200 bg-neutral-50 text-neutral-500 text-[11px] font-bold uppercase tracking-wider">
+                <th class="py-3 px-4">Garment & Variant</th>
+                <th class="py-3 px-4">SKU / Code</th>
+                <th class="py-3 px-4 text-right">Unit Price</th>
+                <th class="py-3 px-4 text-center">Qty</th>
+                <th class="py-3 px-4 text-right">Line Total</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-neutral-100 text-xs text-neutral-800">
+              {% for item in items %}
+                <tr class="hover:bg-neutral-50/60 transition-colors">
+                  <td class="py-4 px-4 font-bold text-neutral-900">
+                    <div>{{ item.product_name }}</div>
+                    {% if item.variant_description %}
+                      <div class="text-[11px] font-normal text-amber-700 mt-0.5">{{ item.variant_description }}</div>
+                    {% endif %}
+                  </td>
+                  <td class="py-4 px-4 font-mono text-neutral-500 text-[11px]">{{ item.sku|default:"N/A" }}</td>
+                  <td class="py-4 px-4 text-right font-medium text-neutral-700">${{ item.unit_price }}</td>
+                  <td class="py-4 px-4 text-center font-bold text-neutral-900">{{ item.quantity }}</td>
+                  <td class="py-4 px-4 text-right font-black text-neutral-900">${{ item.line_total }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Lifecycle Transition & Status Management Panel -->
+      {% if can_change_order %}
+        <div class="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm space-y-6">
+          <div class="flex items-center justify-between border-b border-neutral-100 pb-4">
+            <div>
+              <h3 class="text-sm font-bold text-neutral-900 uppercase tracking-wider">Lifecycle Transition Control</h3>
+              <p class="text-xs text-neutral-500 mt-0.5">Perform atomic transitions to alter order status and synchronize double-entry inventory reserves.</p>
+            </div>
+          </div>
+
+          <form method="post" action="{% url 'dashboard:order_transition' order.order_number %}" class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+            {% csrf_token %}
+            <div>
+              <label class="block text-xs font-bold text-neutral-700 mb-1.5">Target Status</label>
+              <select name="new_status" class="w-full rounded-xl border border-neutral-300 px-3 py-2 text-xs font-semibold text-neutral-900 focus:ring-2 focus:ring-amber-500">
+                {% for code, label in order_statuses %}
+                  <option value="{{ code }}" {% if order.status == code %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-neutral-700 mb-1.5">Transition Reason / Audit Note</label>
+              <input type="text" name="note" placeholder="e.g. Verified wire transfer receipt" class="w-full rounded-xl border border-neutral-300 px-3 py-2 text-xs focus:ring-2 focus:ring-amber-500">
+            </div>
+            <div>
+              <button type="submit" class="w-full py-2 px-4 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-white font-bold text-xs transition-colors shadow-sm">
+                Execute Transition
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Customer & Delivery Notes Form -->
+        <div class="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm space-y-4">
+          <div class="flex items-center justify-between border-b border-neutral-100 pb-3">
+            <h3 class="text-sm font-bold text-neutral-900 uppercase tracking-wider">Customer & Concierge Delivery Notes</h3>
+          </div>
+          <form method="post" action="{% url 'dashboard:order_notes' order.order_number %}" class="space-y-3">
+            {% csrf_token %}
+            <textarea name="customer_notes" rows="4" placeholder="Special delivery instructions or VIP preferences..." class="w-full rounded-xl border border-neutral-300 p-3 text-xs focus:ring-2 focus:ring-amber-500">{{ order.customer_notes }}</textarea>
+            <div class="flex justify-end">
+              <button type="submit" class="px-4 py-2 rounded-xl bg-neutral-900 text-white text-xs font-bold hover:bg-neutral-800 transition-colors shadow-sm">
+                Save Notes
+              </button>
+            </div>
+          </form>
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Right Column: Financial Breakdown, Patron Profile, Fulfillment Info -->
+    <div class="space-y-6">
+      <!-- Financial Breakdown Card -->
+      <div class="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm space-y-4">
+        <h3 class="text-sm font-bold text-neutral-900 uppercase tracking-wider border-b border-neutral-100 pb-3">Financial Summary</h3>
+        
+        <div class="space-y-2.5 text-xs">
+          <div class="flex justify-between text-neutral-600">
+            <span>Subtotal</span>
+            <span class="font-bold text-neutral-900">${{ order.subtotal }}</span>
+          </div>
+          {% if order.discount_total > 0 %}
+            <div class="flex justify-between text-emerald-700">
+              <span>Promotional Discount</span>
+              <span class="font-bold">-${{ order.discount_total }}</span>
+            </div>
+          {% endif %}
+          <div class="flex justify-between text-neutral-600">
+            <span>Shipping Cost</span>
+            <span class="font-bold text-neutral-900">${{ order.shipping_total }}</span>
+          </div>
+          <div class="flex justify-between text-neutral-600">
+            <span>Estimated Tax</span>
+            <span class="font-bold text-neutral-900">${{ order.tax_total }}</span>
+          </div>
+          <div class="border-t border-neutral-200 pt-3 flex justify-between text-base font-black text-neutral-900">
+            <span>Grand Total</span>
+            <span class="text-amber-700">${{ order.grand_total }} <span class="text-xs font-normal text-neutral-400">{{ order.currency }}</span></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Patron & Shipping Profile -->
+      <div class="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm space-y-4">
+        <h3 class="text-sm font-bold text-neutral-900 uppercase tracking-wider border-b border-neutral-100 pb-3">Patron & Shipping Profile</h3>
+
+        <div class="space-y-3 text-xs text-neutral-700">
+          <div>
+            <span class="text-[10px] font-bold uppercase tracking-wider text-neutral-400 block mb-0.5">Account / Recipient</span>
+            <p class="font-bold text-neutral-900 text-sm">{{ shipping_addr.recipient_name|default:order.user.get_full_name|default:"Guest Patron" }}</p>
+            {% if order.user %}
+              <p class="text-neutral-500">{{ order.user.email }}</p>
+            {% else %}
+              <p class="text-amber-700 font-semibold">Guest Checkout Session</p>
+            {% endif %}
+            {% if shipping_addr.phone_number %}
+              <p class="text-neutral-500 mt-0.5">Phone: {{ shipping_addr.phone_number }}</p>
+            {% endif %}
+          </div>
+
+          <div class="border-t border-neutral-100 pt-3">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-neutral-400 block mb-1">Shipping Address</span>
+            <p class="font-medium text-neutral-800">{{ shipping_addr.address_line_1 }}</p>
+            {% if shipping_addr.address_line_2 %}
+              <p class="text-neutral-600">{{ shipping_addr.address_line_2 }}</p>
+            {% endif %}
+            <p class="text-neutral-600">{{ shipping_addr.city }}, {{ shipping_addr.county_or_state }} {{ shipping_addr.postal_code }}</p>
+            <p class="text-neutral-500 font-bold uppercase mt-0.5">{{ shipping_addr.country }}</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Fulfillment Logistics Card -->
+      {% if fulfillment %}
+        <div class="rounded-2xl border border-amber-300 bg-amber-50/60 p-6 shadow-sm space-y-3">
+          <div class="flex items-center justify-between">
+            <h3 class="text-sm font-bold text-amber-900 uppercase tracking-wider">Logistics Lifecycle</h3>
+            <span class="px-2 py-0.5 rounded bg-amber-500 text-neutral-950 font-bold text-[10px] uppercase">{{ fulfillment.get_fulfillment_status_display }}</span>
+          </div>
+          <p class="text-xs text-amber-800">Assigned Facility: <span class="font-bold">{{ fulfillment.warehouse }}</span></p>
+          <div class="pt-2">
+            <a href="{% url 'fulfillment:timeline' fulfillment.pk %}" class="w-full block text-center py-2 px-4 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-white font-bold text-xs transition-colors shadow-sm">
+              Open Warehouse Command Center &rarr;
+            </a>
+          </div>
+        </div>
+      {% else %}
+        <div class="rounded-2xl border border-dashed border-neutral-300 bg-neutral-50 p-6 text-center space-y-2">
+          <p class="text-xs font-semibold text-neutral-600">No Fulfillment Workflow Active</p>
+          <p class="text-[11px] text-neutral-400">Once payment is confirmed, initiate fulfillment to start warehouse picking.</p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,79 @@
+{% extends 'dashboard/base.html' %}
+{% block title %}Patron Segmentation & Behavioral Cohorts — House of Bore CRM{% endblock %}
+{% block section_title %}Behavioral Segmentation & Engagement Analytics{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <!-- Header Bar -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-neutral-200 pb-5">
+    <div>
+      <h2 class="text-xl font-bold text-neutral-900 tracking-tight">Dynamic Patron Cohorts & LTV Breakdown</h2>
+      <p class="text-xs text-neutral-500 mt-0.5">Automated segmentation based on recency, purchasing frequency, monetary lifetime value, and return risks.</p>
+    </div>
+    <div class="flex items-center space-x-3">
+      <a href="{% url 'crm:dashboard' %}" class="px-3.5 py-2 rounded-xl border border-neutral-300 bg-white hover:bg-neutral-50 text-xs font-semibold text-neutral-700 transition-colors shadow-sm">
+        &larr; Return to CRM Portal
+      </a>
+      <a href="{% url 'crm:customer_list' %}" class="px-4 py-2 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-white text-xs font-bold transition-colors shadow-sm">
+        Browse Patron Directory
+      </a>
+    </div>
+  </div>
+
+  <!-- Segment Distribution Cards Grid -->
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+    {% for code, seg in segments.items %}
+      <div class="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm space-y-4 hover:border-amber-400 transition-colors flex flex-col justify-between">
+        <div>
+          <div class="flex items-center justify-between">
+            <span class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider {% if seg.badge_color == 'emerald' %}bg-emerald-100 text-emerald-800{% elif seg.badge_color == 'amber' %}bg-amber-100 text-amber-800{% elif seg.badge_color == 'blue' %}bg-blue-100 text-blue-800{% elif seg.badge_color == 'rose' %}bg-rose-100 text-rose-800{% elif seg.badge_color == 'purple' %}bg-purple-100 text-purple-800{% else %}bg-neutral-100 text-neutral-700{% endif %}">
+              {{ seg.title }}
+            </span>
+            <span class="text-2xl font-black text-neutral-900">{{ seg.count }}</span>
+          </div>
+          <p class="text-xs text-neutral-600 font-medium mt-3">{{ seg.description }}</p>
+        </div>
+
+        <div class="pt-3 border-t border-neutral-100 flex items-center justify-between">
+          <span class="text-[11px] text-neutral-400">Cohort code: {{ seg.code }}</span>
+          <a href="{% url 'crm:customer_list' %}?segment={{ seg.code }}" class="inline-flex items-center space-x-1 text-xs font-bold text-amber-700 hover:underline">
+            <span>Filter Cohort</span>
+            <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          </a>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+
+  <!-- Category & Brand Loyalty Snapshot -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div class="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm space-y-4">
+      <h3 class="text-sm font-bold text-neutral-900 uppercase tracking-wider border-b border-neutral-100 pb-3">Top Purchased Catalog Categories</h3>
+      <div class="space-y-3 text-xs">
+        {% for cat in stats.most_purchased_categories %}
+          <div class="flex items-center justify-between">
+            <span class="font-bold text-neutral-800">{{ cat.name }}</span>
+            <span class="px-2.5 py-1 rounded-md bg-neutral-100 font-bold text-neutral-900">{{ cat.units }} Units Sold</span>
+          </div>
+        {% empty %}
+          <p class="text-neutral-400 italic">No category sales recorded.</p>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm space-y-4">
+      <h3 class="text-sm font-bold text-neutral-900 uppercase tracking-wider border-b border-neutral-100 pb-3">Most Popular Luxury Brands</h3>
+      <div class="space-y-3 text-xs">
+        {% for brand in stats.most_purchased_brands %}
+          <div class="flex items-center justify-between">
+            <span class="font-bold text-neutral-800">{{ brand.name }}</span>
+            <span class="px-2.5 py-1 rounded-md bg-neutral-100 font-bold text-neutral-900">{{ brand.units }} Units Sold</span>
+          </div>
+        {% empty %}
+          <p class="text-neutral-400 italic">No brand sales recorded.</p>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
