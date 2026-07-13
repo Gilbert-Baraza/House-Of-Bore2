@@ -180,24 +180,13 @@ class PricingServicesTests(TestCase):
         self.assertEqual(res, Decimal("30.00"))
 
     def test_calculate_shipping_thresholds(self):
-        self.assertEqual(calculate_shipping(Decimal("149.99")), Decimal("15.00"))
-        self.assertEqual(calculate_shipping(Decimal("150.00")), Decimal("0.00"))
-        self.assertEqual(calculate_shipping(Decimal("50.00"), shipping_method="express"), Decimal("25.00"))
+        self.assertEqual(calculate_shipping(Decimal("49999.99")), Decimal("1500.00"))
+        self.assertEqual(calculate_shipping(Decimal("50000.00")), Decimal("0.00"))
+        self.assertEqual(calculate_shipping(Decimal("50.00"), shipping_method="express"), Decimal("2250.00"))
 
     def test_calculate_tax_regional(self):
-        addr = CheckoutAddress(
-            recipient_name="Test",
-            address_line_1="123 Main",
-            city="LA",
-            county_or_state="CA",
-            postal_code="90001",
-            country="US",
-            phone_number="555-0100"
-        )
-        # CA rate is 8.25%
-        self.assertEqual(calculate_tax(Decimal("100.00"), addr), Decimal("8.25"))
-        # No address defaults to 5.0%
-        self.assertEqual(calculate_tax(Decimal("100.00"), None), Decimal("5.00"))
+        # Default store tax percentage is 16.00%
+        self.assertEqual(calculate_tax(Decimal("100.00"), None), Decimal("16.00"))
 
     def test_pricing_breakdown_full_pipeline(self):
         coupon = Coupon.objects.create(
@@ -212,12 +201,12 @@ class PricingServicesTests(TestCase):
         breakdown = pricing_breakdown(self.cart)
         self.assertEqual(breakdown["subtotal"], Decimal("200.00"))
         self.assertEqual(breakdown["coupon_discount"], Decimal("20.00"))
-        # $180 remaining >= $150 free shipping threshold
-        self.assertEqual(breakdown["shipping"], Decimal("0.00"))
-        # Tax default 5% of $180 = $9.00
-        self.assertEqual(breakdown["tax"], Decimal("9.00"))
-        # Grand total = $180 + $0 + $9 = $189.00
-        self.assertEqual(breakdown["grand_total"], Decimal("189.00"))
+        # $180 remaining < $50000 free shipping threshold -> $1500 shipping
+        self.assertEqual(breakdown["shipping"], Decimal("1500.00"))
+        # Tax default 16% of $180 = $28.80
+        self.assertEqual(breakdown["tax"], Decimal("28.80"))
+        # Grand total = $180 + $1500 + $28.80 = $1708.80
+        self.assertEqual(breakdown["grand_total"], Decimal("1708.80"))
 
     def test_coupon_application_and_removal(self):
         coupon = Coupon.objects.create(
@@ -357,18 +346,34 @@ class PricingImprovementsTests(TestCase):
         self.assertTrue(hasattr(self.cart, "_cached_breakdown"))
 
     def test_free_shipping_progress_metrics(self):
-        # 1 unit @ $100.00 -> subtotal $100.00, threshold $150.00 -> remaining $50.00
+        # 1 unit @ $100.00 -> subtotal $100.00, threshold $50000.00 -> remaining $49900.00
         breakdown = pricing_breakdown(self.cart)
-        self.assertEqual(breakdown["free_shipping_threshold"], Decimal("150.00"))
-        self.assertEqual(breakdown["free_shipping_remaining"], Decimal("50.00"))
-        self.assertEqual(breakdown["free_shipping_progress_pct"], 66) # int(100/150 * 100) = 66%
+        self.assertEqual(breakdown["free_shipping_threshold"], Decimal("50000.00"))
+        self.assertEqual(breakdown["free_shipping_remaining"], Decimal("49900.00"))
+        self.assertEqual(breakdown["free_shipping_progress_pct"], 0) # int(100/50000 * 100) = 0%
 
-        # Increase quantity to 2 units @ $100.00 = $200.00 -> free shipping unlocked!
-        self.item.quantity = 2
+        # Increase quantity to 500 units @ $100.00 = $50000.00 -> free shipping unlocked!
+        self.item.quantity = 500
         self.item.save()
         breakdown2 = pricing_breakdown(self.cart)
         self.assertEqual(breakdown2["free_shipping_remaining"], Decimal("0.00"))
         self.assertEqual(breakdown2["free_shipping_progress_pct"], 100)
+
+    def test_dynamic_shipping_and_tax_from_store_settings(self):
+        from settings.models import StoreSettings
+        st = StoreSettings.load()
+        st.free_shipping_threshold = Decimal("250.00")
+        st.flat_shipping_rate = Decimal("25.00")
+        st.tax_percentage = Decimal("10.00")
+        st.save()
+
+        # Item at $100 -> shipping should be $25.00, threshold remaining $150.00
+        self.item.quantity = 1
+        self.item.save()
+        breakdown = pricing_breakdown(self.cart)
+        self.assertEqual(breakdown["shipping"], Decimal("25.00"))
+        self.assertEqual(breakdown["free_shipping_threshold"], Decimal("250.00"))
+        self.assertEqual(breakdown["free_shipping_remaining"], Decimal("150.00"))
 
     def tearDown(self):
         cache.clear()

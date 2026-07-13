@@ -16,10 +16,10 @@
       <span class="text-[10px] font-bold uppercase tracking-wider text-neutral-400 truncate max-w-[140px]">{{ product.name }}</span>
       <div class="flex items-baseline gap-1.5">
         <span id="mobile-sticky-price" class="text-base font-bold text-primary-900 tabular-nums">
-          {% if product.is_on_sale %}${{ product.price }}{% else %}${{ product.price }}{% endif %}
+          {% if product.is_on_sale %}{{ currency_settings.currency_symbol|default:'$' }}{{ product.price }}{% else %}{{ currency_settings.currency_symbol|default:'$' }}{{ product.price }}{% endif %}
         </span>
         {% if product.is_on_sale and product.compare_at_price %}
-          <del id="mobile-sticky-compare-price" class="text-xs text-neutral-400 tabular-nums">${{ product.compare_at_price }}</del>
+          <del id="mobile-sticky-compare-price" class="text-xs text-neutral-400 tabular-nums">{{ currency_settings.currency_symbol|default:'$' }}{{ product.compare_at_price }}</del>
         {% endif %}
       </div>
     </div>

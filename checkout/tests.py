@@ -374,7 +374,7 @@ class CheckoutViewsAndFormsTests(CheckoutBaseTestCase):
 
         # Verify summary context variables
         self.assertEqual(res.context["checkout_totals"]["subtotal"], Decimal("900.00"))
-        self.assertEqual(res.context["checkout_totals"]["grand_total"], Decimal("974.25"))  # Includes 8.25% CA tax via Phase 4.3 Pricing Engine
+        self.assertEqual(res.context["checkout_totals"]["grand_total"], Decimal("2544.00"))  # Includes 16% VAT and flat shipping via dynamic StoreSettings
         self.assertEqual(res.context["checkout_totals"]["item_count"], 2)
 
 

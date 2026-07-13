@@ -104,6 +104,39 @@ class StoreSettingsSelectorsTest(TestCase):
         social = get_social_links()
         self.assertEqual(social["instagram_url"], "https://instagram.com/houseofbore")
 
+    def test_context_processor_single_lookup(self):
+        from settings.context_processors import store_settings
+        from django.test import RequestFactory
+        from unittest.mock import patch
+        rf = RequestFactory()
+        req = rf.get("/")
+        # Ensure cached
+        StoreSettings.load()
+        with patch.object(StoreSettings, "load", wraps=StoreSettings.load) as mock_load:
+            ctx = store_settings(req)
+            self.assertIn("store_settings", ctx)
+            self.assertIn("branding", ctx)
+            self.assertIn("feature_flags", ctx)
+            self.assertIn("currency_settings", ctx)
+            # Must only call load once per context processor invocation
+            mock_load.assert_called_once()
+
+    def test_maintenance_allowlist_paths(self):
+        from django.test import RequestFactory
+        rf = RequestFactory()
+        self.settings.maintenance_mode_enabled = True
+        self.settings.save()
+
+        # Regular storefront path -> maintenance enabled
+        req_store = rf.get("/products/trench-coat")
+        self.assertTrue(is_maintenance_mode_enabled(req_store))
+
+        # Allowlisted API / health paths -> maintenance NOT enabled
+        req_api = rf.get("/api/v1/products/")
+        self.assertFalse(is_maintenance_mode_enabled(req_api))
+        req_health = rf.get("/health/")
+        self.assertFalse(is_maintenance_mode_enabled(req_health))
+
 
 class StoreSettingsServicesTest(TestCase):
     def setUp(self):

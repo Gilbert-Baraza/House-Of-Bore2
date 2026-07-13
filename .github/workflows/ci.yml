@@ -1,0 +1,241 @@
+name: Continuous Integration & Production Readiness
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master, develop ]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ────────────────────────────────────────────────────────────────────────────
+  # 1. STATIC CHECKS & SYNTAX AUDIT
+  # ────────────────────────────────────────────────────────────────────────────
+  lint-and-check:
+    name: Code Quality & System Checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Codebase
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: 'requirements/*.txt'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements/development.txt
+
+      - name: Verify Python Syntax Across Codebase
+        run: |
+          python -m compileall -q core accounts products cart checkout pricing orders payments inventory fulfillment crm dashboard notifications
+
+      - name: Verify Gunicorn & WSGI Configuration Syntax
+        run: |
+          python -m py_compile gunicorn.conf.py config/wsgi.py config/celery.py
+
+      - name: Run Django System Check (Development Mode)
+        env:
+          DJANGO_ENV: development
+          SECRET_KEY: ci-test-secret-key-do-not-use-in-prod-1234567890
+        run: |
+          python manage.py check
+
+      - name: Check for Missing or Unmade Migrations
+        env:
+          DJANGO_ENV: development
+          SECRET_KEY: ci-test-secret-key-do-not-use-in-prod-1234567890
+        run: |
+          python manage.py makemigrations --check --dry-run
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # 2. DEVELOPMENT MATRIX TESTING (SQLite + Redis)
+  # ────────────────────────────────────────────────────────────────────────────
+  test-development:
+    name: Dev Matrix (Python ${{ matrix.python-version }})
+    needs: lint-and-check
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.11', '3.12']
+      fail-fast: false
+
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout Codebase
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+          cache-dependency-path: 'requirements/*.txt'
+
+      - name: Set up Node.js 20.x (for Tailwind CSS)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+
+      - name: Install Python & Node Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements/development.txt
+          python manage.py tailwind install
+
+      - name: Build Tailwind CSS Stylesheet
+        env:
+          DJANGO_ENV: development
+          SECRET_KEY: ci-test-secret-key-do-not-use-in-prod-1234567890
+        run: |
+          python manage.py tailwind build
+
+      - name: Execute Full Development Regression Test Suite
+        env:
+          DJANGO_ENV: development
+          SECRET_KEY: ci-test-secret-key-do-not-use-in-prod-1234567890
+          REDIS_URL: redis://localhost:6379/0
+          REDIS_CACHE_URL: redis://localhost:6379/1
+          CELERY_TASK_ALWAYS_EAGER: 'False'
+        run: |
+          python manage.py test --noinput --parallel
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # 3. PRODUCTION FIDELITY TESTING (PostgreSQL + Redis + WhiteNoise + Deploy Audit)
+  # ────────────────────────────────────────────────────────────────────────────
+  test-production:
+    name: Production Fidelity (PostgreSQL 16 + Redis 7)
+    needs: lint-and-check
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: house_of_bore_ci
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout Codebase
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: 'requirements/*.txt'
+
+      - name: Set up Node.js 20.x (for Tailwind CSS)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+
+      - name: Install Production Requirements
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements/production.txt
+          python manage.py tailwind install
+
+      - name: Run Database Migrations on PostgreSQL
+        env:
+          DJANGO_ENV: production
+          SECRET_KEY: ci-production-secret-key-for-testing-only-987654321
+          ALLOWED_HOSTS: localhost,127.0.0.1
+          DB_ENGINE: django.db.backends.postgresql
+          DB_NAME: house_of_bore_ci
+          DB_USER: postgres
+          DB_PASSWORD: postgres_password
+          DB_HOST: localhost
+          DB_PORT: 5432
+          REDIS_URL: redis://localhost:6379/0
+          REDIS_CACHE_URL: redis://localhost:6379/1
+        run: |
+          python manage.py migrate --noinput
+
+      - name: Build Tailwind & Collect Static Assets (WhiteNoise Manifest Hash Verification)
+        env:
+          DJANGO_ENV: production
+          SECRET_KEY: ci-production-secret-key-for-testing-only-987654321
+          ALLOWED_HOSTS: localhost,127.0.0.1
+          DB_ENGINE: django.db.backends.postgresql
+          DB_NAME: house_of_bore_ci
+          DB_USER: postgres
+          DB_PASSWORD: postgres_password
+          DB_HOST: localhost
+          DB_PORT: 5432
+          REDIS_URL: redis://localhost:6379/0
+          REDIS_CACHE_URL: redis://localhost:6379/1
+        run: |
+          python manage.py tailwind build
+          python manage.py collectstatic --noinput --clear
+
+      - name: Run Production Deployment Security Audit
+        env:
+          DJANGO_ENV: production
+          SECRET_KEY: ci-production-secret-key-for-testing-only-987654321
+          ALLOWED_HOSTS: localhost,127.0.0.1
+          DB_ENGINE: django.db.backends.postgresql
+          DB_NAME: house_of_bore_ci
+          DB_USER: postgres
+          DB_PASSWORD: postgres_password
+          DB_HOST: localhost
+          DB_PORT: 5432
+          REDIS_URL: redis://localhost:6379/0
+          REDIS_CACHE_URL: redis://localhost:6379/1
+          SECURE_SSL_REDIRECT: 'False'  # Disabled in CI runner loopback check
+        run: |
+          python manage.py check --deploy
+
+      - name: Execute Full Production Regression Test Suite on PostgreSQL & Redis
+        env:
+          DJANGO_ENV: production
+          SECRET_KEY: ci-production-secret-key-for-testing-only-987654321
+          ALLOWED_HOSTS: localhost,127.0.0.1
+          DB_ENGINE: django.db.backends.postgresql
+          DB_NAME: house_of_bore_ci
+          DB_USER: postgres
+          DB_PASSWORD: postgres_password
+          DB_HOST: localhost
+          DB_PORT: 5432
+          REDIS_URL: redis://localhost:6379/0
+          REDIS_CACHE_URL: redis://localhost:6379/1
+          CELERY_TASK_ALWAYS_EAGER: 'False'
+        run: |
+          python manage.py test --noinput

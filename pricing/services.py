@@ -16,6 +16,7 @@ from django.core.exceptions import ValidationError
 from django.db import transaction
 from pricing.models import Coupon, Promotion, CouponUsageLog
 from pricing.selectors import get_applicable_promotions, coupon_by_code
+from settings.selectors import get_shipping_settings, get_currency_settings
 
 
 def quantize_money(amount: Decimal) -> Decimal:
@@ -162,48 +163,38 @@ def calculate_shipping(
 ) -> Decimal:
     """
     Calculate estimated shipping charges based on order subtotal after discounts,
-    selected shipping strategy/method, or destination address region.
+    selected shipping strategy/method, and store configuration settings.
     """
     if subtotal_after_discounts <= Decimal("0.00"):
         return Decimal("0.00")
 
-    # Free shipping threshold ($150+) or complimentary selection
-    if subtotal_after_discounts >= Decimal("150.00") or shipping_method == "complimentary":
+    shipping_cfg = get_shipping_settings()
+    free_threshold = Decimal(str(shipping_cfg.get("free_shipping_threshold", "50000.00")))
+    flat_rate = Decimal(str(shipping_cfg.get("flat_shipping_rate", "1500.00")))
+
+    if subtotal_after_discounts >= free_threshold or shipping_method == "complimentary":
         return Decimal("0.00")
 
     if shipping_method == "express":
-        return Decimal("25.00")
+        return quantize_money(flat_rate * Decimal("1.5"))
 
-    # Standard flat rate placeholder
-    return Decimal("15.00")
+    return quantize_money(flat_rate)
 
 
 def calculate_tax(taxable_amount: Decimal, shipping_address: Optional[Any] = None) -> Decimal:
     """
-    Calculate estimated sales tax or VAT placeholder based on taxable order total and
-    regional destination rules.
+    Calculate estimated sales tax or VAT based on store configuration settings
+    and destination rules.
     """
     if taxable_amount <= Decimal("0.00"):
         return Decimal("0.00")
 
-    rate = Decimal("0.0500")  # Default US placeholder 5.0%
+    currency_cfg = get_currency_settings()
+    if not currency_cfg.get("tax_enabled", True):
+        return Decimal("0.00")
 
-    if shipping_address:
-        country = getattr(shipping_address, "country", "US")
-        state = getattr(shipping_address, "county_or_state", "").strip().upper()
-
-        if country == "US":
-            if state in ("CA", "CALIFORNIA"):
-                rate = Decimal("0.0825")
-            elif state in ("NY", "NEW YORK"):
-                rate = Decimal("0.0888")
-            elif state in ("TX", "TEXAS"):
-                rate = Decimal("0.0625")
-            elif state in ("FL", "FLORIDA"):
-                rate = Decimal("0.0600")
-        else:
-            # International / Border duties placeholder
-            rate = Decimal("0.0000")
+    tax_pct = Decimal(str(currency_cfg.get("tax_percentage", "16.00")))
+    rate = tax_pct / Decimal("100.00")
 
     tax = taxable_amount * rate
     return quantize_money(tax)
@@ -262,7 +253,8 @@ def pricing_breakdown(
     applied_coupon = coupon_obj if (coupon_obj and coupon_discount > Decimal("0.00")) else None
 
     # Free shipping progress metrics
-    free_shipping_threshold = Decimal("150.00")
+    shipping_cfg = get_shipping_settings()
+    free_shipping_threshold = Decimal(str(shipping_cfg.get("free_shipping_threshold", "50000.00")))
     free_shipping_remaining = max(Decimal("0.00"), free_shipping_threshold - subtotal_after_all_discounts)
     if subtotal_after_all_discounts >= free_shipping_threshold or is_empty:
         free_shipping_progress_pct = 100 if not is_empty else 0

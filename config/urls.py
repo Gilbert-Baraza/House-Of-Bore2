@@ -12,8 +12,14 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
+from core import health
 
 urlpatterns = [
+    # Health checks & readiness monitoring for container orchestration and reverse proxy passthrough
+    path("health/", health.health_check, name="health_check"),
+    path("health/ready/", health.readiness_check, name="readiness_check"),
+    path("health/live/", health.liveness_check, name="liveness_check"),
+
     path("admin/", admin.site.urls),
 
     # App URL namespaces will be added here as each phase is implemented.

@@ -19,6 +19,11 @@ from decouple import Csv, config
 # Resolve the project root (two levels above this file: settings/ → config/ → root)
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
+# ─── Logs Directory ────────────────────────────────────────────────────────────
+# Ensure the logs directory exists for rotating file handlers.
+LOGS_DIR = BASE_DIR / "logs"
+LOGS_DIR.mkdir(exist_ok=True)
+
 
 # ─── Security ──────────────────────────────────────────────────────────────────
 # SECRET_KEY is read exclusively from the environment — never hardcoded.
@@ -228,19 +233,286 @@ X_FRAME_OPTIONS = "DENY"
 # to security vulnerabilities when serving user-uploaded content.
 SECURE_CONTENT_TYPE_NOSNIFF = True
 
+# Controls the Referer header sent with outgoing requests.
+# "strict-origin-when-cross-origin" sends full URL for same-origin but only
+# the origin for cross-origin requests — good balance of privacy and analytics.
+SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
+
+# ─── Cookie Security (base defaults — overridden per environment) ──────────────
+
+# Prevent JavaScript from reading session cookies (XSS mitigation).
+SESSION_COOKIE_HTTPONLY = True
+
+# SameSite="Lax" blocks cross-site POST requests from sending cookies,
+# preventing CSRF attacks while allowing normal navigation links.
+SESSION_COOKIE_SAMESITE = "Lax"
+CSRF_COOKIE_SAMESITE = "Lax"
+CSRF_COOKIE_HTTPONLY = True
+
+# ─── Upload & Payload Limits ───────────────────────────────────────────────────
+
+# Maximum size (bytes) for file uploads held in memory before writing to disk.
+# 10 MB — prevents denial-of-service via oversized uploads.
+FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10 MB
+
+# Maximum size (bytes) for the entire request body (POST data + files).
+# 5 MB — protects webhook endpoints from oversized payloads.
+DATA_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024  # 5 MB
+
 
 # ─── Notifications & Email Defaults ─────────────────────────────────────────────
 DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", default="House of Bore <noreply@houseofbore.com>")
 
 
+# ─── Redis ──────────────────────────────────────────────────────────────────────
+# Central Redis URL used by cache, sessions, Celery, and rate limiting.
+REDIS_URL = config("REDIS_URL", default="redis://127.0.0.1:6379/0")
+
+
+# ─── Caching ───────────────────────────────────────────────────────────────────
+# Django 4.0+ native Redis cache backend. Uses the same Redis instance as Celery
+# but on a different database number to prevent key collisions.
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        "LOCATION": config("REDIS_CACHE_URL", default="redis://127.0.0.1:6379/1"),
+        "OPTIONS": {
+            "db": 1,
+        },
+        "KEY_PREFIX": "hob",
+        "TIMEOUT": 300,  # 5 minutes default TTL
+    }
+}
+
+
+# ─── Sessions ──────────────────────────────────────────────────────────────────
+# Cache-backed sessions provide faster reads than database sessions while
+# automatically persisting through Django's cache framework (backed by Redis).
+SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+SESSION_CACHE_ALIAS = "default"
+SESSION_COOKIE_AGE = 60 * 60 * 24 * 14  # 14 days
+
+
 # ─── Celery Configuration ───────────────────────────────────────────────────────
-CELERY_BROKER_URL = config("CELERY_BROKER_URL", default="redis://127.0.0.1:6379/0")
-CELERY_RESULT_BACKEND = config("CELERY_RESULT_BACKEND", default="redis://127.0.0.1:6379/0")
-# In development and automated tests, execute tasks eagerly without requiring a live Redis daemon
-CELERY_TASK_ALWAYS_EAGER = config("CELERY_TASK_ALWAYS_EAGER", default=True, cast=bool)
+CELERY_BROKER_URL = config("CELERY_BROKER_URL", default=REDIS_URL)
+CELERY_RESULT_BACKEND = config("CELERY_RESULT_BACKEND", default=REDIS_URL)
+
+# In development, execute tasks eagerly without requiring a live Redis daemon.
+# Overridden to False in production.py.
+CELERY_TASK_ALWAYS_EAGER = config("CELERY_TASK_ALWAYS_EAGER", default=False, cast=bool)
 CELERY_TASK_EAGER_PROPAGATES = True
+
+# Serialization
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
 CELERY_TIMEZONE = TIME_ZONE
 
+# Task execution limits — prevent runaway tasks from consuming resources.
+CELERY_TASK_SOFT_TIME_LIMIT = 300   # 5 minutes soft limit (raises SoftTimeLimitExceeded)
+CELERY_TASK_TIME_LIMIT = 600        # 10 minutes hard kill
+CELERY_TASK_ACKS_LATE = True        # Acknowledge tasks after execution, not before
+CELERY_WORKER_PREFETCH_MULTIPLIER = 1  # Fetch one task at a time (fair scheduling)
+
+# Result expiry — discard results after 24 hours to prevent Redis bloat.
+CELERY_RESULT_EXPIRES = 60 * 60 * 24  # 24 hours
+
+# Task routing — group tasks by priority for future worker scaling.
+CELERY_TASK_ROUTES = {
+    "payments.tasks.*": {"queue": "high_priority"},
+    "notifications.tasks.*": {"queue": "high_priority"},
+    "orders.tasks.*": {"queue": "default"},
+    "inventory.tasks.*": {"queue": "default"},
+    "fulfillment.tasks.*": {"queue": "default"},
+    "core.tasks.*": {"queue": "low_priority"},
+}
+
+# ─── Celery Beat — Periodic Task Schedule ───────────────────────────────────────
+from celery.schedules import crontab  # noqa: E402
+
+CELERY_BEAT_SCHEDULE = {
+    # ── Orders ──────────────────────────────────────────────────────────────
+    "expire-pending-payments": {
+        "task": "orders.tasks.expire_pending_payments",
+        "schedule": crontab(minute=0),  # Every hour, on the hour
+        "options": {"queue": "default"},
+    },
+    "clear-abandoned-carts": {
+        "task": "orders.tasks.clear_abandoned_carts",
+        "schedule": crontab(hour=3, minute=0),  # Daily at 3:00 AM
+        "options": {"queue": "low_priority"},
+    },
+
+    # ── Inventory ───────────────────────────────────────────────────────────
+    "generate-inventory-alerts": {
+        "task": "inventory.tasks.generate_inventory_alerts",
+        "schedule": crontab(minute=0, hour="*/4"),  # Every 4 hours
+        "options": {"queue": "default"},
+    },
+
+    # ── Fulfillment ─────────────────────────────────────────────────────────
+    "check-overdue-fulfillments": {
+        "task": "fulfillment.tasks.check_overdue_fulfillments",
+        "schedule": crontab(minute=0, hour="*/2"),  # Every 2 hours
+        "options": {"queue": "default"},
+    },
+    "check-delivery-exceptions": {
+        "task": "fulfillment.tasks.check_delivery_exceptions",
+        "schedule": crontab(minute=0, hour="*/6"),  # Every 6 hours
+        "options": {"queue": "default"},
+    },
+
+    # ── Maintenance ─────────────────────────────────────────────────────────
+    "cleanup-expired-sessions": {
+        "task": "core.tasks.cleanup_expired_sessions",
+        "schedule": crontab(hour=4, minute=0),  # Daily at 4:00 AM
+        "options": {"queue": "low_priority"},
+    },
+    "cleanup-temp-files": {
+        "task": "core.tasks.cleanup_temp_files",
+        "schedule": crontab(hour=5, minute=0),  # Daily at 5:00 AM
+        "options": {"queue": "low_priority"},
+    },
+
+    # ── Payments ────────────────────────────────────────────────────────────
+    "cleanup-old-webhook-logs": {
+        "task": "payments.tasks.cleanup_old_webhook_logs",
+        "schedule": crontab(hour=2, minute=0, day_of_week=0),  # Weekly, Sunday 2 AM
+        "options": {"queue": "low_priority"},
+    },
+}
+
+
+# ─── Structured Logging ────────────────────────────────────────────────────────
+# Comprehensive logging configuration with separate handlers for different
+# concerns (django core, payments, security, celery, errors).
+# All file handlers use RotatingFileHandler (10 MB max, 5 backups).
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {
+            "format": "[{asctime}] {levelname} {name} {module}.{funcName}:{lineno} — {message}",
+            "style": "{",
+            "datefmt": "%Y-%m-%d %H:%M:%S",
+        },
+        "simple": {
+            "format": "{levelname} {message}",
+            "style": "{",
+        },
+    },
+    "filters": {
+        "require_debug_false": {
+            "()": "django.utils.log.RequireDebugFalse",
+        },
+        "require_debug_true": {
+            "()": "django.utils.log.RequireDebugTrue",
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "verbose",
+        },
+        "file_django": {
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": str(LOGS_DIR / "django.log"),
+            "maxBytes": 10 * 1024 * 1024,  # 10 MB
+            "backupCount": 5,
+            "formatter": "verbose",
+            "encoding": "utf-8",
+        },
+        "file_requests": {
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": str(LOGS_DIR / "requests.log"),
+            "maxBytes": 10 * 1024 * 1024,
+            "backupCount": 5,
+            "formatter": "verbose",
+            "encoding": "utf-8",
+        },
+        "file_payments": {
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": str(LOGS_DIR / "payments.log"),
+            "maxBytes": 10 * 1024 * 1024,
+            "backupCount": 5,
+            "formatter": "verbose",
+            "encoding": "utf-8",
+        },
+        "file_security": {
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": str(LOGS_DIR / "security.log"),
+            "maxBytes": 10 * 1024 * 1024,
+            "backupCount": 5,
+            "formatter": "verbose",
+            "encoding": "utf-8",
+        },
+        "file_celery": {
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": str(LOGS_DIR / "celery.log"),
+            "maxBytes": 10 * 1024 * 1024,
+            "backupCount": 5,
+            "formatter": "verbose",
+            "encoding": "utf-8",
+        },
+        "file_errors": {
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": str(LOGS_DIR / "errors.log"),
+            "maxBytes": 10 * 1024 * 1024,
+            "backupCount": 5,
+            "formatter": "verbose",
+            "level": "ERROR",
+            "encoding": "utf-8",
+        },
+    },
+    "loggers": {
+        "django": {
+            "handlers": ["console", "file_django"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "django.request": {
+            "handlers": ["console", "file_requests", "file_errors"],
+            "level": "WARNING",
+            "propagate": False,
+        },
+        "django.security": {
+            "handlers": ["console", "file_security", "file_errors"],
+            "level": "WARNING",
+            "propagate": False,
+        },
+        "payments": {
+            "handlers": ["console", "file_payments", "file_errors"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "celery": {
+            "handlers": ["console", "file_celery"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "orders": {
+            "handlers": ["console", "file_django"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "notifications": {
+            "handlers": ["console", "file_django"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "inventory": {
+            "handlers": ["console", "file_django"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "security": {
+            "handlers": ["console", "file_security", "file_errors"],
+            "level": "INFO",
+            "propagate": False,
+        },
+    },
+    "root": {
+        "handlers": ["console", "file_errors"],
+        "level": "WARNING",
+    },
+}

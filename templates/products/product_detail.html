@@ -251,6 +251,7 @@
           </h1>
 
           {# Rating Badge #}
+          {% if feature_flags.reviews %}
           <div class="flex items-center gap-2 mb-4">
             <a href="#reviews" class="inline-flex items-center gap-1.5 hover:opacity-80 transition-opacity">
               {% include "components/rating_stars.html" with rating=review_summary.average_rating star_size="w-4 h-4" %}
@@ -261,21 +262,22 @@
               {{ review_summary.review_count }} review{{ review_summary.review_count|pluralize }}
             </a>
           </div>
+          {% endif %}
 
           {# Price & Discount Display #}
           <div id="dynamic-price-container" class="flex items-baseline gap-3 mb-6 pb-6 border-b border-neutral-200" aria-live="polite" aria-atomic="true">
             {% if has_variants and product.has_multiple_prices %}
-              <span class="text-3xl font-bold text-primary-900 tabular-nums" id="price-display-main">From ${{ product.get_starting_price }}</span>
+              <span class="text-3xl font-bold text-primary-900 tabular-nums" id="price-display-main">From {{ currency_settings.currency_symbol|default:'$' }}{{ product.get_starting_price }}</span>
               <del class="text-xl text-neutral-400 tabular-nums hidden" id="price-display-compare"></del>
               <span class="text-xs font-bold uppercase tracking-wider text-red-600 bg-red-50 px-2.5 py-1 rounded-btn border border-red-100 hidden" id="price-display-badge"></span>
             {% elif product.is_on_sale %}
-              <span class="text-3xl font-bold text-red-600 tabular-nums" id="price-display-main">${{ product.price }}</span>
-              <del class="text-xl text-neutral-400 tabular-nums" id="price-display-compare">${{ product.compare_at_price }}</del>
+              <span class="text-3xl font-bold text-red-600 tabular-nums" id="price-display-main">{{ currency_settings.currency_symbol|default:'$' }}{{ product.price }}</span>
+              <del class="text-xl text-neutral-400 tabular-nums" id="price-display-compare">{{ currency_settings.currency_symbol|default:'$' }}{{ product.compare_at_price }}</del>
               <span class="text-xs font-bold uppercase tracking-wider text-red-600 bg-red-50 px-2.5 py-1 rounded-btn border border-red-100" id="price-display-badge">
-                Save ${{ product.compare_at_price|add:"-"|add:product.price }}
+                Save {{ currency_settings.currency_symbol|default:'$' }}{{ product.compare_at_price|add:"-"|add:product.price }}
               </span>
             {% else %}
-              <span class="text-3xl font-bold text-primary-900 tabular-nums" id="price-display-main">${{ product.price }}</span>
+              <span class="text-3xl font-bold text-primary-900 tabular-nums" id="price-display-main">{{ currency_settings.currency_symbol|default:'$' }}{{ product.price }}</span>
               <del class="text-xl text-neutral-400 tabular-nums hidden" id="price-display-compare"></del>
               <span class="text-xs font-bold uppercase tracking-wider text-red-600 bg-red-50 px-2.5 py-1 rounded-btn border border-red-100 hidden" id="price-display-badge"></span>
             {% endif %}
@@ -363,7 +365,9 @@
                   <span id="add-to-bag-btn-text">Currently Sold Out</span>
                 </button>
               {% endif %}
-              {% include "components/wishlist_button.html" with product=product style="full" %}
+              {% if feature_flags.wishlist %}
+                {% include "components/wishlist_button.html" with product=product style="full" %}
+              {% endif %}
             </div>
           </form>
 
@@ -420,7 +424,7 @@
             <ul class="space-y-2 text-xs text-neutral-600">
               <li class="flex items-start gap-2">
                 <span class="text-accent-700 font-bold">&check;</span>
-                <span><strong>Complimentary Shipping</strong> on all domestic lifestyle orders over $250.00.</span>
+                <span><strong>Complimentary Shipping</strong> on all domestic lifestyle orders over {{ currency_settings.currency_symbol|default:'$' }}250.00.</span>
               </li>
               <li class="flex items-start gap-2">
                 <span class="text-accent-700 font-bold">&check;</span>
@@ -464,6 +468,7 @@
               </button>
             </div>
 
+            {% if feature_flags.compare %}
             <div>
               <form action="{% url 'products:toggle_comparison' product.id %}" method="post" class="inline">
                 {% csrf_token %}
@@ -474,6 +479,7 @@
                 </button>
               </form>
             </div>
+            {% endif %}
           </div>
 
         </div>
@@ -558,6 +564,7 @@
       </div>
 
       {# ── Product Reviews & Ratings Section ─────────────────────────────── #}
+      {% if feature_flags.reviews %}
       <section id="reviews" class="mt-20 sm:mt-24 pt-16 border-t border-neutral-200" aria-labelledby="reviews-heading">
         <div class="mb-8 sm:mb-10">
           <h2 id="reviews-heading" class="font-serif text-2xl sm:text-3xl font-bold text-primary-900">
@@ -655,6 +662,7 @@
         </div>
 
       </section>
+      {% endif %}
 
       {# ── Related Products Section ──────────────────────────────────────── #}
       {% if related_products %}
@@ -777,15 +785,15 @@
 
               if (matched) {
                 if (hiddenInput) hiddenInput.value = matched.id;
-                if (priceMain) priceMain.textContent = "$" + matched.price;
+                if (priceMain) priceMain.textContent = "{{ currency_settings.currency_symbol|default:'$'|escapejs }}" + matched.price;
                 if (matched.is_on_sale && matched.compare_at_price) {
                   if (priceCompare) {
-                    priceCompare.textContent = "$" + matched.compare_at_price;
+                    priceCompare.textContent = "{{ currency_settings.currency_symbol|default:'$'|escapejs }}" + matched.compare_at_price;
                     priceCompare.classList.remove("hidden");
                   }
                   if (priceBadge) {
                     var diff = (parseFloat(matched.compare_at_price) - parseFloat(matched.price)).toFixed(2);
-                    priceBadge.textContent = "Save $" + diff;
+                    priceBadge.textContent = "Save {{ currency_settings.currency_symbol|default:'$'|escapejs }}" + diff;
                     priceBadge.classList.remove("hidden");
                   }
                 } else {

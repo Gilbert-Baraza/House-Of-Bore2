@@ -63,7 +63,16 @@
   {% endblock twitter_card %}
 
   {# ── Title ────────────────────────────────────────────────────────────── #}
-  <title>{% block title %}{{ store_settings.store_name|default:"House of Bore" }}{% endblock %} — {{ store_settings.store_name|default:"House of Bore" }}</title>
+  <title>{% block title %}{{ seo_defaults.default_meta_title|default:store_settings.store_name|default:"House of Bore" }}{% endblock %}</title>
+
+  {# ── Dynamic CSS Properties ───────────────────────────────────────────── #}
+  <style>
+    :root {
+      --color-primary: {{ branding.primary_color|default:'#1a1a1a' }};
+      --color-secondary: {{ branding.secondary_color|default:'#f5f5f5' }};
+      --color-accent: {{ branding.accent_color|default:'#d97706' }};
+    }
+  </style>
 
   {# ── Google Fonts ─────────────────────────────────────────────────────── #}
   {# Preconnect establishes the connection early so font files load faster. #}
@@ -127,7 +136,9 @@
     {% include "components/footer.html" %}
 
     {# ── Comparison Floating Pill ────────────────────────────────────────── #}
+    {% if feature_flags.compare %}
     {% include "components/comparison_pill.html" %}
+    {% endif %}
 
     {# ── Page-level Modals ────────────────────────────────────────────────── #}
     {% block modals %}{% endblock %}

@@ -21,3 +21,15 @@ whitenoise[brotli]>=6.6
 # Gunicorn — production-grade WSGI server. Replaces Django's built-in
 # development server, which is not suitable for production traffic.
 gunicorn>=22.0
+
+# Sentry — real-time error tracking and performance monitoring.
+# The [django] extra adds Django-specific integrations (middleware, logging).
+# Only activated when SENTRY_DSN environment variable is set.
+sentry-sdk[django]>=2.0
+
+# Cloudinary — cloud-based image/video management and CDN delivery.
+# django-cloudinary-storage integrates Cloudinary as Django's default
+# file storage backend for user-uploaded media files.
+# Only activated when CLOUDINARY_URL environment variable is set.
+cloudinary>=1.40
+django-cloudinary-storage>=0.3.0

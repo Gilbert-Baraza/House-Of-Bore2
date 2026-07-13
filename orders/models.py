@@ -149,8 +149,8 @@ class Order(models.Model):
     )
     currency = models.CharField(
         max_length=3,
-        default="USD",
-        help_text="ISO currency code (e.g., USD)."
+        default="KES",
+        help_text="ISO currency code (e.g., KES)."
     )
 
     # Customer Metadata

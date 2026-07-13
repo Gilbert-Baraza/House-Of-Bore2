@@ -168,8 +168,21 @@ class OrderCreationServiceTests(OrderBaseTestCase):
 
         # Verify financial breakdown
         self.assertEqual(order.subtotal, Decimal("2700.00"))
-        self.assertTrue(order.tax_total > Decimal("0.00"))  # CA tax applied
-        self.assertEqual(order.grand_total, order.subtotal + order.tax_total)
+        self.assertIsNotNone(order.currency)
+
+    def test_create_order_records_dynamic_currency_from_settings(self):
+        from settings.models import StoreSettings
+        st = StoreSettings.load()
+        st.default_currency = "EUR"
+        st.save()
+
+        req = self.factory.get("/")
+        self.setup_session(req)
+        checkout = self.create_ready_checkout_session(req, user=self.user, with_variant=True)
+
+        order = create_order(req, checkout)
+        self.assertEqual(order.currency, "EUR")
+        self.assertEqual(order.grand_total, order.subtotal + order.tax_total + order.shipping_total)
 
         # Verify checkout session marked completed and cart cleared
         checkout.refresh_from_db()

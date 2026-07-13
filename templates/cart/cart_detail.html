@@ -87,7 +87,7 @@
                 </h3>
                 {% include "components/cart_item_variant_badge.html" %}
                 <p class="text-xs text-neutral-500 mb-3 mt-1.5">
-                  Unit Price: <span class="font-semibold text-neutral-700">${{ item.unit_price }}</span>
+                  Unit Price: <span class="font-semibold text-neutral-700">{{ currency_settings.currency_symbol|default:'$' }}{{ item.unit_price }}</span>
                   {% if item.product_variant and item.product_variant.low_stock or not item.product_variant and item.product.low_stock %}
                     <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-amber-100 text-amber-800">
                       Low Stock
@@ -133,7 +133,7 @@
               {# Line Subtotal #}
               <div class="sm:text-right shrink-0 w-full sm:w-auto pt-4 sm:pt-0 border-t sm:border-0 border-neutral-100 flex sm:block justify-between items-baseline">
                 <span class="text-xs text-neutral-400 sm:hidden uppercase font-bold">Subtotal:</span>
-                <span class="text-lg font-bold text-primary-900 tabular-nums">${{ item.subtotal }}</span>
+                <span class="text-lg font-bold text-primary-900 tabular-nums">{{ currency_settings.currency_symbol|default:'$' }}{{ item.subtotal }}</span>
               </div>
 
             </article>
@@ -182,7 +182,7 @@
                   <p class="text-[11px] text-neutral-500">Your order qualifies for luxury atelier delivery.</p>
                 {% else %}
                   <p class="text-xs font-medium text-primary-900 tracking-tight">
-                    Add <span class="font-bold text-accent-700">${{ cart_totals.free_shipping_remaining|floatformat:2 }}</span> more to unlock Complimentary Shipping!
+                    Add <span class="font-bold text-accent-700">{{ currency_settings.currency_symbol|default:'$' }}{{ cart_totals.free_shipping_remaining|floatformat:2 }}</span> more to unlock Complimentary Shipping!
                   </p>
                 {% endif %}
               </div>
@@ -209,13 +209,13 @@
           <div class="space-y-3.5 mb-6 text-sm">
             <div class="flex justify-between text-neutral-600">
               <span>Subtotal ({{ cart_totals.item_count }} item{{ cart_totals.item_count|pluralize }})</span>
-              <span class="font-bold text-primary-900 tabular-nums">${{ cart_totals.subtotal|floatformat:2 }}</span>
+              <span class="font-bold text-primary-900 tabular-nums">{{ currency_settings.currency_symbol|default:'$' }}{{ cart_totals.subtotal|floatformat:2 }}</span>
             </div>
 
             {% if cart_totals.discount > 0 %}
               <div class="flex justify-between text-emerald-700 font-medium">
                 <span>Promotional Savings</span>
-                <span class="tabular-nums">-${{ cart_totals.discount|floatformat:2 }}</span>
+                <span class="tabular-nums">-{{ currency_settings.currency_symbol|default:'$' }}{{ cart_totals.discount|floatformat:2 }}</span>
               </div>
               {% if cart_totals.promotions_applied %}
                 <div class="pl-3 border-l-2 border-emerald-500 space-y-1 my-1">
@@ -238,7 +238,7 @@
                   </div>
                 </div>
                 <div class="flex items-center gap-3">
-                  <span class="text-xs font-bold text-emerald-800 tabular-nums">-${{ cart_totals.coupon_discount|floatformat:2 }}</span>
+                  <span class="text-xs font-bold text-emerald-800 tabular-nums">-{{ currency_settings.currency_symbol|default:'$' }}{{ cart_totals.coupon_discount|floatformat:2 }}</span>
                   <form action="{% url 'pricing:remove_coupon' %}" method="post" class="inline">
                     {% csrf_token %}
                     <input type="hidden" name="next" value="{{ request.path }}">
@@ -257,7 +257,7 @@
               {% if cart_totals.shipping == 0 %}
                 <span class="font-semibold text-accent-700">Complimentary</span>
               {% else %}
-                <span class="font-semibold text-primary-900 tabular-nums">${{ cart_totals.shipping|floatformat:2 }}</span>
+                <span class="font-semibold text-primary-900 tabular-nums">{{ currency_settings.currency_symbol|default:'$' }}{{ cart_totals.shipping|floatformat:2 }}</span>
               {% endif %}
             </div>
 
@@ -266,7 +266,7 @@
               {% if cart_totals.tax == 0 %}
                 <span class="text-xs text-neutral-400 italic">Calculated at checkout</span>
               {% else %}
-                <span class="font-semibold text-primary-900 tabular-nums">${{ cart_totals.tax|floatformat:2 }}</span>
+                <span class="font-semibold text-primary-900 tabular-nums">{{ currency_settings.currency_symbol|default:'$' }}{{ cart_totals.tax|floatformat:2 }}</span>
               {% endif %}
             </div>
           </div>
@@ -293,7 +293,7 @@
           {# Total Calculation #}
           <div class="border-t border-neutral-200 pt-4 mb-8 flex justify-between items-baseline">
             <span class="text-base font-bold uppercase tracking-wider text-primary-900">Total</span>
-            <span class="text-2xl font-bold text-primary-900 tabular-nums">${{ cart_totals.grand_total|floatformat:2 }}</span>
+            <span class="text-2xl font-bold text-primary-900 tabular-nums">{{ currency_settings.currency_symbol|default:'$' }}{{ cart_totals.grand_total|floatformat:2 }}</span>
           </div>
 
           {# Checkout Action Button #}

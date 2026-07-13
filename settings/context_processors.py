@@ -31,14 +31,15 @@ from .selectors import (
 def store_settings(request: HttpRequest) -> dict[str, Any]:
     """
     Template context processor exposing site configuration across all templates.
+    Fetches the StoreSettings singleton exactly once per request render.
     """
     settings_instance = get_store_settings()
     return {
         "store_settings": settings_instance,
-        "branding": get_branding_assets(),
-        "feature_flags": get_active_feature_flags(),
-        "seo_defaults": get_seo_defaults(),
-        "currency_settings": get_currency_settings(),
-        "shipping_settings": get_shipping_settings(),
-        "social_links": get_social_links(),
+        "branding": get_branding_assets(settings_instance),
+        "feature_flags": get_active_feature_flags(settings_instance),
+        "seo_defaults": get_seo_defaults(settings_instance),
+        "currency_settings": get_currency_settings(settings_instance),
+        "shipping_settings": get_shipping_settings(settings_instance),
+        "social_links": get_social_links(settings_instance),
     }

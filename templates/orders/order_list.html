@@ -42,7 +42,7 @@
                 </div>
                 <div>
                   <span class="block text-neutral-400 uppercase tracking-widest text-[10px]">Total Amount</span>
-                  <span class="font-bold text-primary-900 tabular-nums text-sm">${{ order.grand_total|floatformat:2 }}</span>
+                  <span class="font-bold text-primary-900 tabular-nums text-sm">{{ currency_settings.currency_symbol|default:'$' }}{{ order.grand_total|floatformat:2 }}</span>
                 </div>
                 <div>
                   <span class="block text-neutral-400 uppercase tracking-widest text-[10px]">Items</span>

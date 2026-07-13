@@ -66,6 +66,44 @@ SECURE_HSTS_INCLUDE_SUBDOMAINS = False
 SECURE_HSTS_PRELOAD = False
 
 
+# ─── Caching (development) ─────────────────────────────────────────────────────
+# Use Redis if available (for full fidelity testing), with LocMemCache as
+# fallback if Redis is not running locally. Override the base.py Redis cache.
+try:
+    import redis as _redis_lib
+    _r = _redis_lib.Redis.from_url(
+        config("REDIS_CACHE_URL", default="redis://127.0.0.1:6379/1"),
+        socket_connect_timeout=1,
+    )
+    _r.ping()
+    # Redis is available — use it for full fidelity with production
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.redis.RedisCache",
+            "LOCATION": config("REDIS_CACHE_URL", default="redis://127.0.0.1:6379/1"),
+            "KEY_PREFIX": "hob_dev",
+            "TIMEOUT": 300,
+        }
+    }
+except Exception:
+    # Redis not available — fall back to in-memory cache for development
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            "LOCATION": "hob-dev-cache",
+        }
+    }
+    # Also set Celery to eager mode when Redis is unavailable
+    CELERY_TASK_ALWAYS_EAGER = True
+
+
+# ─── Logging (development) ──────────────────────────────────────────────────────
+# Override base.py logging: reduce console noise, keep file handlers from base.
+LOGGING["loggers"]["django"]["level"] = "INFO"  # type: ignore[name-defined]
+LOGGING["loggers"]["django.request"]["level"] = "DEBUG"  # type: ignore[name-defined]
+LOGGING["root"]["level"] = "INFO"  # type: ignore[name-defined]
+
+
 # ─── Browser Reload (development only) ──────────────────────────────────────────
 # django-browser-reload automatically refreshes the browser when Python or
 # template files change. It's part of the django-tailwind[reload] extras and

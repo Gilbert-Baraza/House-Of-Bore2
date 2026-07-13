@@ -121,6 +121,7 @@
           </a>
 
           {# Wishlist — with item count badge #}
+          {% if feature_flags.wishlist %}
           <a href="{% url 'wishlist:wishlist' %}"
              class="icon-btn relative"
              aria-label="Wishlist, {{ wishlist_count|default:0 }} items">
@@ -138,6 +139,7 @@
               </span>
             {% endif %}
           </a>
+          {% endif %}
 
           {# Logout Button (POST) #}
           <form method="post" action="{% url 'accounts:logout' %}" class="inline-flex m-0 p-0">
@@ -276,6 +278,7 @@
           </svg>
           Security & Settings
         </a>
+        {% if feature_flags.wishlist %}
         <a href="{% url 'wishlist:wishlist' %}"
            class="flex items-center justify-between px-3 py-2.5 rounded-btn text-sm font-medium
                   text-neutral-700 hover:text-primary-900 hover:bg-neutral-50 transition-colors">
@@ -293,6 +296,7 @@
             </span>
           {% endif %}
         </a>
+        {% endif %}
         <a href="{% url 'cart:cart_detail' %}"
            class="flex items-center justify-between px-3 py-2.5 rounded-btn text-sm font-medium
                   text-neutral-700 hover:text-primary-900 hover:bg-neutral-50 transition-colors">

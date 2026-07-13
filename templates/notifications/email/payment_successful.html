@@ -10,7 +10,7 @@
 <div style="background-color: #fafafa; padding: 20px; border-radius: 6px; margin: 24px 0; border-left: 4px solid #16a34a;">
     <p style="margin: 6px 0;"><strong>Payment Reference:</strong> {{ payment.payment_reference }}</p>
     <p style="margin: 6px 0;"><strong>Order Number:</strong> {{ order.order_number }}</p>
-    <p style="margin: 6px 0;"><strong>Amount Paid:</strong> ${{ payment.amount|floatformat:2 }} {{ payment.currency }}</p>
+    <p style="margin: 6px 0;"><strong>Amount Paid:</strong> {{ currency_settings.currency_symbol|default:'$' }}{{ payment.amount|floatformat:2 }} {{ payment.currency }}</p>
     <p style="margin: 6px 0;"><strong>Payment Method:</strong> {{ payment.get_gateway_display }}</p>
     <p style="margin: 6px 0;"><strong>Status:</strong> <span style="color: #16a34a; font-weight: 600;">COMPLETED</span></p>
 </div>

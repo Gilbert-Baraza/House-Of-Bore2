@@ -109,10 +109,10 @@
                       {# Price #}
                       <div class="flex items-center gap-2 mb-4">
                         {% if product.is_on_sale and product.compare_at_price %}
-                          <span class="text-base font-bold text-primary-900 tabular-nums">${{ product.price }}</span>
-                          <span class="text-xs text-neutral-400 line-through tabular-nums">${{ product.compare_at_price }}</span>
+                          <span class="text-base font-bold text-primary-900 tabular-nums">{{ currency_settings.currency_symbol|default:'$' }}{{ product.price }}</span>
+                          <span class="text-xs text-neutral-400 line-through tabular-nums">{{ currency_settings.currency_symbol|default:'$' }}{{ product.compare_at_price }}</span>
                         {% else %}
-                          <span class="text-base font-bold text-primary-900 tabular-nums">${{ product.price }}</span>
+                          <span class="text-base font-bold text-primary-900 tabular-nums">{{ currency_settings.currency_symbol|default:'$' }}{{ product.price }}</span>
                         {% endif %}
                       </div>
 

@@ -27,6 +27,7 @@ from orders.models import (
 )
 from pricing.services import pricing_breakdown
 from products.models import ProductVariant
+from settings.selectors import get_currency_settings
 
 
 def generate_order_number() -> str:
@@ -216,6 +217,8 @@ def create_order(request: HttpRequest, checkout_session: CheckoutSession, custom
     if not session_key and checkout_session.session_key:
         session_key = checkout_session.session_key
 
+    currency_code = get_currency_settings().get("default_currency", "KES")
+
     # 6. Create permanent Order record with concurrency collision retry protection
     order = None
     for _ in range(3):
@@ -236,7 +239,7 @@ def create_order(request: HttpRequest, checkout_session: CheckoutSession, custom
                     shipping_total=totals["shipping_total"],
                     tax_total=totals["tax_total"],
                     grand_total=totals["grand_total"],
-                    currency="USD",
+                    currency=currency_code,
                     customer_notes=customer_notes.strip(),
                 )
             break

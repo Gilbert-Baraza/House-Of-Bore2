@@ -68,12 +68,18 @@ class PayPalProvider(BasePaymentProvider):
 
         # Simulated response when in test/sandbox without live network credentials
         if kwargs.get("mock") or self.client_id in ("test_client_id", "mock_client_id", ""):
+            return_url = kwargs.get("return_url", f"/payments/return/{payment.payment_reference}/")
+            if payment.gateway == "manual":
+                redirect_url = f"{return_url}?simulated_status=COMPLETED&token={order_id}"
+            else:
+                redirect_url = f"https://www.sandbox.paypal.com/checkoutnow?token={order_id}"
+
             provider_data = {
                 "id": order_id,
                 "status": "CREATED",
                 "links": [
                     {
-                        "href": f"https://www.sandbox.paypal.com/checkoutnow?token={order_id}",
+                        "href": redirect_url,
                         "rel": "approve",
                         "method": "GET",
                     }
@@ -81,7 +87,7 @@ class PayPalProvider(BasePaymentProvider):
             }
             return {
                 "success": True,
-                "redirect_url": f"https://www.sandbox.paypal.com/checkoutnow?token={order_id}",
+                "redirect_url": redirect_url,
                 "provider_data": provider_data,
                 "error": None,
             }

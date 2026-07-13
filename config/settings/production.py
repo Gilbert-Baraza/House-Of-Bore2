@@ -11,8 +11,13 @@ WHY THIS FILE EXISTS:
       • WhiteNoise serves static files without a separate CDN setup
       • HTTPS is enforced via SSL redirect, secure cookies, and HSTS
       • SMTP email backend for real transactional email
+      • Celery tasks execute asynchronously via Redis (not eager)
+      • Sentry error monitoring (conditional on SENTRY_DSN)
+      • Cloudinary for media storage (conditional on CLOUDINARY_URL)
 ──────────────────────────────────────────────────────────────────────────────
 """
+
+import logging
 
 from decouple import Csv, config
 
@@ -48,6 +53,9 @@ DATABASES = {
             # Forces all queries to use a transaction, preventing partial writes
             # that could leave the database in an inconsistent state.
             "connect_timeout": 10,
+            # PgBouncer compatibility: set to "prefer" when using PgBouncer
+            # in transaction pooling mode. Comment out if not using PgBouncer.
+            # "options": "-c search_path=public",
         },
     }
 }
@@ -67,11 +75,31 @@ STORAGES = {
         "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
     },
     # Default file storage for user uploads (MEDIA_ROOT).
-    # Replace with S3 or similar in a cloud deployment.
+    # Overridden below if Cloudinary is configured.
     "default": {
         "BACKEND": "django.core.files.storage.FileSystemStorage",
     },
 }
+
+
+# ─── Cloudinary Media Storage ─────────────────────────────────────────────────
+# When CLOUDINARY_URL is set, use Cloudinary for all user-uploaded media files.
+# This offloads media serving to a global CDN with automatic image optimization.
+_cloudinary_url = config("CLOUDINARY_URL", default="")
+if _cloudinary_url:
+    INSTALLED_APPS += ["cloudinary_storage", "cloudinary"]  # type: ignore[name-defined]
+    STORAGES["default"] = {
+        "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
+    }
+    # Cloudinary SDK reads CLOUDINARY_URL from the environment automatically.
+    DEFAULT_FILE_STORAGE = "cloudinary_storage.storage.MediaCloudinaryStorage"
+
+
+# ─── Celery (production) ──────────────────────────────────────────────────────
+# In production, tasks MUST execute asynchronously via Redis.
+# Never set to True in production — it would bypass the entire task queue.
+CELERY_TASK_ALWAYS_EAGER = False
+
 
 # ─── Security — HTTPS Enforcement ─────────────────────────────────────────────
 
@@ -96,6 +124,10 @@ CSRF_COOKIE_SECURE = True
 # Prevents JavaScript from accessing the session cookie (mitigates XSS attacks).
 SESSION_COOKIE_HTTPONLY = True
 
+# SameSite — prevent cross-site cookie leakage
+SESSION_COOKIE_SAMESITE = "Lax"
+CSRF_COOKIE_SAMESITE = "Lax"
+
 # ─── Security — HSTS (HTTP Strict Transport Security) ─────────────────────────
 # HSTS tells browsers to ALWAYS use HTTPS for this domain for the next year,
 # even if the user types "http://". This prevents protocol downgrade attacks.
@@ -111,6 +143,12 @@ SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 # Allows the domain to be included in browser HSTS preload lists.
 # Only enable after the domain has been registered at https://hstspreload.org/
 SECURE_HSTS_PRELOAD = True
+
+# ─── Security — Content Security Policy (foundation) ─────────────────────────
+# A restrictive CSP prevents XSS by controlling which sources can load scripts,
+# styles, images, etc. Start with report-only mode, then enforce.
+# Implemented via Nginx headers (see deploy/nginx/house_of_bore.conf) rather
+# than Django middleware to avoid template complexity with nonces.
 
 # ─── CSRF Trusted Origins ─────────────────────────────────────────────────────
 # Required for CSRF validation when requests come through a reverse proxy.
@@ -132,26 +170,61 @@ DEFAULT_FROM_EMAIL = config(
     default="House of Bore <noreply@house-of-bore.com>",
 )
 
-# ─── Logging (production) ─────────────────────────────────────────────────────
-# Errors are logged to the console. Configure a file handler or Sentry here
-# for a production-grade logging setup in a future phase.
-LOGGING = {
-    "version": 1,
-    "disable_existing_loggers": False,
-    "handlers": {
-        "console": {
-            "class": "logging.StreamHandler",
+
+# ─── Caching (production — Redis with django-redis) ──────────────────────────
+# Override base.py cache with django-redis for production features:
+# connection pooling, compression, and Sentinel support.
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": config("REDIS_CACHE_URL", default="redis://127.0.0.1:6379/1"),
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            "COMPRESSOR": "django_redis.compressors.zlib.ZlibCompressor",
+            "CONNECTION_POOL_KWARGS": {
+                "max_connections": 50,
+                "retry_on_timeout": True,
+            },
         },
-    },
-    "root": {
-        "handlers": ["console"],
-        "level": "WARNING",
-    },
-    "loggers": {
-        "django": {
-            "handlers": ["console"],
-            "level": "ERROR",
-            "propagate": False,
-        },
-    },
+        "KEY_PREFIX": "hob",
+        "TIMEOUT": 300,
+    }
 }
+
+
+# ─── Logging (production) ─────────────────────────────────────────────────────
+# Override base.py logging levels for production: less verbose, focus on
+# warnings and errors. Console handler uses structured format for log aggregation.
+LOGGING["loggers"]["django"]["level"] = "WARNING"  # type: ignore[name-defined]
+LOGGING["loggers"]["django.request"]["level"] = "ERROR"  # type: ignore[name-defined]
+LOGGING["loggers"]["payments"]["level"] = "WARNING"  # type: ignore[name-defined]
+LOGGING["loggers"]["celery"]["level"] = "WARNING"  # type: ignore[name-defined]
+LOGGING["root"]["level"] = "WARNING"  # type: ignore[name-defined]
+
+
+# ─── Sentry Error Monitoring ─────────────────────────────────────────────────
+# Conditional initialization: Sentry is only activated when SENTRY_DSN is set
+# in the environment. This allows the same codebase to run without Sentry
+# during staging or early deployment phases.
+_sentry_dsn = config("SENTRY_DSN", default="")
+if _sentry_dsn:
+    try:
+        import sentry_sdk
+
+        sentry_sdk.init(
+            dsn=_sentry_dsn,
+            # Capture 10% of transactions for performance monitoring.
+            # Increase in staging, decrease in high-traffic production.
+            traces_sample_rate=config("SENTRY_TRACES_SAMPLE_RATE", default=0.1, cast=float),
+            # Associate errors with the latest Git commit for release tracking.
+            release=config("SENTRY_RELEASE", default="house-of-bore@latest"),
+            environment=config("SENTRY_ENVIRONMENT", default="production"),
+            # Send user context (email, ID) with errors for debugging.
+            send_default_pii=True,
+        )
+    except ImportError:
+        logger = logging.getLogger("django")
+        logger.warning(
+            "SENTRY_DSN is set but sentry-sdk is not installed. "
+            "Install with: pip install sentry-sdk[django]"
+        )

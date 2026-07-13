@@ -38,8 +38,19 @@ class StoreSettingsPermissionMixin(DashboardPermissionRequiredMixin):
     """
     View mixin requiring specific settings permissions.
     If no specific permission is declared on the view, defaults to `VIEW_SETTINGS`.
+    Grants access if the user has ANY of the required permissions (OR logic).
     """
     required_permissions = [VIEW_SETTINGS]
+
+    def has_permission(self) -> bool:
+        user = self.request.user
+        if not user.is_authenticated or not user.is_staff:
+            return False
+        if user.is_superuser:
+            return True
+        if not self.required_permissions:
+            return True
+        return any(has_dashboard_permission(user, perm) for perm in self.required_permissions)
 
 
 def can_manage_section(user: Any, permission_code: str) -> bool:

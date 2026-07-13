@@ -64,7 +64,7 @@
 
       {# Tabular Price #}
       <p class="text-base font-semibold text-primary-900 tabular-nums mb-4">
-        {{ product.price }}
+        {% if product.price|slice:":1" == "$" %}{{ currency_settings.currency_symbol|default:'$' }}{{ product.price|slice:"1:" }}{% else %}{{ currency_settings.currency_symbol|default:'$' }}{{ product.price }}{% endif %}
       </p>
     </div>
 

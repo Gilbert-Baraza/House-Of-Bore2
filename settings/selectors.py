@@ -11,7 +11,7 @@ lookups across high-frequency storefront queries.
 ──────────────────────────────────────────────────────────────────────────────
 """
 
-from typing import Any
+from typing import Any, Optional
 from .models import StoreSettings
 
 
@@ -23,11 +23,12 @@ def get_store_settings() -> StoreSettings:
     return StoreSettings.load()
 
 
-def get_branding_assets() -> dict[str, Any]:
+def get_branding_assets(settings: Optional[StoreSettings] = None) -> dict[str, Any]:
     """
     Get current store branding assets and theme colors.
     """
-    settings = get_store_settings()
+    if settings is None:
+        settings = get_store_settings()
     return {
         "store_name": settings.store_name,
         "business_name": settings.business_name,
@@ -46,22 +47,23 @@ def get_branding_assets() -> dict[str, Any]:
     }
 
 
-def get_branding() -> dict[str, Any]:
+def get_branding(settings: Optional[StoreSettings] = None) -> dict[str, Any]:
     """Alias for get_branding_assets()."""
-    return get_branding_assets()
+    return get_branding_assets(settings=settings)
 
 
-def get_branding_context() -> dict[str, Any]:
+def get_branding_context(settings: Optional[StoreSettings] = None) -> dict[str, Any]:
     """Alias for get_branding_assets()."""
-    return get_branding_assets()
+    return get_branding_assets(settings=settings)
 
 
-def get_active_feature_flags() -> dict[str, bool]:
+def get_active_feature_flags(settings: Optional[StoreSettings] = None) -> dict[str, bool]:
     """
     Retrieve all active feature flags as a dictionary of booleans.
     Storefront views and templates respect these flags to show/hide features.
     """
-    settings = get_store_settings()
+    if settings is None:
+        settings = get_store_settings()
     return {
         "wishlist": settings.feature_wishlist,
         "reviews": settings.feature_reviews,
@@ -72,17 +74,18 @@ def get_active_feature_flags() -> dict[str, bool]:
     }
 
 
-def get_feature_flags() -> dict[str, bool]:
+def get_feature_flags(settings: Optional[StoreSettings] = None) -> dict[str, bool]:
     """Alias for get_active_feature_flags()."""
-    return get_active_feature_flags()
+    return get_active_feature_flags(settings=settings)
 
 
-def is_feature_enabled(feature_name: str) -> bool:
+def is_feature_enabled(feature_name: str, settings: Optional[StoreSettings] = None) -> bool:
     """
     Check if a specific feature flag is currently enabled.
     Accepts full model attribute names ('feature_wishlist') or short names ('wishlist').
     """
-    settings = get_store_settings()
+    if settings is None:
+        settings = get_store_settings()
     if not feature_name.startswith("feature_"):
         attr_name = f"feature_{feature_name}"
     else:
@@ -90,11 +93,12 @@ def is_feature_enabled(feature_name: str) -> bool:
     return getattr(settings, attr_name, False)
 
 
-def get_seo_defaults() -> dict[str, Any]:
+def get_seo_defaults(settings: Optional[StoreSettings] = None) -> dict[str, Any]:
     """
     Retrieve default SEO metadata values for the site.
     """
-    settings = get_store_settings()
+    if settings is None:
+        settings = get_store_settings()
     return {
         "default_meta_title": settings.default_meta_title,
         "default_meta_description": settings.default_meta_description,
@@ -105,11 +109,12 @@ def get_seo_defaults() -> dict[str, Any]:
     }
 
 
-def get_currency_settings() -> dict[str, Any]:
+def get_currency_settings(settings: Optional[StoreSettings] = None) -> dict[str, Any]:
     """
     Retrieve default currency, decimal precision, and tax calculation settings.
     """
-    settings = get_store_settings()
+    if settings is None:
+        settings = get_store_settings()
     return {
         "default_currency": settings.default_currency,
         "currency_symbol": settings.currency_symbol,
@@ -120,11 +125,12 @@ def get_currency_settings() -> dict[str, Any]:
     }
 
 
-def get_shipping_settings() -> dict[str, Any]:
+def get_shipping_settings(settings: Optional[StoreSettings] = None) -> dict[str, Any]:
     """
     Retrieve shipping rules, thresholds, and estimated delivery messaging.
     """
-    settings = get_store_settings()
+    if settings is None:
+        settings = get_store_settings()
     return {
         "free_shipping_threshold": settings.free_shipping_threshold,
         "flat_shipping_rate": settings.flat_shipping_rate,
@@ -134,11 +140,12 @@ def get_shipping_settings() -> dict[str, Any]:
     }
 
 
-def get_social_links() -> dict[str, str]:
+def get_social_links(settings: Optional[StoreSettings] = None) -> dict[str, str]:
     """
     Retrieve configured social media URLs.
     """
-    settings = get_store_settings()
+    if settings is None:
+        settings = get_store_settings()
     return {
         "facebook_url": settings.facebook_url,
         "instagram_url": settings.instagram_url,
@@ -149,11 +156,12 @@ def get_social_links() -> dict[str, str]:
     }
 
 
-def get_store_policies() -> dict[str, str]:
+def get_store_policies(settings: Optional[StoreSettings] = None) -> dict[str, str]:
     """
     Retrieve markdown text content for legal store policies.
     """
-    settings = get_store_settings()
+    if settings is None:
+        settings = get_store_settings()
     return {
         "privacy_policy": settings.privacy_policy,
         "terms_and_conditions": settings.terms_and_conditions,
@@ -163,13 +171,14 @@ def get_store_policies() -> dict[str, str]:
     }
 
 
-def maintenance_enabled(request: Any = None) -> bool:
+def maintenance_enabled(request: Any = None, settings: Optional[StoreSettings] = None) -> bool:
     """
     Check if maintenance mode is enabled globally.
     If an HTTP request object is passed, check if the user is authenticated staff
     or accessing an administrative path. Staff and admin paths bypass maintenance mode.
     """
-    settings = get_store_settings()
+    if settings is None:
+        settings = get_store_settings()
     if not settings.maintenance_mode_enabled:
         return False
 
@@ -178,7 +187,7 @@ def maintenance_enabled(request: Any = None) -> bool:
         if hasattr(request, "user") and request.user.is_authenticated and getattr(request.user, "is_staff", False):
             return False
 
-        # Check if path is dashboard, admin, login, or static/media
+        # Check if path is dashboard, admin, login, or static/media/api/webhooks/health
         path = getattr(request, "path", "")
         if (
             path.startswith("/dashboard/") or
@@ -187,13 +196,17 @@ def maintenance_enabled(request: Any = None) -> bool:
             path.startswith("/logout") or
             path.startswith("/static/") or
             path.startswith("/media/") or
-            path.startswith("/__reload__")
+            path.startswith("/__reload__") or
+            path.startswith("/api/") or
+            path.startswith("/webhooks/") or
+            path.startswith("/health/") or
+            path.startswith("/metrics/")
         ):
             return False
 
     return True
 
 
-def is_maintenance_mode_enabled(request: Any = None) -> bool:
+def is_maintenance_mode_enabled(request: Any = None, settings: Optional[StoreSettings] = None) -> bool:
     """Alias for maintenance_enabled(request)."""
-    return maintenance_enabled(request)
+    return maintenance_enabled(request=request, settings=settings)

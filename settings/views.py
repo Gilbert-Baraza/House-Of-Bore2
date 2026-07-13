@@ -42,6 +42,21 @@ from .selectors import get_store_settings
 from .services import update_store_file_asset, update_store_settings
 
 
+def get_client_ip(request: HttpRequest) -> str | None:
+    """
+    Extract accurate client IP address, supporting reverse proxies (`X-Forwarded-For` / `X-Real-IP`).
+    """
+    if not request:
+        return None
+    x_forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR")
+    if x_forwarded_for:
+        return x_forwarded_for.split(",")[0].strip()
+    x_real_ip = request.META.get("HTTP_X_REAL_IP")
+    if x_real_ip:
+        return x_real_ip.strip()
+    return request.META.get("REMOTE_ADDR")
+
+
 class BaseSettingsSectionView(StoreSettingsPermissionMixin, View):
     """
     Abstract base view for GET/POST forms modifying a single StoreSettings section.
@@ -69,11 +84,12 @@ class BaseSettingsSectionView(StoreSettingsPermissionMixin, View):
         instance = get_store_settings()
         form = self.form_class(request.POST, request.FILES, instance=instance)
         if form.is_valid():
+            client_ip = get_client_ip(request)
             # Update regular fields through service
             update_store_settings(
                 user=request.user,
                 section_name=self.section_title,
-                ip_address=request.META.get("REMOTE_ADDR"),
+                ip_address=client_ip,
                 **form.cleaned_data,
             )
             # Update uploaded file assets if any were submitted
@@ -83,7 +99,7 @@ class BaseSettingsSectionView(StoreSettingsPermissionMixin, View):
                         user=request.user,
                         field_name=file_field,
                         file_obj=request.FILES[file_field],
-                        ip_address=request.META.get("REMOTE_ADDR"),
+                        ip_address=client_ip,
                     )
 
             messages.success(request, f"{self.section_title} settings saved successfully.")
@@ -136,17 +152,6 @@ class BrandingView(BaseSettingsSectionView):
     file_fields = ["default_placeholder_image"]
     required_permissions = [MANAGE_BRANDING, MANAGE_STORE_SETTINGS]
 
-    def dispatch(self, request, *args, **kwargs):
-        # Allow if user has MANAGE_BRANDING OR MANAGE_STORE_SETTINGS
-        if request.user.is_authenticated and request.user.is_staff:
-            if request.user.is_superuser or any(
-                hasattr(request.user, "has_perm") and request.user.has_perm(perm)
-                or any(role.has_permission(perm) for role in request.user.staff_roles.all())
-                for perm in [MANAGE_BRANDING, MANAGE_STORE_SETTINGS]
-            ):
-                return super(StoreSettingsPermissionMixin, self).dispatch(request, *args, **kwargs)
-        return super().dispatch(request, *args, **kwargs)
-
 
 class CurrencyTaxView(BaseSettingsSectionView):
     form_class = CurrencyTaxForm
@@ -196,16 +201,6 @@ class FeatureFlagsView(BaseSettingsSectionView):
     section_code = "flags"
     required_permissions = [MANAGE_FEATURE_FLAGS, MANAGE_STORE_SETTINGS]
 
-    def dispatch(self, request, *args, **kwargs):
-        if request.user.is_authenticated and request.user.is_staff:
-            if request.user.is_superuser or any(
-                hasattr(request.user, "has_perm") and request.user.has_perm(perm)
-                or any(role.has_permission(perm) for role in request.user.staff_roles.all())
-                for perm in [MANAGE_FEATURE_FLAGS, MANAGE_STORE_SETTINGS]
-            ):
-                return super(StoreSettingsPermissionMixin, self).dispatch(request, *args, **kwargs)
-        return super().dispatch(request, *args, **kwargs)
-
 
 class MaintenanceModeView(BaseSettingsSectionView):
     form_class = MaintenanceModeForm
@@ -214,16 +209,6 @@ class MaintenanceModeView(BaseSettingsSectionView):
     section_code = "maintenance"
     required_permissions = [TOGGLE_MAINTENANCE_MODE, MANAGE_STORE_SETTINGS]
 
-    def dispatch(self, request, *args, **kwargs):
-        if request.user.is_authenticated and request.user.is_staff:
-            if request.user.is_superuser or any(
-                hasattr(request.user, "has_perm") and request.user.has_perm(perm)
-                or any(role.has_permission(perm) for role in request.user.staff_roles.all())
-                for perm in [TOGGLE_MAINTENANCE_MODE, MANAGE_STORE_SETTINGS]
-            ):
-                return super(StoreSettingsPermissionMixin, self).dispatch(request, *args, **kwargs)
-        return super().dispatch(request, *args, **kwargs)
-
 
 class StorePoliciesView(BaseSettingsSectionView):
     form_class = StorePoliciesForm
@@ -231,13 +216,3 @@ class StorePoliciesView(BaseSettingsSectionView):
     section_title = "Store Policies"
     section_code = "policies"
     required_permissions = [MANAGE_POLICIES, MANAGE_STORE_SETTINGS]
-
-    def dispatch(self, request, *args, **kwargs):
-        if request.user.is_authenticated and request.user.is_staff:
-            if request.user.is_superuser or any(
-                hasattr(request.user, "has_perm") and request.user.has_perm(perm)
-                or any(role.has_permission(perm) for role in request.user.staff_roles.all())
-                for perm in [MANAGE_POLICIES, MANAGE_STORE_SETTINGS]
-            ):
-                return super(StoreSettingsPermissionMixin, self).dispatch(request, *args, **kwargs)
-        return super().dispatch(request, *args, **kwargs)

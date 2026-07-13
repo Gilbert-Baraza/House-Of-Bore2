@@ -16,3 +16,11 @@ python-decouple>=3.8
 # Asynchronous task queue and broker clients for event-driven notifications
 celery>=5.4
 redis>=5.0
+
+# django-redis: production-grade Redis cache backend for Django.
+# Provides connection pooling, compression, Sentinel support, and key pattern deletion.
+django-redis>=5.4
+
+# hiredis: high-performance C parser for Redis responses.
+# Significantly faster than the pure-Python parser for large cache operations.
+hiredis>=3.0

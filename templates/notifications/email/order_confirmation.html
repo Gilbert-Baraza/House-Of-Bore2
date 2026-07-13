@@ -26,7 +26,7 @@
                 {% endif %}
             </td>
             <td class="text-right">{{ item.quantity }}</td>
-            <td class="text-right">${{ item.line_total|floatformat:2 }}</td>
+            <td class="text-right">{{ currency_settings.currency_symbol|default:'$' }}{{ item.line_total|floatformat:2 }}</td>
         </tr>
         {% empty %}
         <tr>
@@ -37,14 +37,14 @@
 </table>
 
 <div style="background-color: #fafafa; padding: 16px; border-radius: 6px; margin: 20px 0;">
-    <p style="margin: 4px 0;"><strong>Subtotal:</strong> ${{ order.subtotal|floatformat:2 }}</p>
+    <p style="margin: 4px 0;"><strong>Subtotal:</strong> {{ currency_settings.currency_symbol|default:'$' }}{{ order.subtotal|floatformat:2 }}</p>
     {% if order.discount_total and order.discount_total > 0 %}
-    <p style="margin: 4px 0; color: #16a34a;"><strong>Discount:</strong> -${{ order.discount_total|floatformat:2 }}</p>
+    <p style="margin: 4px 0; color: #16a34a;"><strong>Discount:</strong> -{{ currency_settings.currency_symbol|default:'$' }}{{ order.discount_total|floatformat:2 }}</p>
     {% endif %}
-    <p style="margin: 4px 0;"><strong>Shipping:</strong> ${{ order.shipping_total|floatformat:2 }}</p>
-    <p style="margin: 4px 0;"><strong>Tax:</strong> ${{ order.tax_total|floatformat:2 }}</p>
+    <p style="margin: 4px 0;"><strong>Shipping:</strong> {{ currency_settings.currency_symbol|default:'$' }}{{ order.shipping_total|floatformat:2 }}</p>
+    <p style="margin: 4px 0;"><strong>Tax:</strong> {{ currency_settings.currency_symbol|default:'$' }}{{ order.tax_total|floatformat:2 }}</p>
     <hr style="border: none; border-top: 1px solid #e4e4e7; margin: 8px 0;">
-    <p style="margin: 4px 0; font-size: 16px;"><strong>Total Amount:</strong> <span style="color: #d4af37; font-weight: 700;">${{ order.grand_total|floatformat:2 }} {{ order.currency }}</span></p>
+    <p style="margin: 4px 0; font-size: 16px;"><strong>Total Amount:</strong> <span style="color: #d4af37; font-weight: 700;">{{ currency_settings.currency_symbol|default:'$' }}{{ order.grand_total|floatformat:2 }} {{ order.currency }}</span></p>
 </div>
 
 <p>You can inspect your order status and tracking details at any time from your account dashboard.</p>
