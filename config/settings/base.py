@@ -63,6 +63,7 @@ LOCAL_APPS = [
     "inventory",     # Inventory management, ledger, and stock controls
     "fulfillment",   # Order fulfillment, picking, packing, shipping, and returns workflow
     "crm",           # Customer Relationship Management (CRM) 360° profile & timeline
+    "settings",      # Store configuration, branding, policies & feature flags
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -80,6 +81,8 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     # Protects against clickjacking by setting the X-Frame-Options header.
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    # Enforces configurable zero-downtime maintenance mode for public storefront visitors.
+    "settings.middleware.MaintenanceModeMiddleware",
 ]
 
 ROOT_URLCONF = "config.urls"
@@ -105,6 +108,7 @@ TEMPLATES = [
                 "django.contrib.messages.context_processors.messages",
                 "wishlist.context_processors.wishlist_status",
                 "cart.context_processors.cart",
+                "settings.context_processors.store_settings",
             ],
         },
     },

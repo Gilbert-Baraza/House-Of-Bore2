@@ -1,0 +1,86 @@
+<!-- templates/dashboard/settings/nav_tabs.html -->
+<div class="bg-white rounded-xl border border-neutral-200 shadow-sm p-4 sm:p-6 mb-8">
+  <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-neutral-100 pb-4 mb-4">
+    <div>
+      <h1 class="text-2xl font-serif font-bold text-neutral-900 tracking-tight flex items-center gap-2">
+        <span>Store Configuration & Settings</span>
+        {% if store_settings.maintenance_mode_enabled %}
+          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-300">
+            Maintenance Active
+          </span>
+        {% else %}
+          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-300">
+            Storefront Online
+          </span>
+        {% endif %}
+      </h1>
+      <p class="text-sm text-neutral-500 mt-1">
+        Manage live configuration without code modifications or server restarts. Changes take effect instantly across the storefront.
+      </p>
+    </div>
+    <div class="flex items-center gap-2 self-start md:self-auto">
+      <a href="{% url 'core:home' %}" target="_blank" class="inline-flex items-center space-x-1.5 px-3.5 py-2 rounded-lg border border-neutral-300 bg-white hover:bg-neutral-50 text-neutral-700 text-xs font-semibold shadow-sm transition-colors">
+        <svg class="h-4 w-4 text-neutral-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+        <span>Preview Storefront</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Responsive Navigation Tabs -->
+  <div class="flex items-center overflow-x-auto no-scrollbar space-x-2 pb-1 border-b border-neutral-200">
+    <!-- Overview -->
+    <a href="{% url 'dashboard:settings:overview' %}" class="shrink-0 px-4 py-2.5 rounded-t-lg text-xs font-semibold sm:text-sm transition-colors border-b-2 {% if active_tab == 'overview' %}border-neutral-900 text-neutral-900 bg-neutral-50/80 font-bold{% else %}border-transparent text-neutral-500 hover:text-neutral-800 hover:border-neutral-300{% endif %}">
+      Overview
+    </a>
+
+    <!-- Profile -->
+    <a href="{% url 'dashboard:settings:profile' %}" class="shrink-0 px-4 py-2.5 rounded-t-lg text-xs font-semibold sm:text-sm transition-colors border-b-2 {% if active_tab == 'profile' %}border-neutral-900 text-neutral-900 bg-neutral-50/80 font-bold{% else %}border-transparent text-neutral-500 hover:text-neutral-800 hover:border-neutral-300{% endif %}">
+      Profile & Brand
+    </a>
+
+    <!-- Branding & Theme -->
+    <a href="{% url 'dashboard:settings:branding' %}" class="shrink-0 px-4 py-2.5 rounded-t-lg text-xs font-semibold sm:text-sm transition-colors border-b-2 {% if active_tab == 'branding' %}border-neutral-900 text-neutral-900 bg-neutral-50/80 font-bold{% else %}border-transparent text-neutral-500 hover:text-neutral-800 hover:border-neutral-300{% endif %}">
+      Theme Colors
+    </a>
+
+    <!-- Currency & Tax -->
+    <a href="{% url 'dashboard:settings:currency' %}" class="shrink-0 px-4 py-2.5 rounded-t-lg text-xs font-semibold sm:text-sm transition-colors border-b-2 {% if active_tab == 'currency' %}border-neutral-900 text-neutral-900 bg-neutral-50/80 font-bold{% else %}border-transparent text-neutral-500 hover:text-neutral-800 hover:border-neutral-300{% endif %}">
+      Currency & Tax
+    </a>
+
+    <!-- Shipping -->
+    <a href="{% url 'dashboard:settings:shipping' %}" class="shrink-0 px-4 py-2.5 rounded-t-lg text-xs font-semibold sm:text-sm transition-colors border-b-2 {% if active_tab == 'shipping' %}border-neutral-900 text-neutral-900 bg-neutral-50/80 font-bold{% else %}border-transparent text-neutral-500 hover:text-neutral-800 hover:border-neutral-300{% endif %}">
+      Shipping Rules
+    </a>
+
+    <!-- Email -->
+    <a href="{% url 'dashboard:settings:email' %}" class="shrink-0 px-4 py-2.5 rounded-t-lg text-xs font-semibold sm:text-sm transition-colors border-b-2 {% if active_tab == 'email' %}border-neutral-900 text-neutral-900 bg-neutral-50/80 font-bold{% else %}border-transparent text-neutral-500 hover:text-neutral-800 hover:border-neutral-300{% endif %}">
+      Email Alerts
+    </a>
+
+    <!-- SEO Defaults -->
+    <a href="{% url 'dashboard:settings:seo' %}" class="shrink-0 px-4 py-2.5 rounded-t-lg text-xs font-semibold sm:text-sm transition-colors border-b-2 {% if active_tab == 'seo' %}border-neutral-900 text-neutral-900 bg-neutral-50/80 font-bold{% else %}border-transparent text-neutral-500 hover:text-neutral-800 hover:border-neutral-300{% endif %}">
+      SEO Metadata
+    </a>
+
+    <!-- Social Media -->
+    <a href="{% url 'dashboard:settings:social' %}" class="shrink-0 px-4 py-2.5 rounded-t-lg text-xs font-semibold sm:text-sm transition-colors border-b-2 {% if active_tab == 'social' %}border-neutral-900 text-neutral-900 bg-neutral-50/80 font-bold{% else %}border-transparent text-neutral-500 hover:text-neutral-800 hover:border-neutral-300{% endif %}">
+      Social Links
+    </a>
+
+    <!-- Feature Flags -->
+    <a href="{% url 'dashboard:settings:flags' %}" class="shrink-0 px-4 py-2.5 rounded-t-lg text-xs font-semibold sm:text-sm transition-colors border-b-2 {% if active_tab == 'flags' %}border-neutral-900 text-neutral-900 bg-neutral-50/80 font-bold{% else %}border-transparent text-neutral-500 hover:text-neutral-800 hover:border-neutral-300{% endif %}">
+      Feature Flags
+    </a>
+
+    <!-- Maintenance -->
+    <a href="{% url 'dashboard:settings:maintenance' %}" class="shrink-0 px-4 py-2.5 rounded-t-lg text-xs font-semibold sm:text-sm transition-colors border-b-2 {% if active_tab == 'maintenance' %}border-neutral-900 text-neutral-900 bg-neutral-50/80 font-bold{% else %}border-transparent text-neutral-500 hover:text-neutral-800 hover:border-neutral-300{% endif %}">
+      Maintenance
+    </a>
+
+    <!-- Policies -->
+    <a href="{% url 'dashboard:settings:policies' %}" class="shrink-0 px-4 py-2.5 rounded-t-lg text-xs font-semibold sm:text-sm transition-colors border-b-2 {% if active_tab == 'policies' %}border-neutral-900 text-neutral-900 bg-neutral-50/80 font-bold{% else %}border-transparent text-neutral-500 hover:text-neutral-800 hover:border-neutral-300{% endif %}">
+      Store Policies
+    </a>
+  </div>
+</div>

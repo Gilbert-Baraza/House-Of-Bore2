@@ -1,0 +1,107 @@
+{% extends "dashboard/base.html" %}
+{% load i18n %}
+
+{% block title %}Store Profile Settings{% endblock %}
+
+{% block content %}
+{% include "dashboard/settings/nav_tabs.html" %}
+
+<div class="max-w-4xl bg-white rounded-xl border border-neutral-200 shadow-sm overflow-hidden p-6 sm:p-8">
+  <div class="border-b border-neutral-100 pb-4 mb-6">
+    <h2 class="text-lg font-serif font-bold text-neutral-900">General Store Information & Profile</h2>
+    <p class="text-xs text-neutral-500 mt-1">Configure public storefront identity, corporate details, contact channels, and brand logos.</p>
+  </div>
+
+  <form method="post" enctype="multipart/form-data" class="space-y-6">
+    {% csrf_token %}
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+      <div>
+        <label for="{{ form.store_name.id_for_label }}" class="block text-xs font-semibold text-neutral-700 uppercase tracking-wider mb-1">{{ form.store_name.label }}</label>
+        {{ form.store_name }}
+        {% if form.store_name.help_text %}<p class="text-[11px] text-neutral-500 mt-1">{{ form.store_name.help_text }}</p>{% endif %}
+        {% if form.store_name.errors %}<p class="text-xs text-red-600 mt-1">{{ form.store_name.errors.0 }}</p>{% endif %}
+      </div>
+      <div>
+        <label for="{{ form.business_name.id_for_label }}" class="block text-xs font-semibold text-neutral-700 uppercase tracking-wider mb-1">{{ form.business_name.label }}</label>
+        {{ form.business_name }}
+        {% if form.business_name.help_text %}<p class="text-[11px] text-neutral-500 mt-1">{{ form.business_name.help_text }}</p>{% endif %}
+        {% if form.business_name.errors %}<p class="text-xs text-red-600 mt-1">{{ form.business_name.errors.0 }}</p>{% endif %}
+      </div>
+    </div>
+
+    <div>
+      <label for="{{ form.store_description.id_for_label }}" class="block text-xs font-semibold text-neutral-700 uppercase tracking-wider mb-1">{{ form.store_description.label }}</label>
+      {{ form.store_description }}
+      {% if form.store_description.help_text %}<p class="text-[11px] text-neutral-500 mt-1">{{ form.store_description.help_text }}</p>{% endif %}
+      {% if form.store_description.errors %}<p class="text-xs text-red-600 mt-1">{{ form.store_description.errors.0 }}</p>{% endif %}
+    </div>
+
+    <div class="border-t border-neutral-100 pt-6 grid grid-cols-1 sm:grid-cols-3 gap-6">
+      <div>
+        <label for="{{ form.email.id_for_label }}" class="block text-xs font-semibold text-neutral-700 uppercase tracking-wider mb-1">{{ form.email.label }}</label>
+        {{ form.email }}
+        {% if form.email.help_text %}<p class="text-[11px] text-neutral-500 mt-1">{{ form.email.help_text }}</p>{% endif %}
+        {% if form.email.errors %}<p class="text-xs text-red-600 mt-1">{{ form.email.errors.0 }}</p>{% endif %}
+      </div>
+      <div>
+        <label for="{{ form.phone.id_for_label }}" class="block text-xs font-semibold text-neutral-700 uppercase tracking-wider mb-1">{{ form.phone.label }}</label>
+        {{ form.phone }}
+        {% if form.phone.help_text %}<p class="text-[11px] text-neutral-500 mt-1">{{ form.phone.help_text }}</p>{% endif %}
+        {% if form.phone.errors %}<p class="text-xs text-red-600 mt-1">{{ form.phone.errors.0 }}</p>{% endif %}
+      </div>
+      <div>
+        <label for="{{ form.whatsapp.id_for_label }}" class="block text-xs font-semibold text-neutral-700 uppercase tracking-wider mb-1">{{ form.whatsapp.label }}</label>
+        {{ form.whatsapp }}
+        {% if form.whatsapp.help_text %}<p class="text-[11px] text-neutral-500 mt-1">{{ form.whatsapp.help_text }}</p>{% endif %}
+        {% if form.whatsapp.errors %}<p class="text-xs text-red-600 mt-1">{{ form.whatsapp.errors.0 }}</p>{% endif %}
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+      <div>
+        <label for="{{ form.physical_address.id_for_label }}" class="block text-xs font-semibold text-neutral-700 uppercase tracking-wider mb-1">{{ form.physical_address.label }}</label>
+        {{ form.physical_address }}
+        {% if form.physical_address.help_text %}<p class="text-[11px] text-neutral-500 mt-1">{{ form.physical_address.help_text }}</p>{% endif %}
+        {% if form.physical_address.errors %}<p class="text-xs text-red-600 mt-1">{{ form.physical_address.errors.0 }}</p>{% endif %}
+      </div>
+      <div>
+        <label for="{{ form.business_hours.id_for_label }}" class="block text-xs font-semibold text-neutral-700 uppercase tracking-wider mb-1">{{ form.business_hours.label }}</label>
+        {{ form.business_hours }}
+        {% if form.business_hours.help_text %}<p class="text-[11px] text-neutral-500 mt-1">{{ form.business_hours.help_text }}</p>{% endif %}
+        {% if form.business_hours.errors %}<p class="text-xs text-red-600 mt-1">{{ form.business_hours.errors.0 }}</p>{% endif %}
+      </div>
+    </div>
+
+    <div class="border-t border-neutral-100 pt-6 grid grid-cols-1 sm:grid-cols-2 gap-6">
+      <div>
+        <label for="{{ form.logo.id_for_label }}" class="block text-xs font-semibold text-neutral-700 uppercase tracking-wider mb-1">{{ form.logo.label }}</label>
+        {% if settings.logo %}
+          <div class="mb-2 flex items-center gap-3">
+            <img src="{{ settings.logo.url }}" alt="Current Logo" class="h-10 w-auto object-contain bg-neutral-900 p-1.5 rounded border">
+            <span class="text-xs text-neutral-500">Current uploaded logo</span>
+          </div>
+        {% endif %}
+        {{ form.logo }}
+        {% if form.logo.help_text %}<p class="text-[11px] text-neutral-500 mt-1">{{ form.logo.help_text }}</p>{% endif %}
+      </div>
+      <div>
+        <label for="{{ form.favicon.id_for_label }}" class="block text-xs font-semibold text-neutral-700 uppercase tracking-wider mb-1">{{ form.favicon.label }}</label>
+        {% if settings.favicon %}
+          <div class="mb-2 flex items-center gap-3">
+            <img src="{{ settings.favicon.url }}" alt="Current Favicon" class="h-8 w-8 object-contain bg-neutral-100 p-1 rounded border">
+            <span class="text-xs text-neutral-500">Current favicon</span>
+          </div>
+        {% endif %}
+        {{ form.favicon }}
+        {% if form.favicon.help_text %}<p class="text-[11px] text-neutral-500 mt-1">{{ form.favicon.help_text }}</p>{% endif %}
+      </div>
+    </div>
+
+    <div class="border-t border-neutral-200 pt-6 flex justify-end gap-3">
+      <a href="{% url 'dashboard:settings:overview' %}" class="px-5 py-2.5 rounded-lg border border-neutral-300 bg-white hover:bg-neutral-50 text-neutral-700 text-sm font-semibold transition-colors">Cancel</a>
+      <button type="submit" class="px-6 py-2.5 bg-neutral-900 hover:bg-neutral-800 text-white font-semibold text-sm rounded-lg shadow-sm transition-colors">Save Profile Settings</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

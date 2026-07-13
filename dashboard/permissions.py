@@ -52,6 +52,9 @@ DEFAULT_ROLES_CONFIG = {
             "dashboard.view_reports", "dashboard.view_marketing",
             "crm.view_customer", "crm.change_customer", "crm.add_staffnote",
             "crm.view_analytics", "crm.export_customerdata",
+            "settings.view_storesettings", "settings.change_storesettings",
+            "settings.manage_branding", "settings.manage_policies",
+            "settings.toggle_maintenance", "settings.manage_featureflags",
         ],
     },
     "inventory_manager": {

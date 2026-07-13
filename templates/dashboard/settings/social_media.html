@@ -1,0 +1,63 @@
+{% extends "dashboard/base.html" %}
+{% load i18n %}
+
+{% block title %}Social Media Links{% endblock %}
+
+{% block content %}
+{% include "dashboard/settings/nav_tabs.html" %}
+
+<div class="max-w-4xl bg-white rounded-xl border border-neutral-200 shadow-sm overflow-hidden p-6 sm:p-8">
+  <div class="border-b border-neutral-100 pb-4 mb-6">
+    <h2 class="text-lg font-serif font-bold text-neutral-900">Social Media Links</h2>
+    <p class="text-xs text-neutral-500 mt-1">Manage official profile URLs displayed in storefront footers, contact cards, and social share badges.</p>
+  </div>
+
+  <form method="post" class="space-y-6">
+    {% csrf_token %}
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+      <div>
+        <label for="{{ form.instagram_url.id_for_label }}" class="block text-xs font-semibold text-neutral-700 uppercase tracking-wider mb-1">{{ form.instagram_url.label }}</label>
+        {{ form.instagram_url }}
+        {% if form.instagram_url.help_text %}<p class="text-[11px] text-neutral-500 mt-1">{{ form.instagram_url.help_text }}</p>{% endif %}
+      </div>
+      <div>
+        <label for="{{ form.facebook_url.id_for_label }}" class="block text-xs font-semibold text-neutral-700 uppercase tracking-wider mb-1">{{ form.facebook_url.label }}</label>
+        {{ form.facebook_url }}
+        {% if form.facebook_url.help_text %}<p class="text-[11px] text-neutral-500 mt-1">{{ form.facebook_url.help_text }}</p>{% endif %}
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+      <div>
+        <label for="{{ form.twitter_url.id_for_label }}" class="block text-xs font-semibold text-neutral-700 uppercase tracking-wider mb-1">{{ form.twitter_url.label }}</label>
+        {{ form.twitter_url }}
+        {% if form.twitter_url.help_text %}<p class="text-[11px] text-neutral-500 mt-1">{{ form.twitter_url.help_text }}</p>{% endif %}
+      </div>
+      <div>
+        <label for="{{ form.tiktok_url.id_for_label }}" class="block text-xs font-semibold text-neutral-700 uppercase tracking-wider mb-1">{{ form.tiktok_url.label }}</label>
+        {{ form.tiktok_url }}
+        {% if form.tiktok_url.help_text %}<p class="text-[11px] text-neutral-500 mt-1">{{ form.tiktok_url.help_text }}</p>{% endif %}
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+      <div>
+        <label for="{{ form.youtube_url.id_for_label }}" class="block text-xs font-semibold text-neutral-700 uppercase tracking-wider mb-1">{{ form.youtube_url.label }}</label>
+        {{ form.youtube_url }}
+        {% if form.youtube_url.help_text %}<p class="text-[11px] text-neutral-500 mt-1">{{ form.youtube_url.help_text }}</p>{% endif %}
+      </div>
+      <div>
+        <label for="{{ form.linkedin_url.id_for_label }}" class="block text-xs font-semibold text-neutral-700 uppercase tracking-wider mb-1">{{ form.linkedin_url.label }}</label>
+        {{ form.linkedin_url }}
+        {% if form.linkedin_url.help_text %}<p class="text-[11px] text-neutral-500 mt-1">{{ form.linkedin_url.help_text }}</p>{% endif %}
+      </div>
+    </div>
+
+    <div class="border-t border-neutral-200 pt-6 flex justify-end gap-3">
+      <a href="{% url 'dashboard:settings:overview' %}" class="px-5 py-2.5 rounded-lg border border-neutral-300 bg-white hover:bg-neutral-50 text-neutral-700 text-sm font-semibold transition-colors">Cancel</a>
+      <button type="submit" class="px-6 py-2.5 bg-neutral-900 hover:bg-neutral-800 text-white font-semibold text-sm rounded-lg shadow-sm transition-colors">Save Social Links</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

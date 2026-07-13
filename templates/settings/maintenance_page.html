@@ -1,0 +1,83 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-neutral-950 text-neutral-100">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-fit, initial-scale=1.0" />
+  <title>Under Maintenance | {{ store_settings.store_name|default:"House of Bore" }}</title>
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="stylesheet" href="{% static 'css/dist/styles.css' %}" onerror="this.onerror=null;this.href='https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css';" />
+  <style>
+    :root {
+      --primary-color: {{ branding.primary_color|default:"#1A1A1A" }};
+      --accent-color: {{ branding.accent_color|default:"#C5A059" }};
+    }
+    .brand-accent { color: var(--accent-color); }
+    .bg-brand-accent { background-color: var(--accent-color); }
+    .border-brand-accent { border-color: var(--accent-color); }
+  </style>
+</head>
+<body class="h-full antialiased flex flex-col justify-between p-6 sm:p-12 relative overflow-hidden font-sans">
+  <!-- Subtle background glow -->
+  <div class="absolute inset-0 bg-gradient-to-br from-neutral-900 via-neutral-950 to-black -z-10"></div>
+  <div class="absolute -top-40 -left-40 w-96 h-96 rounded-full opacity-10 blur-3xl bg-amber-500 pointer-events-none"></div>
+
+  <!-- Header / Logo -->
+  <header class="flex justify-between items-center max-w-5xl mx-auto w-full">
+    <div class="flex items-center space-x-3">
+      {% if branding.logo_url %}
+        <img src="{{ branding.logo_url }}" alt="{{ branding.store_name }}" class="h-10 w-auto object-contain">
+      {% else %}
+        <div class="h-10 w-10 bg-gradient-to-br from-amber-400 to-amber-600 rounded-lg flex items-center justify-center text-neutral-950 font-serif font-bold text-lg shadow-md">
+          HB
+        </div>
+        <span class="font-serif font-bold tracking-wider text-xl text-white">{{ branding.store_name|default:"HOUSE OF BORE" }}</span>
+      {% endif %}
+    </div>
+    <div>
+      <a href="{% url 'dashboard:home' %}" class="text-xs text-neutral-400 hover:text-white underline transition-colors">Staff Portal Login</a>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="max-w-3xl mx-auto w-full text-center my-12 space-y-6">
+    <div class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-widest bg-amber-500/10 text-amber-400 border border-amber-500/30 mb-4">
+      System Maintenance
+    </div>
+
+    <h1 class="text-3xl sm:text-5xl font-serif font-bold text-white tracking-tight leading-tight">
+      Seasonal Curation & Upgrades
+    </h1>
+
+    <p class="text-base sm:text-lg text-neutral-300 max-w-2xl mx-auto leading-relaxed">
+      {{ store_settings.maintenance_message|default:"Our digital flagship is undergoing seasonal curation and upgrades. We will return shortly." }}
+    </p>
+
+    {% if store_settings.maintenance_return_date %}
+      <div class="pt-6">
+        <div class="inline-block px-6 py-4 rounded-xl bg-neutral-900/80 border border-neutral-800 backdrop-blur-md shadow-xl">
+          <span class="block text-xs uppercase tracking-widest text-neutral-400 font-semibold mb-1">Expected Reopening</span>
+          <span class="text-lg sm:text-xl font-serif font-bold brand-accent">
+            {{ store_settings.maintenance_return_date|date:"F j, Y - g:i A" }} EAT
+          </span>
+        </div>
+      </div>
+    {% endif %}
+
+    <div class="pt-8 flex flex-wrap justify-center gap-4 text-sm">
+      {% if social_links.instagram_url %}
+        <a href="{{ social_links.instagram_url }}" target="_blank" class="px-5 py-2.5 rounded-lg border border-neutral-800 bg-neutral-900/60 hover:bg-neutral-800 text-neutral-300 hover:text-white transition-colors">Instagram</a>
+      {% endif %}
+      {% if social_links.whatsapp %}
+        <a href="https://wa.me/{{ social_links.whatsapp|cut:' '|cut:'+' }}" target="_blank" class="px-5 py-2.5 rounded-lg border border-neutral-800 bg-neutral-900/60 hover:bg-neutral-800 text-neutral-300 hover:text-white transition-colors">Concierge WhatsApp</a>
+      {% endif %}
+      <a href="mailto:{{ store_settings.email|default:'concierge@houseofbore.com' }}" class="px-5 py-2.5 rounded-lg border border-neutral-800 bg-neutral-900/60 hover:bg-neutral-800 text-neutral-300 hover:text-white transition-colors">Contact Concierge</a>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="max-w-5xl mx-auto w-full text-center text-xs text-neutral-500 border-t border-neutral-900 pt-6">
+    <p>&copy; {% now "Y" %} {{ store_settings.store_name|default:"House of Bore" }}. All rights reserved.</p>
+  </footer>
+</body>
+</html>

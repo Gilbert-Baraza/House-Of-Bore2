@@ -44,13 +44,17 @@
       {# ── Logo ─────────────────────────────────────────────────────────── #}
       <a href="{% url 'core:home' %}"
          class="flex items-center gap-2.5 text-primary-900 no-underline group"
-         aria-label="House of Bore — Home">
-        {# Gold dot accent mark #}
-        <span class="w-2.5 h-2.5 rounded-full bg-accent-500 flex-shrink-0 transition-transform duration-200 group-hover:scale-110"
-              aria-hidden="true"></span>
-        <span class="font-serif font-bold text-xl tracking-tight leading-none">
-          House of Bore
-        </span>
+         aria-label="{{ store_settings.store_name|default:'House of Bore' }} — Home">
+        {% if branding.logo_url %}
+          <img src="{{ branding.logo_url }}" alt="{{ store_settings.store_name|default:'House of Bore' }}" class="h-8 sm:h-9 w-auto object-contain">
+        {% else %}
+          {# Gold dot accent mark #}
+          <span class="w-2.5 h-2.5 rounded-full bg-accent-500 flex-shrink-0 transition-transform duration-200 group-hover:scale-110"
+                aria-hidden="true"></span>
+          <span class="font-serif font-bold text-xl tracking-tight leading-none">
+            {{ store_settings.store_name|default:"House of Bore" }}
+          </span>
+        {% endif %}
       </a>
 
       {# ── Desktop Navigation Links ────────────────────────────────────── #}

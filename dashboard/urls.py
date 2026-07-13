@@ -33,7 +33,6 @@ from .views import (
     StaffProductsView,
     StaffProfileView,
     StaffReportsView,
-    StaffSettingsView,
     StaffUsersView,
 )
 
@@ -70,6 +69,6 @@ urlpatterns = [
     path("products/", StaffProductsView.as_view(), name="products"),
     path("marketing/", StaffMarketingView.as_view(), name="marketing"),
     path("reports/", StaffReportsView.as_view(), name="reports"),
-    path("settings/", StaffSettingsView.as_view(), name="settings"),
+    path("settings/", include("settings.urls", namespace="settings")),
     path("users/", StaffUsersView.as_view(), name="users"),
 ]

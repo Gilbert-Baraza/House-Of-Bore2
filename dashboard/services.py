@@ -348,6 +348,11 @@ def ensure_default_roles() -> int:
         )
         if created:
             created_count += 1
+        elif obj.permissions != conf["permissions"]:
+            obj.name = conf["name"]
+            obj.description = conf["description"]
+            obj.permissions = conf["permissions"]
+            obj.save(update_fields=["name", "description", "permissions"])
     return created_count
 
 

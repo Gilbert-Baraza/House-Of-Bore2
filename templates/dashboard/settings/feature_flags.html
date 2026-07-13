@@ -1,0 +1,74 @@
+{% extends "dashboard/base.html" %}
+{% load i18n %}
+
+{% block title %}Feature Flags{% endblock %}
+
+{% block content %}
+{% include "dashboard/settings/nav_tabs.html" %}
+
+<div class="max-w-4xl bg-white rounded-xl border border-neutral-200 shadow-sm overflow-hidden p-6 sm:p-8">
+  <div class="border-b border-neutral-100 pb-4 mb-6">
+    <h2 class="text-lg font-serif font-bold text-neutral-900">Feature Flags & Customer Experience Toggles</h2>
+    <p class="text-xs text-neutral-500 mt-1">Enable or disable optional storefront workflows in real-time without requiring code changes or server deployments.</p>
+  </div>
+
+  <form method="post" class="space-y-6">
+    {% csrf_token %}
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+      <div class="p-4 rounded-lg border border-neutral-200 hover:border-accent-300 transition-colors flex items-start space-x-3">
+        <div class="pt-0.5">{{ form.feature_wishlist }}</div>
+        <div>
+          <label for="{{ form.feature_wishlist.id_for_label }}" class="text-sm font-bold text-neutral-900 cursor-pointer">{{ form.feature_wishlist.label }}</label>
+          <p class="text-xs text-neutral-500 mt-0.5">Allows visitors and account holders to save products for later consideration.</p>
+        </div>
+      </div>
+
+      <div class="p-4 rounded-lg border border-neutral-200 hover:border-accent-300 transition-colors flex items-start space-x-3">
+        <div class="pt-0.5">{{ form.feature_reviews }}</div>
+        <div>
+          <label for="{{ form.feature_reviews.id_for_label }}" class="text-sm font-bold text-neutral-900 cursor-pointer">{{ form.feature_reviews.label }}</label>
+          <p class="text-xs text-neutral-500 mt-0.5">Allows patrons to submit verified ratings and feedback on product pages.</p>
+        </div>
+      </div>
+
+      <div class="p-4 rounded-lg border border-neutral-200 hover:border-accent-300 transition-colors flex items-start space-x-3">
+        <div class="pt-0.5">{{ form.feature_compare }}</div>
+        <div>
+          <label for="{{ form.feature_compare.id_for_label }}" class="text-sm font-bold text-neutral-900 cursor-pointer">{{ form.feature_compare.label }}</label>
+          <p class="text-xs text-neutral-500 mt-0.5">Enables side-by-side product specification comparisons and floating drawer.</p>
+        </div>
+      </div>
+
+      <div class="p-4 rounded-lg border border-neutral-200 hover:border-accent-300 transition-colors flex items-start space-x-3">
+        <div class="pt-0.5">{{ form.feature_recently_viewed }}</div>
+        <div>
+          <label for="{{ form.feature_recently_viewed.id_for_label }}" class="text-sm font-bold text-neutral-900 cursor-pointer">{{ form.feature_recently_viewed.label }}</label>
+          <p class="text-xs text-neutral-500 mt-0.5">Tracks browser history to display recently viewed garments across catalog pages.</p>
+        </div>
+      </div>
+
+      <div class="p-4 rounded-lg border border-neutral-200 hover:border-accent-300 transition-colors flex items-start space-x-3">
+        <div class="pt-0.5">{{ form.feature_promotions }}</div>
+        <div>
+          <label for="{{ form.feature_promotions.id_for_label }}" class="text-sm font-bold text-neutral-900 cursor-pointer">{{ form.feature_promotions.label }}</label>
+          <p class="text-xs text-neutral-500 mt-0.5">Enables coupon redemption boxes and promotional pricing calculations across cart and checkout.</p>
+        </div>
+      </div>
+
+      <div class="p-4 rounded-lg border border-neutral-200 hover:border-accent-300 transition-colors flex items-start space-x-3">
+        <div class="pt-0.5">{{ form.feature_guest_checkout }}</div>
+        <div>
+          <label for="{{ form.feature_guest_checkout.id_for_label }}" class="text-sm font-bold text-neutral-900 cursor-pointer">{{ form.feature_guest_checkout.label }}</label>
+          <p class="text-xs text-neutral-500 mt-0.5">Allows patrons to complete orders without registering for a permanent account.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="border-t border-neutral-200 pt-6 flex justify-end gap-3">
+      <a href="{% url 'dashboard:settings:overview' %}" class="px-5 py-2.5 rounded-lg border border-neutral-300 bg-white hover:bg-neutral-50 text-neutral-700 text-sm font-semibold transition-colors">Cancel</a>
+      <button type="submit" class="px-6 py-2.5 bg-neutral-900 hover:bg-neutral-800 text-white font-semibold text-sm rounded-lg shadow-sm transition-colors">Update Feature Flags</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

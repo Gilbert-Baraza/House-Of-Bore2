@@ -32,33 +32,38 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <!-- ── SEO ─────────────────────────────────────────────────────────────── -->
+  <meta name="robots" content="{{ seo_defaults.robots_index_preference|default:'index, follow' }}" />
   {% block meta_description %}
   <meta name="description"
-    content="House of Bore — Premium lifestyle e-commerce. Curated products, exceptional quality.">
+    content="{{ seo_defaults.default_meta_description|default:'House of Bore — Premium lifestyle e-commerce. Curated products, exceptional quality.' }}">
   {% endblock meta_description %}
-  <meta name="theme-color" content="#1a1a1a">
+  <meta name="theme-color" content="{{ branding.primary_color|default:'#1a1a1a' }}">
 
   <!-- ── Open Graph (social sharing) ────────────────────────────────────── -->
   <meta property="og:type" content="website">
-  <meta property="og:site_name" content="House of Bore">
+  <meta property="og:site_name" content="{{ store_settings.store_name|default:'House of Bore' }}">
   {% block og_title %}
-  <meta property="og:title" content="House of Bore">
+  <meta property="og:title" content="{{ store_settings.store_name|default:'House of Bore' }}">
   {% endblock og_title %}
   {% block og_description %}
-  <meta property="og:description" content="Premium lifestyle e-commerce.">
+  <meta property="og:description" content="{{ seo_defaults.default_social_share_description|default:'Premium lifestyle e-commerce.' }}">
   {% endblock og_description %}
-  {% block og_image %}{% endblock og_image %}
+  {% block og_image %}
+  {% if seo_defaults.default_og_image_url %}
+  <meta property="og:image" content="{{ seo_defaults.default_og_image_url }}">
+  {% endif %}
+  {% endblock og_image %}
   {% block og_url %}{% endblock og_url %}
 
   <!-- ── Twitter Card ───────────────────────────────────────────────────── -->
   {% block twitter_card %}
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="House of Bore">
-  <meta name="twitter:description" content="Premium lifestyle e-commerce.">
+  <meta name="twitter:title" content="{{ store_settings.store_name|default:'House of Bore' }}">
+  <meta name="twitter:description" content="{{ seo_defaults.default_social_share_description|default:'Premium lifestyle e-commerce.' }}">
   {% endblock twitter_card %}
 
   {# ── Title ────────────────────────────────────────────────────────────── #}
-  <title>{% block title %}House of Bore{% endblock %} — House of Bore</title>
+  <title>{% block title %}{{ store_settings.store_name|default:"House of Bore" }}{% endblock %} — {{ store_settings.store_name|default:"House of Bore" }}</title>
 
   {# ── Google Fonts ─────────────────────────────────────────────────────── #}
   {# Preconnect establishes the connection early so font files load faster. #}
@@ -75,10 +80,13 @@
   <link rel="stylesheet" href="/static/css/dist/styles.css"> #}
   {% tailwind_css %}
 
-  {# ── Favicon placeholder ─────────────────────────────────────────────── #}
-  {# Replace with actual favicon files in Phase 2+ #}
+  {# ── Favicon ────────────────────────────────────────────────────────── #}
+  {% if branding.favicon_url %}
+  <link rel="icon" href="{{ branding.favicon_url }}">
+  {% else %}
   <link rel="icon" type="image/svg+xml"
     href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='10' fill='%231a1a1a'/%3E%3C/svg%3E">
+  {% endif %}
 
   {# ── Per-page CSS & Extra Head ────────────────────────────────────────── #}
   {% block extra_css %}{% endblock %}
@@ -93,6 +101,15 @@
     class="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[100] btn btn-primary text-sm">
     Skip to main content
   </a>
+
+  {# ── Announcement Banner ──────────────────────────────────────────────── #}
+  {% if branding.announcement_banner_enabled and branding.announcement_banner_text %}
+  <div class="bg-neutral-900 text-amber-400 text-xs sm:text-sm font-semibold py-2 px-4 text-center tracking-wide border-b border-neutral-800">
+    <div class="max-w-7xl mx-auto flex items-center justify-center space-x-2">
+      <span>{{ branding.announcement_banner_text }}</span>
+    </div>
+  </div>
+  {% endif %}
 
   {# ── Navigation ───────────────────────────────────────────────────────── #}
   {% include "components/navbar.html" %}

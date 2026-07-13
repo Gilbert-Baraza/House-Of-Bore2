@@ -1,0 +1,56 @@
+{% extends "dashboard/base.html" %}
+{% load i18n %}
+
+{% block title %}Shipping Settings{% endblock %}
+
+{% block content %}
+{% include "dashboard/settings/nav_tabs.html" %}
+
+<div class="max-w-4xl bg-white rounded-xl border border-neutral-200 shadow-sm overflow-hidden p-6 sm:p-8">
+  <div class="border-b border-neutral-100 pb-4 mb-6">
+    <h2 class="text-lg font-serif font-bold text-neutral-900">Shipping Rules & Delivery Messaging</h2>
+    <p class="text-xs text-neutral-500 mt-1">Configure complimentary shipping thresholds, default courier charges, and public dispatch timelines.</p>
+  </div>
+
+  <form method="post" class="space-y-6">
+    {% csrf_token %}
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+      <div>
+        <label for="{{ form.free_shipping_threshold.id_for_label }}" class="block text-xs font-semibold text-neutral-700 uppercase tracking-wider mb-1">{{ form.free_shipping_threshold.label }}</label>
+        {{ form.free_shipping_threshold }}
+        {% if form.free_shipping_threshold.help_text %}<p class="text-[11px] text-neutral-500 mt-1">{{ form.free_shipping_threshold.help_text }}</p>{% endif %}
+      </div>
+      <div>
+        <label for="{{ form.flat_shipping_rate.id_for_label }}" class="block text-xs font-semibold text-neutral-700 uppercase tracking-wider mb-1">{{ form.flat_shipping_rate.label }}</label>
+        {{ form.flat_shipping_rate }}
+        {% if form.flat_shipping_rate.help_text %}<p class="text-[11px] text-neutral-500 mt-1">{{ form.flat_shipping_rate.help_text }}</p>{% endif %}
+      </div>
+    </div>
+
+    <div class="border-t border-neutral-100 pt-6">
+      <div class="flex items-center gap-3">
+        {{ form.local_pickup_enabled }}
+        <label for="{{ form.local_pickup_enabled.id_for_label }}" class="text-sm font-semibold text-neutral-800 cursor-pointer">{{ form.local_pickup_enabled.label }}</label>
+      </div>
+    </div>
+
+    <div class="border-t border-neutral-100 pt-6">
+      <label for="{{ form.estimated_delivery_message.id_for_label }}" class="block text-xs font-semibold text-neutral-700 uppercase tracking-wider mb-1">{{ form.estimated_delivery_message.label }}</label>
+      {{ form.estimated_delivery_message }}
+      {% if form.estimated_delivery_message.help_text %}<p class="text-[11px] text-neutral-500 mt-1">{{ form.estimated_delivery_message.help_text }}</p>{% endif %}
+    </div>
+
+    <div class="border-t border-neutral-100 pt-6">
+      <label for="{{ form.default_shipping_policy.id_for_label }}" class="block text-xs font-semibold text-neutral-700 uppercase tracking-wider mb-1">{{ form.default_shipping_policy.label }}</label>
+      {{ form.default_shipping_policy }}
+      {% if form.default_shipping_policy.help_text %}<p class="text-[11px] text-neutral-500 mt-1">{{ form.default_shipping_policy.help_text }}</p>{% endif %}
+    </div>
+
+    <div class="border-t border-neutral-200 pt-6 flex justify-end gap-3">
+      <a href="{% url 'dashboard:settings:overview' %}" class="px-5 py-2.5 rounded-lg border border-neutral-300 bg-white hover:bg-neutral-50 text-neutral-700 text-sm font-semibold transition-colors">Cancel</a>
+      <button type="submit" class="px-6 py-2.5 bg-neutral-900 hover:bg-neutral-800 text-white font-semibold text-sm rounded-lg shadow-sm transition-colors">Save Shipping Rules</button>
+    </div>
+  </form>
+</div>
+{% endblock %}
