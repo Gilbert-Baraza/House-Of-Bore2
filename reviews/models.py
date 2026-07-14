@@ -96,7 +96,7 @@ class Review(models.Model):
                 name="unique_user_product_review",
             ),
             models.CheckConstraint(
-                check=models.Q(rating__gte=1, rating__lte=5),
+                condition=models.Q(rating__gte=1, rating__lte=5),
                 name="valid_rating_range",
             ),
         ]
