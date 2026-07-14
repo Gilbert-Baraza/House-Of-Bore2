@@ -1,12 +1,7 @@
-# ─────────────────────────────────────────────────────────────────────────────
 # requirements/base.txt
-# ─────────────────────────────────────────────────────────────────────────────
 # Packages required in ALL environments (development and production).
 # Install with: pip install -r requirements/base.txt
-# ─────────────────────────────────────────────────────────────────────────────
 
-# Core framework — supports Django 5.x LTS (5.2) and Django 6.x.
-# Pin to a specific version in production: e.g. Django==5.2.15
 Django>=5.1
 
 # Reads .env files and maps variables to Python settings cleanly.
@@ -22,5 +17,4 @@ redis>=5.0
 django-redis>=5.4
 
 # hiredis: high-performance C parser for Redis responses.
-# Significantly faster than the pure-Python parser for large cache operations.
 hiredis>=3.0

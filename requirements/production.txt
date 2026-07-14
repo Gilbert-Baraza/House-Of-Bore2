@@ -10,7 +10,6 @@
 
 # PostgreSQL database adapter (psycopg v3 — the modern, async-compatible driver).
 # The [binary] extra bundles pre-compiled C extensions — no libpq-dev needed.
-# Alternative: psycopg2-binary (v2) if your host requires it.
 psycopg[binary]>=3.1
 
 # WhiteNoise — serves static files directly from Django with Brotli/gzip

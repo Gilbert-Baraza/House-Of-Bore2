@@ -1,9 +1,5 @@
 # ─────────────────────────────────────────────────────────────────────────────
 # requirements/development.txt
-# ─────────────────────────────────────────────────────────────────────────────
-# Packages for local development only. Extends base.txt.
-# Install with: pip install -r requirements/development.txt
-# ─────────────────────────────────────────────────────────────────────────────
 
 # Inherit all base requirements
 -r base.txt
