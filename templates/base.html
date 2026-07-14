@@ -87,7 +87,7 @@
   {# ── Tailwind CSS ─────────────────────────────────────────────────────── #}
   {# Outputs:
   <link rel="stylesheet" href="/static/css/dist/styles.css"> #}
-  {% tailwind_css %}
+  <link rel="stylesheet" href="{% static 'css/dist/styles.css' %}">
 
   {# ── Favicon ────────────────────────────────────────────────────────── #}
   {% if branding.favicon_url %}
