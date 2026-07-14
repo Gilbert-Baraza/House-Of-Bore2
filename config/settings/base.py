@@ -197,6 +197,8 @@ STATIC_URL = "/static/"
 # Additional directories where Django will look for static files.
 # The project-level static/ folder holds global CSS, JS, images, and fonts.
 STATICFILES_DIRS = [BASE_DIR / "static"]
+if "theme" not in INSTALLED_APPS and (BASE_DIR / "theme" / "static").exists():
+    STATICFILES_DIRS.append(BASE_DIR / "theme" / "static")
 
 # The directory where 'collectstatic' gathers all static files for deployment.
 # This folder should be served by WhiteNoise (production) or a web server.
