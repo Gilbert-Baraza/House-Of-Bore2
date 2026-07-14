@@ -70,12 +70,19 @@ MIDDLEWARE.insert(1, "whitenoise.middleware.WhiteNoiseMiddleware")
 #   • Adds a content-hash fingerprint to filenames (e.g. main.abc123.css)
 #   • Enables far-future cache headers (files never change once deployed)
 #   • Brotli/gzip compresses all text assets at collect time
+# CompressedManifestStaticFilesStorage subclass with manifest_strict = False
+# to prevent WhiteNoise 500 crashes on missing static files without triggering
+# FileSystemStorage.__init__() keyword argument TypeErrors:
+from whitenoise.storage import CompressedManifestStaticFilesStorage
+
+
+class NonStrictWhiteNoiseStorage(CompressedManifestStaticFilesStorage):
+    manifest_strict = False
+
+
 STORAGES = {
     "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
-        "OPTIONS": {
-            "manifest_strict": False,
-        },
+        "BACKEND": "config.settings.production.NonStrictWhiteNoiseStorage",
     },
     # Default file storage for user uploads (MEDIA_ROOT).
     # Overridden below if Cloudinary is configured.
