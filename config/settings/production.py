@@ -3,7 +3,7 @@ config/settings/production.py
 ──────────────────────────────────────────────────────────────────────────────
 WHY THIS FILE EXISTS:
     Extends base.py with hardened, performance-optimised settings for the live
-    server. All secrets are read from environment variables — never hardcoded.
+    server. All secrets are read from environment variables.
 
     Key differences from development:
       • DEBUG is False (no stack traces exposed to users)
@@ -62,7 +62,7 @@ DATABASES = {
 
 # ─── Static Files — WhiteNoise ────────────────────────────────────────────────
 # WhiteNoise serves pre-compressed static files directly from Django, without
-# needing Nginx or a CDN for static assets. Insert it right after
+# needing Nginx or a CDN for static assets. Inserted right after
 # SecurityMiddleware (index 1) so it can short-circuit requests early.
 MIDDLEWARE.insert(1, "whitenoise.middleware.WhiteNoiseMiddleware")
 
@@ -97,7 +97,7 @@ if _cloudinary_url:
 
 # ─── Celery (production) ──────────────────────────────────────────────────────
 # In production, tasks MUST execute asynchronously via Redis.
-# Never set to True in production — it would bypass the entire task queue.
+#Set to True in production — it would bypass the entire task queue.
 CELERY_TASK_ALWAYS_EAGER = False
 
 

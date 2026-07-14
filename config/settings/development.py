@@ -34,12 +34,25 @@ ALLOWED_HOSTS = config(
 # ─── Database — SQLite ──────────────────────────────────────────────────────────
 # SQLite requires zero configuration and has no external dependencies.
 # It lives in a single file at the project root, perfect for local development.
-DATABASES = {
+""" DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
         "NAME": BASE_DIR / "db.sqlite3",  # BASE_DIR inherited from base.py
     }
+} """
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME":  "house_of_bore_db",
+        "USER":  "postgres",
+        "PASSWORD":  "40807663",
+        "HOST":  "localhost",
+        "PORT":  "5432",
+    }
 }
+
+
+
 
 # ─── Email Backend ───────────────────────────────────────────────────────────────
 # Prints all outgoing emails to the terminal instead of actually sending them.

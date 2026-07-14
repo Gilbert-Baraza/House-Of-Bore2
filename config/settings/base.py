@@ -2,7 +2,7 @@
 config/settings/base.py
 ──────────────────────────────────────────────────────────────────────────────
 WHY THIS FILE EXISTS:
-    Contains every setting that is identical across development, staging, and
+    Contains every setting that is identical across development and
     production. Environment-specific files (development.py / production.py)
     import from here and only override what differs.
 
@@ -26,7 +26,7 @@ LOGS_DIR.mkdir(exist_ok=True)
 
 
 # ─── Security ──────────────────────────────────────────────────────────────────
-# SECRET_KEY is read exclusively from the environment — never hardcoded.
+# SECRET_KEY is read exclusively from the environment.
 SECRET_KEY = config("SECRET_KEY")
 
 
@@ -125,7 +125,7 @@ WSGI_APPLICATION = "config.wsgi.application"
 # AUTH_USER_MODEL tells Django to use our custom User model instead of the
 # default django.contrib.auth.User.
 #
-# ✅ PHASE 1.2: Custom User model created in accounts/models.py.
+#    Custom User model created in accounts/models.py.
 #    This is set before any migration is applied — see accounts/models.py
 #    for a full explanation of why changing AUTH_USER_MODEL later is so difficult.
 #
