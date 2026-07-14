@@ -87,7 +87,7 @@
   {# ── Tailwind CSS ─────────────────────────────────────────────────────── #}
   {# Outputs:
   <link rel="stylesheet" href="/static/css/dist/styles.css"> #}
-  <link rel="stylesheet" href="{% static 'css/dist/styles.css' %}">
+  <link rel="stylesheet" href="{% static 'css/dist/styles.css' %}" onerror="this.onerror=null;this.href='https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css';">
 
   {# ── Favicon ────────────────────────────────────────────────────────── #}
   {% if branding.favicon_url %}
