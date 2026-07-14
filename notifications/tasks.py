@@ -24,7 +24,9 @@ def dispatch_notification_task(self, notification_id: int) -> dict:
     from notifications.models import Notification, NotificationStatusChoices
     from notifications.services import send_notification
 
-    logger.info(f"Task dispatch_notification_task started for Notification #{notification_id} (attempt {self.request.retries + 1})")
+    retries = getattr(getattr(self, "request", None), "retries", 0)
+    max_retries = getattr(self, "max_retries", 3)
+    logger.info(f"Task dispatch_notification_task started for Notification #{notification_id} (attempt {retries + 1})")
 
     try:
         notification = send_notification(notification_id)
@@ -33,12 +35,12 @@ def dispatch_notification_task(self, notification_id: int) -> dict:
             return {"status": "sent", "notification_id": notification_id}
         elif notification.status == NotificationStatusChoices.FAILED:
             # If retry count is less than max_retries, raise an exception so autoretry_for triggers backoff
-            if self.request.retries < self.max_retries:
+            if retries < max_retries:
                 err_msg = f"Delivery failed: {notification.error_message}. Retrying via backoff..."
                 logger.warning(f"Notification #{notification_id} failed: {err_msg}")
                 raise RuntimeError(err_msg)
             else:
-                logger.error(f"Notification #{notification_id} exhausted all retries ({self.max_retries}). Marked FAILED.")
+                logger.error(f"Notification #{notification_id} exhausted all retries ({max_retries}). Marked FAILED.")
                 return {"status": "failed", "notification_id": notification_id, "error": notification.error_message}
         return {"status": notification.status, "notification_id": notification_id}
     except Exception as exc:

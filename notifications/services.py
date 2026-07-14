@@ -155,13 +155,14 @@ def queue_notification(
         metadata=metadata or {},
     )
 
-    # Dispatch via Celery async worker
+    # Dispatch via Celery async worker or synchronously if CELERY_ENABLED is False
     try:
-        dispatch_notification_task.delay(notification.pk)
+        from core.utils import dispatch_task
+        dispatch_task(dispatch_notification_task, notification.pk)
     except Exception as exc:
-        logger.error(f"Failed to enqueue Celery task for Notification #{notification.pk}: {exc}")
-        # If Celery queue fails completely (e.g., Redis down), we leave status as PENDING or log error
-        notification.error_message = f"Enqueue failure: {exc}"
+        logger.error(f"Failed to execute or enqueue task for Notification #{notification.pk}: {exc}")
+        # If queue/execution fails, leave status as PENDING or log error
+        notification.error_message = f"Dispatch failure: {exc}"
         notification.save(update_fields=["error_message", "updated_at"])
 
     return notification
@@ -355,5 +356,6 @@ def retry_notification(notification: Notification) -> Notification:
             error_details=f"Manual/Programmatic retry initiated (Attempt #{notification.retry_count + 1}).",
         )
 
-    dispatch_notification_task.delay(notification.pk)
+    from core.utils import dispatch_task
+    dispatch_task(dispatch_notification_task, notification.pk)
     return notification

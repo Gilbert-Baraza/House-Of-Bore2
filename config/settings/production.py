@@ -73,11 +73,16 @@ MIDDLEWARE.insert(1, "whitenoise.middleware.WhiteNoiseMiddleware")
 # CompressedManifestStaticFilesStorage subclass with manifest_strict = False
 # to prevent WhiteNoise 500 crashes on missing static files without triggering
 # FileSystemStorage.__init__() keyword argument TypeErrors:
-from whitenoise.storage import CompressedManifestStaticFilesStorage
+try:
+    from whitenoise.storage import CompressedManifestStaticFilesStorage
 
+    class NonStrictWhiteNoiseStorage(CompressedManifestStaticFilesStorage):
+        manifest_strict = False
+except ImportError:
+    from django.contrib.staticfiles.storage import ManifestStaticFilesStorage
 
-class NonStrictWhiteNoiseStorage(CompressedManifestStaticFilesStorage):
-    manifest_strict = False
+    class NonStrictWhiteNoiseStorage(ManifestStaticFilesStorage):  # type: ignore[no-redef]
+        manifest_strict = False
 
 
 STORAGES = {
@@ -97,18 +102,22 @@ STORAGES = {
 # This offloads media serving to a global CDN with automatic image optimization.
 _cloudinary_url = config("CLOUDINARY_URL", default="")
 if _cloudinary_url:
-    INSTALLED_APPS += ["cloudinary_storage", "cloudinary"]  # type: ignore[name-defined]
-    STORAGES["default"] = {
-        "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
-    }
-    # Cloudinary SDK reads CLOUDINARY_URL from the environment automatically.
-    DEFAULT_FILE_STORAGE = "cloudinary_storage.storage.MediaCloudinaryStorage"
+    try:
+        import cloudinary_storage  # noqa: F401
+        INSTALLED_APPS += ["cloudinary_storage", "cloudinary"]  # type: ignore[name-defined]
+        STORAGES["default"] = {
+            "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
+        }
+        # Cloudinary SDK reads CLOUDINARY_URL from the environment automatically.
+        DEFAULT_FILE_STORAGE = "cloudinary_storage.storage.MediaCloudinaryStorage"
+    except ImportError:
+        pass
 
 
 # ─── Celery (production) ──────────────────────────────────────────────────────
-# In production, tasks MUST execute asynchronously via Redis.
-#Set to True in production — it would bypass the entire task queue.
-CELERY_TASK_ALWAYS_EAGER = False
+# In production, tasks execute asynchronously via Redis when CELERY_ENABLED=True.
+# When False, tasks execute eagerly without requiring a live Redis daemon.
+CELERY_TASK_ALWAYS_EAGER = not CELERY_ENABLED
 
 
 # ─── Security — HTTPS Enforcement ─────────────────────────────────────────────
@@ -181,25 +190,36 @@ DEFAULT_FROM_EMAIL = config(
 )
 
 
-# ─── Caching (production — Redis with django-redis) ──────────────────────────
-# Override base.py cache with django-redis for production features:
-# connection pooling, compression, and Sentinel support.
-CACHES = {
-    "default": {
-        "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": config("REDIS_CACHE_URL", default="redis://127.0.0.1:6379/1"),
-        "OPTIONS": {
-            "CLIENT_CLASS": "django_redis.client.DefaultClient",
-            "COMPRESSOR": "django_redis.compressors.zlib.ZlibCompressor",
-            "CONNECTION_POOL_KWARGS": {
-                "max_connections": 50,
-                "retry_on_timeout": True,
+# ─── Caching & Sessions (production) ──────────────────────────────────────────
+# Override base.py cache with django-redis when CELERY_ENABLED=True.
+# When CELERY_ENABLED=False (no Redis), use LocMemCache and cached_db sessions.
+if CELERY_ENABLED:
+    CACHES = {
+        "default": {
+            "BACKEND": "django_redis.cache.RedisCache",
+            "LOCATION": config("REDIS_CACHE_URL", default="redis://127.0.0.1:6379/1"),
+            "OPTIONS": {
+                "CLIENT_CLASS": "django_redis.client.DefaultClient",
+                "COMPRESSOR": "django_redis.compressors.zlib.ZlibCompressor",
+                "CONNECTION_POOL_KWARGS": {
+                    "max_connections": 50,
+                    "retry_on_timeout": True,
+                },
             },
-        },
-        "KEY_PREFIX": "hob",
-        "TIMEOUT": 300,
+            "KEY_PREFIX": "hob",
+            "TIMEOUT": 300,
+        }
     }
-}
+    SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+else:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            "LOCATION": "hob-prod-locmem",
+            "TIMEOUT": 300,
+        }
+    }
+    SESSION_ENGINE = "django.contrib.sessions.backends.cached_db"
 
 
 # ─── Logging (production) ─────────────────────────────────────────────────────

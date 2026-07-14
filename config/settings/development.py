@@ -82,33 +82,41 @@ SECURE_HSTS_PRELOAD = False
 
 
 # ─── Caching (development) ─────────────────────────────────────────────────────
-# Use Redis if available (for full fidelity testing), with LocMemCache as
-# fallback if Redis is not running locally. Override the base.py Redis cache.
-try:
-    import redis as _redis_lib
-    _r = _redis_lib.Redis.from_url(
-        config("REDIS_CACHE_URL", default="redis://127.0.0.1:6379/1"),
-        socket_connect_timeout=1,
-    )
-    _r.ping()
-    # Redis is available — use it for full fidelity with production
-    CACHES = {
-        "default": {
-            "BACKEND": "django.core.cache.backends.redis.RedisCache",
-            "LOCATION": config("REDIS_CACHE_URL", default="redis://127.0.0.1:6379/1"),
-            "KEY_PREFIX": "hob_dev",
-            "TIMEOUT": 300,
+# Use Redis if CELERY_ENABLED=True and Redis is available (for full fidelity),
+# with LocMemCache as fallback if CELERY_ENABLED=False or Redis is down.
+if CELERY_ENABLED:
+    try:
+        import redis as _redis_lib
+        _r = _redis_lib.Redis.from_url(
+            config("REDIS_CACHE_URL", default="redis://127.0.0.1:6379/1"),
+            socket_connect_timeout=1,
+        )
+        _r.ping()
+        # Redis is available — use it for full fidelity with production
+        CACHES = {
+            "default": {
+                "BACKEND": "django.core.cache.backends.redis.RedisCache",
+                "LOCATION": config("REDIS_CACHE_URL", default="redis://127.0.0.1:6379/1"),
+                "KEY_PREFIX": "hob_dev",
+                "TIMEOUT": 300,
+            }
         }
-    }
-except Exception:
-    # Redis not available — fall back to in-memory cache for development
+    except Exception:
+        # Redis not available — fall back to in-memory cache for development
+        CACHES = {
+            "default": {
+                "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+                "LOCATION": "hob-dev-cache",
+            }
+        }
+        CELERY_TASK_ALWAYS_EAGER = True
+else:
     CACHES = {
         "default": {
             "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
             "LOCATION": "hob-dev-cache",
         }
     }
-    # Also set Celery to eager mode when Redis is unavailable
     CELERY_TASK_ALWAYS_EAGER = True
 
 

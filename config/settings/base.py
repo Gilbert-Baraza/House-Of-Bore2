@@ -271,42 +271,51 @@ DATA_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024  # 5 MB
 DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", default="House of Bore <noreply@houseofbore.com>")
 
 
-# ─── Redis ──────────────────────────────────────────────────────────────────────
-# Central Redis URL used by cache, sessions, Celery, and rate limiting.
-REDIS_URL = config("REDIS_URL", default="redis://127.0.0.1:6379/0")
+# ─── Feature Flag & Redis ───────────────────────────────────────────────────────
+# CELERY_ENABLED governs whether Redis and Celery background workers are required.
+# Defaults to False so the application can run in environments without a Redis service.
+CELERY_ENABLED = config("CELERY_ENABLED", default=False, cast=bool)
+
+# Central Redis URL used by cache, sessions, Celery, and rate limiting when enabled.
+REDIS_URL = config("REDIS_URL", default="redis://127.0.0.1:6379/0" if CELERY_ENABLED else "memory://")
 
 
-# ─── Caching ───────────────────────────────────────────────────────────────────
-# Django 4.0+ native Redis cache backend. Uses the same Redis instance as Celery
-# but on a different database number to prevent key collisions.
-CACHES = {
-    "default": {
-        "BACKEND": "django.core.cache.backends.redis.RedisCache",
-        "LOCATION": config("REDIS_CACHE_URL", default="redis://127.0.0.1:6379/1"),
-        "OPTIONS": {
-            "db": 1,
-        },
-        "KEY_PREFIX": "hob",
-        "TIMEOUT": 300,  # 5 minutes default TTL
+# ─── Caching & Sessions ────────────────────────────────────────────────────────
+# Uses Redis when CELERY_ENABLED=True, falling back to LocMemCache and cached_db
+# sessions when CELERY_ENABLED=False (no Redis dependency).
+if CELERY_ENABLED:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.redis.RedisCache",
+            "LOCATION": config("REDIS_CACHE_URL", default="redis://127.0.0.1:6379/1"),
+            "OPTIONS": {
+                "db": 1,
+            },
+            "KEY_PREFIX": "hob",
+            "TIMEOUT": 300,  # 5 minutes default TTL
+        }
     }
-}
-
-
-# ─── Sessions ──────────────────────────────────────────────────────────────────
-# Cache-backed sessions provide faster reads than database sessions while
-# automatically persisting through Django's cache framework (backed by Redis).
-SESSION_ENGINE = "django.contrib.sessions.backends.cache"
-SESSION_CACHE_ALIAS = "default"
+    SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+    SESSION_CACHE_ALIAS = "default"
+else:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            "LOCATION": "hob-base-locmem",
+            "TIMEOUT": 300,
+        }
+    }
+    SESSION_ENGINE = "django.contrib.sessions.backends.cached_db"
+    SESSION_CACHE_ALIAS = "default"
 SESSION_COOKIE_AGE = 60 * 60 * 24 * 14  # 14 days
 
 
 # ─── Celery Configuration ───────────────────────────────────────────────────────
-CELERY_BROKER_URL = config("CELERY_BROKER_URL", default=REDIS_URL)
-CELERY_RESULT_BACKEND = config("CELERY_RESULT_BACKEND", default=REDIS_URL)
+CELERY_BROKER_URL = config("CELERY_BROKER_URL", default=REDIS_URL if CELERY_ENABLED else "memory://")
+CELERY_RESULT_BACKEND = config("CELERY_RESULT_BACKEND", default=REDIS_URL if CELERY_ENABLED else "cache+memory://")
 
-# In development, execute tasks eagerly without requiring a live Redis daemon.
-# Overridden to False in production.py.
-CELERY_TASK_ALWAYS_EAGER = config("CELERY_TASK_ALWAYS_EAGER", default=False, cast=bool)
+# In development or when disabled, execute tasks eagerly without requiring a live Redis daemon.
+CELERY_TASK_ALWAYS_EAGER = config("CELERY_TASK_ALWAYS_EAGER", default=not CELERY_ENABLED, cast=bool)
 CELERY_TASK_EAGER_PROPAGATES = True
 
 # Serialization

@@ -72,14 +72,16 @@ def _validate_environment():
     if environment == "production":
         # In production, these variables are mandatory — fail fast with clear messages.
         missing = []
+        celery_enabled = os.environ.get("CELERY_ENABLED", "False").lower().strip() in ("true", "1", "yes")
         required_vars = [
             ("SECRET_KEY", "Django cryptographic signing key"),
             ("ALLOWED_HOSTS", "Comma-separated list of valid hostnames"),
             ("DB_NAME", "PostgreSQL database name"),
             ("DB_USER", "PostgreSQL username"),
             ("DB_PASSWORD", "PostgreSQL password"),
-            ("REDIS_URL", "Redis connection URL (broker, cache, sessions)"),
         ]
+        if celery_enabled:
+            required_vars.append(("REDIS_URL", "Redis connection URL (broker, cache, sessions)"))
         for var_name, description in required_vars:
             if not os.environ.get(var_name):
                 missing.append(f"  • {var_name:24s} — {description}")
