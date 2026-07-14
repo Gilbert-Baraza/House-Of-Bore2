@@ -27,7 +27,7 @@ from .base import *  # noqa: F401, F403 — intentional settings inheritance
 # CRITICAL: Debug must always be False in production.
 # With DEBUG=True, Django serves detailed error pages that expose source code,
 # local variables, and settings to anyone who triggers an error.
-DEBUG = False
+DEBUG = config("DEBUG", default=False, cast=bool)
 
 # ─── Allowed Hosts ──────────────────────────────────────────────────────────────
 # REQUIRED when DEBUG=False. Django rejects requests whose Host header does not
