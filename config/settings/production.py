@@ -78,11 +78,25 @@ try:
 
     class NonStrictWhiteNoiseStorage(CompressedManifestStaticFilesStorage):
         manifest_strict = False
+
+        def hashed_name(self, name, content=None, filename=None):
+            try:
+                return super().hashed_name(name, content, filename)
+            except ValueError:
+                # If a static asset (or map file) is missing from disk or manifest,
+                # return unhashed path instead of throwing a 500 server error.
+                return name
 except ImportError:
     from django.contrib.staticfiles.storage import ManifestStaticFilesStorage
 
     class NonStrictWhiteNoiseStorage(ManifestStaticFilesStorage):  # type: ignore[no-redef]
         manifest_strict = False
+
+        def hashed_name(self, name, content=None, filename=None):
+            try:
+                return super().hashed_name(name, content, filename)
+            except ValueError:
+                return name
 
 
 STORAGES = {

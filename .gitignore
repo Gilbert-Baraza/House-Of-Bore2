@@ -14,7 +14,7 @@ __pycache__/
 *.so
 *.egg
 *.egg-info/
-dist/
+/dist/
 build/
 .eggs/
 
@@ -40,7 +40,8 @@ npm-debug.log*
 
 # Compiled Tailwind CSS output (`manage.py tailwind build`)
 # Committed to git so collectstatic finds it in production without Node/npm build steps:
-# theme/static/css/dist/
+!theme/static/css/dist/
+!theme/static/css/dist/*
 
 # npm lock file — commit this if you want reproducible installs on CI
 # theme/static_src/package-lock.json
