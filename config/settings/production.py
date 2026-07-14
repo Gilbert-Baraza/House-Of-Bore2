@@ -73,6 +73,9 @@ MIDDLEWARE.insert(1, "whitenoise.middleware.WhiteNoiseMiddleware")
 STORAGES = {
     "staticfiles": {
         "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        "OPTIONS": {
+            "manifest_strict": False,
+        },
     },
     # Default file storage for user uploads (MEDIA_ROOT).
     # Overridden below if Cloudinary is configured.
