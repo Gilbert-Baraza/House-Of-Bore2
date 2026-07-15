@@ -269,6 +269,7 @@ DATA_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024  # 5 MB
 
 # ─── Notifications & Email Defaults ─────────────────────────────────────────────
 DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", default="House of Bore <noreply@houseofbore.com>")
+EMAIL_TIMEOUT = config("EMAIL_TIMEOUT", default=10, cast=int)
 
 
 # ─── Feature Flag & Redis ───────────────────────────────────────────────────────

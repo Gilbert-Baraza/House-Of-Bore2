@@ -131,9 +131,12 @@ def _dispatch_templated_email(
             to=recipient_list
         )
         msg.attach_alternative(html_body, "text/html")
-        msg.send(fail_silently=False)
+        sent_count = msg.send(fail_silently=True)
+        if sent_count == 0:
+            logger.error(f"Failed to send email '{subject}' to {recipient_list}: SMTP backend returned 0 messages sent.")
+            return False
         return True
-    except Exception as e:
+    except (Exception, BaseException) as e:
         logger.error(f"Failed to send email '{subject}' to {recipient_list}: {e}", exc_info=True)
         return False
 

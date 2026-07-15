@@ -81,16 +81,16 @@ class EmailProvider(BaseNotificationProvider):
 
         try:
             msg = self.format_payload(recipient, subject, content, html_content=html_content, metadata=metadata)
-            sent_count = msg.send(fail_silently=False)
-            message_id = f"email_{uuid.uuid4().hex}"
+            sent_count = msg.send(fail_silently=True)
+            message_id = f"email_{uuid.uuid4().hex}" if sent_count > 0 else None
             return {
                 "success": sent_count > 0,
                 "provider_code": self.provider_code,
-                "message_id": message_id if sent_count > 0 else None,
-                "error": None if sent_count > 0 else "Backend reported 0 messages sent without raising exception.",
+                "message_id": message_id,
+                "error": None if sent_count > 0 else "SMTP email dispatch failed: backend returned 0 messages sent (check SMTP settings/port availability).",
                 "raw_response": {"sent_count": sent_count, "message_id": message_id},
             }
-        except Exception as str_e:
+        except (Exception, BaseException) as str_e:
             return {
                 "success": False,
                 "provider_code": self.provider_code,
