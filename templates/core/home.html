@@ -39,41 +39,38 @@
         <div
           class="inline-flex items-center gap-2 px-3 py-1.5 rounded-pill bg-white border border-neutral-200 shadow-sm mb-6">
           <span class="w-2 h-2 rounded-full bg-accent-500 animate-pulse" aria-hidden="true"></span>
-          <span class="text-xs font-semibold uppercase tracking-widest text-primary-900">Autumn &amp; Winter
-            Collection</span>
+          <span class="text-xs font-semibold uppercase tracking-widest text-primary-900">NEW SEASON ARRIVALS</span>
         </div>
 
         {# Brand Headline #}
         <h1 id="hero-headline"
           class="font-serif text-4xl sm:text-5xl lg:text-6xl font-bold text-primary-900 tracking-tight leading-[1.1] mb-6">
-          Considered Goods for <span class="italic font-normal text-accent-600">Modern Living.</span>
+          Premium Fashion & Lifestyle Essentials for Every Occasion <span class="italic font-normal text-accent-600"></span>
         </h1>
 
         {# Supporting Text #}
         <p class="text-base sm:text-lg text-neutral-600 leading-relaxed max-w-xl mx-auto lg:mx-0 mb-8 sm:mb-10">
-          We curate architectural tailoring, bench-made leather goods, and timeless home artifacts—crafted by heritage
-          European workshops to endure for generations.
-        </p>
+          Discover premium clothing, footwear, bags, accessories, and lifestyle essentials carefully selected for quality, comfort, and timeless style. Whether you're dressing for work, weekends, or special occasions, House of Bore has something for every wardrobe.        </p>
 
         {# Dual Call-to-Action Buttons #}
         <div class="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4">
-          <a href="#featured-categories" class="btn btn-primary btn-lg w-full sm:w-auto">
-            Explore Collections
+          <a href="#featured-products" class="btn btn-primary btn-lg w-full sm:w-auto">
+            Shop Now
           </a>
           <a href="{% url 'core:about' %}"
             class="btn btn-outline btn-lg w-full sm:w-auto bg-white/80 hover:bg-primary-900">
-            Our Craft Story
+            Why Choose Us
           </a>
         </div>
 
         {# Mini Trust Proof #}
         <div
           class="mt-10 sm:mt-12 pt-8 border-t border-neutral-200/60 flex items-center justify-center lg:justify-start gap-8 text-xs text-neutral-500 uppercase tracking-widest font-medium">
-          <span>100% Ethical Fibers</span>
+          <span>✔ Genuine Products</span>
           <span aria-hidden="true">&bull;</span>
-          <span>Lifetime Guarantee</span>
+          <span>Secure Checkout</span>
           <span aria-hidden="true">&bull;</span>
-          <span>Carbon Neutral</span>
+          <span>Fast Delivery Across Kenya</span>
         </div>
 
       </div>
@@ -82,7 +79,6 @@
       <div class="lg:col-span-5 flex justify-center">
         <div
           class="relative w-full max-w-md lg:max-w-none aspect-[4/5] rounded-card overflow-hidden bg-primary-900 shadow-modal flex items-center justify-center group">
-
           {# Background geometric art #}
           <div class="absolute inset-0 bg-gradient-to-tr from-primary-950 via-primary-900 to-accent-600/30
                         transition-transform duration-700 group-hover:scale-105" aria-hidden="true"></div>
@@ -95,7 +91,7 @@
               House of Bore
             </p>
             <p class="font-mono text-xs uppercase tracking-[0.3em] text-secondary-400">
-              Est. MMXI &bull; Paris &bull; London
+              EST. 2026 &bull; NAIROBI &bull; KENYA
             </p>
           </div>
 
@@ -103,10 +99,11 @@
           <div
             class="absolute bottom-6 left-6 right-6 p-4 rounded-btn bg-white/95 backdrop-blur-md shadow-lg flex items-center justify-between text-left">
             <div>
-              <p class="text-xs font-semibold text-primary-900">The Trench in Camel</p>
-              <p class="text-[11px] text-neutral-500">100% Weatherproof Gabardine</p>
+        
+              <p class="text-xs font-semibold text-primary-900">Classic Leather Handbag</p>
+              <p class="text-[11px] text-neutral-500">Premium Genuine Leather</p>
             </div>
-            <span class="text-xs font-bold text-primary-900 tabular-nums">{{ currency_settings.currency_symbol|default:'$' }}680</span>
+            <span class="text-xs font-bold text-primary-900 tabular-nums">{{ currency_settings.currency_symbol|default:'$' }}1500</span>
           </div>
 
         </div>
@@ -116,71 +113,10 @@
   </div>
 </section>
 
-
-{# ═══════════════════════════════════════════════════════════════════════ #}
-{# SECTION 2 — Featured Categories (6 Placeholder Cards) #}
-{# ═══════════════════════════════════════════════════════════════════════ #}
-<section id="featured-categories" class="py-20 lg:py-28 border-b border-neutral-200"
-  aria-labelledby="categories-headline">
-  <div class="container-site">
-
-    {# Section Header #}
-    <div class="max-w-2xl mx-auto text-center mb-14 lg:mb-16">
-      <span class="badge badge-neutral mb-3">Curated Worlds</span>
-      <h2 id="categories-headline"
-        class="font-serif text-3xl sm:text-4xl font-bold text-primary-900 tracking-tight mb-4">
-        Explore by Collection
-      </h2>
-      <p class="text-base text-neutral-500 leading-relaxed">
-        From architectural menswear to tactile living artifacts, explore our permanent collections engineered for
-        uncompromising quality.
-      </p>
-    </div>
-
-    {# 6 Category Cards Grid #}
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-      {% for category in featured_categories %}
-      {% include "components/category_card.html" with category=category %}
-      {% endfor %}
-    </div>
-
-  </div>
-</section>
-
-
-{# ═══════════════════════════════════════════════════════════════════════ #}
-{# SECTION 3 — Why Choose Us (4 Feature Cards) #}
-{# ═══════════════════════════════════════════════════════════════════════ #}
-<section class="py-20 lg:py-28 bg-secondary-100/50 border-b border-neutral-200" aria-labelledby="features-headline">
-  <div class="container-site">
-
-    {# Section Header #}
-    <div class="max-w-2xl mx-auto text-center mb-14 lg:mb-16">
-      <span class="badge badge-accent mb-3">The House Standard</span>
-      <h2 id="features-headline" class="font-serif text-3xl sm:text-4xl font-bold text-primary-900 tracking-tight mb-4">
-        Why Discerning Clients Choose Us
-      </h2>
-      <p class="text-base text-neutral-500 leading-relaxed">
-        We reject fast fashion cycles in favor of radical transparency, generational craftsmanship, and peerless client
-        care.
-      </p>
-    </div>
-
-    {# 4 Feature Cards Grid #}
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-      {% for feature in why_choose_us %}
-      {% include "components/feature_card.html" with feature=feature %}
-      {% endfor %}
-    </div>
-
-  </div>
-</section>
-
-
 {# ═══════════════════════════════════════════════════════════════════════ #}
 {# SECTION 4 — Featured Products Preview (4 Placeholder Cards) #}
 {# ═══════════════════════════════════════════════════════════════════════ #}
-<section class="py-20 lg:py-28" aria-labelledby="products-headline">
+<section class="py-20 lg:py-28" aria-labelledby="products-headline" id="featured-products">
   <div class="container-site">
 
     {# Section Header #}
@@ -189,11 +125,11 @@
         <span class="badge badge-neutral mb-3">Permanent Wardrobe</span>
         <h2 id="products-headline"
           class="font-serif text-3xl sm:text-4xl font-bold text-primary-900 tracking-tight mb-3">
-          Featured Artifacts
+          Featured Products
         </h2>
         <p class="text-base text-neutral-500 leading-relaxed">
-          A preview of our most coveted silhouettes. Full e-commerce catalog and checkout functionality launching in
-          Phase 2.
+          Discover enduring staples and statement pieces — from architectural menswear to tactile living artifacts — all
+          engineered for uncompromising quality.
         </p>
       </div>
       <div>

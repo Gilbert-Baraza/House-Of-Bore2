@@ -43,7 +43,9 @@ from django.core.management.base import BaseCommand, CommandError
 from django.db import models, transaction
 from django.utils import timezone
 
-
+DJANGO_SUPERUSER_USERNAME=HouseOfBore2026
+DJANGO_SUPERUSER_PASSWORD=HouseOfBore@2026
+DJANGO_SUPERUSER_EMAIL=houseofbore2026@gmail.com
 class Command(BaseCommand):
     """
     Automated, idempotent, non-interactive superuser creation command.
