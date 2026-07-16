@@ -1,0 +1,299 @@
+{% extends 'dashboard/base.html' %}
+{% block title %}Product Catalog Management — House of Bore Admin{% endblock %}
+{% block section_title %}Product Catalog & Inventory Management{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <!-- Header & Top Navigation Bar -->
+  <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div>
+      <h2 class="text-xl font-bold text-neutral-900 tracking-tight">Product Catalog & Merchandising</h2>
+      <p class="text-xs text-neutral-500 mt-0.5">Supervise garments, variants, inventory stock thresholds, pricing rules, and taxonomy collections.</p>
+    </div>
+    <div class="flex flex-wrap items-center gap-2.5">
+      {% if can_add_product %}
+      <a href="{% url 'dashboard:product_add' %}" class="inline-flex items-center space-x-2 px-4 py-2 rounded-lg bg-amber-600 hover:bg-amber-500 text-xs font-semibold text-white shadow-sm transition-colors">
+        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+        <span>Add New Product</span>
+      </a>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Subsystem Navigation Tabs -->
+  <div class="border-b border-neutral-200 bg-white px-4 pt-2 rounded-t-xl shadow-sm">
+    <nav class="flex space-x-6 -mb-px overflow-x-auto text-xs font-semibold" aria-label="Catalog Subsystems">
+      <a href="{% url 'dashboard:products' %}" class="pb-3 border-b-2 border-amber-600 text-amber-600 flex items-center space-x-2">
+        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+        <span>Products ({{ stats.total_products }})</span>
+      </a>
+      <a href="{% url 'dashboard:categories' %}" class="pb-3 border-b-2 border-transparent text-neutral-500 hover:text-neutral-800 hover:border-neutral-300 flex items-center space-x-2 transition-colors">
+        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
+        <span>Categories ({{ stats.total_categories }})</span>
+      </a>
+      <a href="{% url 'dashboard:brands' %}" class="pb-3 border-b-2 border-transparent text-neutral-500 hover:text-neutral-800 hover:border-neutral-300 flex items-center space-x-2 transition-colors">
+        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+        <span>Brands ({{ stats.total_brands }})</span>
+      </a>
+      <a href="{% url 'dashboard:options' %}" class="pb-3 border-b-2 border-transparent text-neutral-500 hover:text-neutral-800 hover:border-neutral-300 flex items-center space-x-2 transition-colors">
+        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>
+        <span>Option Groups</span>
+      </a>
+    </nav>
+  </div>
+
+  <!-- KPI Summary Cards Grid -->
+  <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+    <div class="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm relative overflow-hidden">
+      <span class="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Total Products</span>
+      <p class="text-2xl font-black text-neutral-900 mt-1.5">{{ stats.total_products|default:"0" }}</p>
+      <p class="text-[11px] text-neutral-400 mt-1">{{ stats.total_variants|default:"0" }} SKUs configured</p>
+    </div>
+    <div class="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm relative overflow-hidden">
+      <span class="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Published Active</span>
+      <p class="text-2xl font-black text-emerald-600 mt-1.5">{{ stats.active_products|default:"0" }}</p>
+      <p class="text-[11px] text-neutral-400 mt-1">Live in store catalog</p>
+    </div>
+    <div class="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm relative overflow-hidden">
+      <span class="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Low Stock Alerts</span>
+      <p class="text-2xl font-black {% if stats.low_stock_count > 0 %}text-amber-600{% else %}text-neutral-900{% endif %} mt-1.5">{{ stats.low_stock_count|default:"0" }}</p>
+      <p class="text-[11px] text-neutral-400 mt-1">At or below threshold</p>
+    </div>
+    <div class="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm relative overflow-hidden">
+      <span class="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Out of Stock</span>
+      <p class="text-2xl font-black {% if stats.out_of_stock_count > 0 %}text-rose-600{% else %}text-neutral-900{% endif %} mt-1.5">{{ stats.out_of_stock_count|default:"0" }}</p>
+      <p class="text-[11px] text-neutral-400 mt-1">Zero inventory units</p>
+    </div>
+    <div class="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm relative overflow-hidden">
+      <span class="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Categories</span>
+      <p class="text-2xl font-black text-neutral-900 mt-1.5">{{ stats.total_categories|default:"0" }}</p>
+      <p class="text-[11px] text-neutral-400 mt-1">Collections & hierarchies</p>
+    </div>
+    <div class="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm relative overflow-hidden">
+      <span class="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Brand Houses</span>
+      <p class="text-2xl font-black text-neutral-900 mt-1.5">{{ stats.total_brands|default:"0" }}</p>
+      <p class="text-[11px] text-neutral-400 mt-1">Ateliers & makers</p>
+    </div>
+  </div>
+
+  <!-- Search & Multi-dimensional Filter Controls -->
+  <div class="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm space-y-4">
+    <form method="get" action="{% url 'dashboard:products' %}" class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+      <div class="flex flex-wrap items-center gap-2">
+        <span class="text-xs font-semibold text-neutral-600 mr-1">Status:</span>
+        <a href="{% url 'dashboard:products' %}?status=all&category={{ category_filter }}&brand={{ brand_filter }}&visibility={{ visibility_filter }}&search={{ search_query }}" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors {% if status_filter == 'all' %}bg-neutral-900 text-white{% else %}bg-neutral-100 text-neutral-600 hover:bg-neutral-200{% endif %}">All</a>
+        <a href="{% url 'dashboard:products' %}?status=in_stock&category={{ category_filter }}&brand={{ brand_filter }}&visibility={{ visibility_filter }}&search={{ search_query }}" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors {% if status_filter == 'in_stock' %}bg-emerald-600 text-white{% else %}bg-emerald-50 text-emerald-800 hover:bg-emerald-100{% endif %}">In Stock</a>
+        <a href="{% url 'dashboard:products' %}?status=low_stock&category={{ category_filter }}&brand={{ brand_filter }}&visibility={{ visibility_filter }}&search={{ search_query }}" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors {% if status_filter == 'low_stock' %}bg-amber-600 text-white{% else %}bg-amber-50 text-amber-800 hover:bg-amber-100{% endif %}">Low Stock</a>
+        <a href="{% url 'dashboard:products' %}?status=out_of_stock&category={{ category_filter }}&brand={{ brand_filter }}&visibility={{ visibility_filter }}&search={{ search_query }}" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors {% if status_filter == 'out_of_stock' %}bg-rose-600 text-white{% else %}bg-rose-50 text-rose-800 hover:bg-rose-100{% endif %}">Out of Stock</a>
+
+        <span class="text-neutral-300 mx-1">|</span>
+
+        <!-- Category Dropdown Filter -->
+        <select name="category" onchange="this.form.submit()" class="rounded-lg border border-neutral-300 bg-white py-1.5 px-3 text-xs font-medium text-neutral-700 shadow-sm focus:border-amber-600 focus:outline-none focus:ring-1 focus:ring-amber-600">
+          <option value="all" {% if category_filter == 'all' %}selected{% endif %}>All Categories</option>
+          {% for cat in categories %}
+          <option value="{{ cat.slug }}" {% if category_filter == cat.slug %}selected{% endif %}>{{ cat.name }}</option>
+          {% endfor %}
+        </select>
+
+        <!-- Brand Dropdown Filter -->
+        <select name="brand" onchange="this.form.submit()" class="rounded-lg border border-neutral-300 bg-white py-1.5 px-3 text-xs font-medium text-neutral-700 shadow-sm focus:border-amber-600 focus:outline-none focus:ring-1 focus:ring-amber-600">
+          <option value="all" {% if brand_filter == 'all' %}selected{% endif %}>All Brands</option>
+          {% for b in brands %}
+          <option value="{{ b.slug }}" {% if brand_filter == b.slug %}selected{% endif %}>{{ b.name }}</option>
+          {% endfor %}
+        </select>
+
+        <!-- Visibility Dropdown Filter -->
+        <select name="visibility" onchange="this.form.submit()" class="rounded-lg border border-neutral-300 bg-white py-1.5 px-3 text-xs font-medium text-neutral-700 shadow-sm focus:border-amber-600 focus:outline-none focus:ring-1 focus:ring-amber-600">
+          <option value="all" {% if visibility_filter == 'all' %}selected{% endif %}>All Visibility</option>
+          <option value="active" {% if visibility_filter == 'active' %}selected{% endif %}>Published Only</option>
+          <option value="draft" {% if visibility_filter == 'draft' %}selected{% endif %}>Draft / Inactive</option>
+        </select>
+      </div>
+
+      <div class="flex items-center space-x-2">
+        <div class="relative w-full sm:w-64">
+          <input type="text" name="search" value="{{ search_query }}" placeholder="Search name, slug, SKU..." class="w-full pl-8 pr-3 py-1.5 rounded-lg border border-neutral-300 text-xs focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
+          <svg class="h-4 w-4 text-neutral-400 absolute left-2.5 top-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+        </div>
+        <button type="submit" class="px-3.5 py-1.5 bg-neutral-900 text-white text-xs font-semibold rounded-lg hover:bg-neutral-800 transition-colors shadow-sm">Filter</button>
+        {% if search_query or status_filter != 'all' or category_filter != 'all' or brand_filter != 'all' or visibility_filter != 'all' %}
+          <a href="{% url 'dashboard:products' %}" class="px-2.5 py-1.5 bg-neutral-100 text-neutral-600 text-xs font-semibold rounded-lg hover:bg-neutral-200 transition-colors">Reset</a>
+        {% endif %}
+      </div>
+    </form>
+  </div>
+
+  <!-- Products Table -->
+  <div class="rounded-xl border border-neutral-200 bg-white shadow-sm overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full text-left border-collapse">
+        <thead>
+          <tr class="border-b border-neutral-200 bg-neutral-50 text-neutral-500 text-[11px] font-bold uppercase tracking-wider">
+            <th class="py-3 px-4 w-12">Image</th>
+            <th class="py-3 px-4">Garment Title & Slug</th>
+            <th class="py-3 px-4">Category / Brand</th>
+            <th class="py-3 px-4 text-right">Price / Compare</th>
+            <th class="py-3 px-4 text-center">Variants</th>
+            <th class="py-3 px-4 text-center">Inventory Stock</th>
+            <th class="py-3 px-4 text-center">Status</th>
+            <th class="py-3 px-4 text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-neutral-100 text-xs">
+          {% for product in products %}
+          <tr class="hover:bg-neutral-50/75 transition-colors">
+            <!-- Thumbnail Image -->
+            <td class="py-3 px-4">
+              <div class="h-10 w-10 rounded-lg overflow-hidden bg-neutral-100 border border-neutral-200 flex items-center justify-center shrink-0">
+                {% with primary_img=product.get_primary_image %}
+                  {% if primary_img and primary_img.image %}
+                    <img src="{{ primary_img.image.url }}" alt="{{ product.name }}" class="h-full w-full object-cover">
+                  {% else %}
+                    <svg class="h-5 w-5 text-neutral-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                  {% endif %}
+                {% endwith %}
+              </div>
+            </td>
+
+            <!-- Garment Title & Slug -->
+            <td class="py-3 px-4">
+              <a href="{% url 'dashboard:product_edit' product.pk %}" class="font-bold text-neutral-900 hover:text-amber-600 block line-clamp-1 transition-colors">
+                {{ product.name }}
+              </a>
+              <span class="text-[11px] text-neutral-400 font-mono block mt-0.5">/products/{{ product.slug }}/</span>
+            </td>
+
+            <!-- Category / Brand -->
+            <td class="py-3 px-4">
+              <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-neutral-100 text-neutral-800">
+                {{ product.category.name }}
+              </span>
+              {% if product.brand %}
+                <span class="block text-[11px] text-neutral-500 mt-1 font-medium">{{ product.brand.name }}</span>
+              {% else %}
+                <span class="block text-[11px] text-neutral-400 mt-1 italic">No Brand Assigned</span>
+              {% endif %}
+            </td>
+
+            <!-- Price -->
+            <td class="py-3 px-4 text-right">
+              <span class="font-bold text-neutral-900 block">${{ product.price|floatformat:2 }}</span>
+              {% if product.compare_at_price and product.compare_at_price > product.price %}
+                <span class="text-[10px] text-neutral-400 line-through block mt-0.5">${{ product.compare_at_price|floatformat:2 }}</span>
+              {% endif %}
+            </td>
+
+            <!-- Variants Count -->
+            <td class="py-3 px-4 text-center">
+              {% with variants_count=product.variants.count %}
+                {% if variants_count > 0 %}
+                  <a href="{% url 'dashboard:product_edit' product.pk %}#variants" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors">
+                    {{ variants_count }} SKU{% if variants_count > 1 %}s{% endif %}
+                  </a>
+                {% else %}
+                  <span class="text-neutral-400 text-[11px]">Base Only</span>
+                {% endif %}
+              {% endwith %}
+            </td>
+
+            <!-- Inventory Stock -->
+            <td class="py-3 px-4 text-center">
+              {% if product.stock_quantity == 0 %}
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-rose-100 text-rose-800">
+                  0 — Out of Stock
+                </span>
+              {% elif product.low_stock %}
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800">
+                  {{ product.stock_quantity }} — Low Stock
+                </span>
+              {% else %}
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800">
+                  {{ product.stock_quantity }} in Stock
+                </span>
+              {% endif %}
+            </td>
+
+            <!-- Status Badges -->
+            <td class="py-3 px-4 text-center">
+              <div class="flex items-center justify-center gap-1.5 flex-wrap">
+                {% if product.is_active %}
+                  <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    Published
+                  </span>
+                {% else %}
+                  <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-neutral-100 text-neutral-600 border border-neutral-300">
+                    Draft
+                  </span>
+                {% endif %}
+
+                {% if product.is_featured %}
+                  <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200" title="Featured on Storefront">
+                    ★
+                  </span>
+                {% endif %}
+              </div>
+            </td>
+
+            <!-- Actions -->
+            <td class="py-3 px-4 text-right">
+              <div class="flex items-center justify-end space-x-2">
+                {% if can_change_product %}
+                <form method="post" action="{% url 'dashboard:product_toggle_active' product.pk %}" class="inline">
+                  {% csrf_token %}
+                  <button type="submit" class="p-1 rounded text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 transition-colors" title="Toggle Published Status">
+                    {% if product.is_active %}
+                      <svg class="h-4 w-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                    {% else %}
+                      <svg class="h-4 w-4 text-neutral-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/></svg>
+                    {% endif %}
+                  </button>
+                </form>
+
+                <a href="{% url 'dashboard:product_edit' product.pk %}" class="px-2.5 py-1.5 rounded-lg border border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-50 font-semibold transition-colors shadow-2xs">
+                  Edit
+                </a>
+                {% endif %}
+
+                {% if can_delete_product %}
+                <form method="post" action="{% url 'dashboard:product_delete' product.pk %}" onsubmit="return confirm('Permanently delete {{ product.name|escapejs }}? This action cannot be undone.');" class="inline">
+                  {% csrf_token %}
+                  <button type="submit" class="p-1.5 rounded-lg text-neutral-400 hover:text-rose-600 hover:bg-rose-50 transition-colors" title="Delete Product">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                  </button>
+                </form>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="8" class="py-12 text-center text-neutral-500">
+              <svg class="mx-auto h-12 w-12 text-neutral-300 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+              <p class="text-base font-semibold text-neutral-700">No products matching criteria</p>
+              <p class="text-xs text-neutral-400 mt-1">Try resetting your filter parameters or adding a new product.</p>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination Controls -->
+    {% if is_paginated %}
+    <div class="border-t border-neutral-200 bg-neutral-50 px-4 py-3 flex items-center justify-between text-xs">
+      <span class="text-neutral-500">Showing page <strong class="text-neutral-900">{{ page_obj.number }}</strong> of <strong class="text-neutral-900">{{ page_obj.paginator.num_pages }}</strong></span>
+      <div class="flex space-x-2">
+        {% if page_obj.has_previous %}
+        <a href="?page={{ page_obj.previous_page_number }}&status={{ status_filter }}&category={{ category_filter }}&brand={{ brand_filter }}&visibility={{ visibility_filter }}&search={{ search_query }}" class="px-3 py-1 rounded bg-white border border-neutral-300 font-semibold text-neutral-700 hover:bg-neutral-100 transition-colors">Previous</a>
+        {% endif %}
+        {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}&status={{ status_filter }}&category={{ category_filter }}&brand={{ brand_filter }}&visibility={{ visibility_filter }}&search={{ search_query }}" class="px-3 py-1 rounded bg-white border border-neutral-300 font-semibold text-neutral-700 hover:bg-neutral-100 transition-colors">Next</a>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

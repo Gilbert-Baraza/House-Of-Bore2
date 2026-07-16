@@ -41,7 +41,10 @@ DEFAULT_ROLES_CONFIG = {
         "description": "Comprehensive operational control over orders, products, inventory, and customers.",
         "permissions": [
             "orders.view_order", "orders.change_order",
-            "products.view_product", "products.add_product", "products.change_product",
+            "products.view_product", "products.add_product", "products.change_product", "products.delete_product",
+            "products.view_category", "products.add_category", "products.change_category", "products.delete_category",
+            "products.view_brand", "products.add_brand", "products.change_brand", "products.delete_brand",
+            "products.view_productvariant", "products.add_productvariant", "products.change_productvariant", "products.delete_productvariant",
             "inventory.view_inventory", "inventory.change_inventory",
             "inventory.adjust_inventory", "inventory.approve_adjustments",
             "inventory.process_returns", "inventory.view_valuation", "inventory.manage_reorder_levels",

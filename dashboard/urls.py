@@ -22,6 +22,31 @@ from .order_views import (
     StaffOrdersListView,
     StaffOrderTransitionView,
 )
+from .product_views import (
+    StaffBrandCreateView,
+    StaffBrandDeleteView,
+    StaffBrandUpdateView,
+    StaffBrandsListView,
+    StaffCategoriesListView,
+    StaffCategoryCreateView,
+    StaffCategoryDeleteView,
+    StaffCategoryUpdateView,
+    StaffOptionCreateView,
+    StaffOptionValueCreateView,
+    StaffOptionValueDeleteView,
+    StaffOptionsListView,
+    StaffProductCreateView,
+    StaffProductDeleteView,
+    StaffProductImageDeleteView,
+    StaffProductImageMakePrimaryView,
+    StaffProductImageUploadView,
+    StaffProductsListView,
+    StaffProductToggleActiveView,
+    StaffProductUpdateView,
+    StaffProductVariantCreateView,
+    StaffProductVariantDeleteView,
+    StaffProductVariantUpdateView,
+)
 from .views import (
     AccessDeniedView,
     DashboardHomeView,
@@ -30,7 +55,6 @@ from .views import (
     StaffContactUpdateView,
     StaffMarketingView,
     StaffPreferencesUpdateView,
-    StaffProductsView,
     StaffProfileView,
     StaffReportsView,
     StaffUsersView,
@@ -65,8 +89,42 @@ urlpatterns = [
     path("crm/", include("crm.urls")),
     path("customers/", CustomerListView.as_view(), name="customers"),
 
+    # Catalog & Product Management
+    path("products/", StaffProductsListView.as_view(), name="products"),
+    path("products/add/", StaffProductCreateView.as_view(), name="product_add"),
+    path("products/<int:pk>/edit/", StaffProductUpdateView.as_view(), name="product_edit"),
+    path("products/<int:pk>/delete/", StaffProductDeleteView.as_view(), name="product_delete"),
+    path("products/<int:pk>/toggle-active/", StaffProductToggleActiveView.as_view(), name="product_toggle_active"),
+
+    # Product Gallery Images
+    path("products/<int:pk>/images/add/", StaffProductImageUploadView.as_view(), name="product_image_add"),
+    path("products/images/<int:image_id>/delete/", StaffProductImageDeleteView.as_view(), name="product_image_delete"),
+    path("products/images/<int:image_id>/make-primary/", StaffProductImageMakePrimaryView.as_view(), name="product_image_make_primary"),
+
+    # Product Variants & SKUs
+    path("products/<int:pk>/variants/add/", StaffProductVariantCreateView.as_view(), name="product_variant_add"),
+    path("products/variants/<int:variant_id>/edit/", StaffProductVariantUpdateView.as_view(), name="product_variant_edit"),
+    path("products/variants/<int:variant_id>/delete/", StaffProductVariantDeleteView.as_view(), name="product_variant_delete"),
+
+    # Categories Management
+    path("products/categories/", StaffCategoriesListView.as_view(), name="categories"),
+    path("products/categories/add/", StaffCategoryCreateView.as_view(), name="category_add"),
+    path("products/categories/<int:pk>/edit/", StaffCategoryUpdateView.as_view(), name="category_edit"),
+    path("products/categories/<int:pk>/delete/", StaffCategoryDeleteView.as_view(), name="category_delete"),
+
+    # Brands Management
+    path("products/brands/", StaffBrandsListView.as_view(), name="brands"),
+    path("products/brands/add/", StaffBrandCreateView.as_view(), name="brand_add"),
+    path("products/brands/<int:pk>/edit/", StaffBrandUpdateView.as_view(), name="brand_edit"),
+    path("products/brands/<int:pk>/delete/", StaffBrandDeleteView.as_view(), name="brand_delete"),
+
+    # Product Options & Values Management
+    path("products/options/", StaffOptionsListView.as_view(), name="options"),
+    path("products/options/add/", StaffOptionCreateView.as_view(), name="option_add"),
+    path("products/options/<int:option_id>/values/add/", StaffOptionValueCreateView.as_view(), name="option_value_add"),
+    path("products/options/values/<int:value_id>/delete/", StaffOptionValueDeleteView.as_view(), name="option_value_delete"),
+
     # Staff Navigation Section Placeholders
-    path("products/", StaffProductsView.as_view(), name="products"),
     path("marketing/", StaffMarketingView.as_view(), name="marketing"),
     path("reports/", StaffReportsView.as_view(), name="reports"),
     path("settings/", include("settings.urls", namespace="settings")),

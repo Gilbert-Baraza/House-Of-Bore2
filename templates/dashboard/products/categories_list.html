@@ -1,0 +1,153 @@
+{% extends 'dashboard/base.html' %}
+{% block title %}Category Hierarchy — House of Bore Admin{% endblock %}
+{% block section_title %}Category Hierarchy Management{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <!-- Header Bar -->
+  <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div>
+      <h2 class="text-xl font-bold text-neutral-900 tracking-tight">Catalog Taxonomy & Collections</h2>
+      <p class="text-xs text-neutral-500 mt-0.5">Organize hierarchical categories, subcategory nesting, and promotional banners.</p>
+    </div>
+    <div class="flex items-center space-x-3">
+      <a href="{% url 'dashboard:products' %}" class="inline-flex items-center space-x-1.5 px-3.5 py-2 rounded-lg border border-neutral-300 bg-white hover:bg-neutral-50 text-xs font-semibold text-neutral-700 transition-colors shadow-2xs">
+        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+        <span>Back to Products</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Subsystem Navigation Tabs -->
+  <div class="border-b border-neutral-200 bg-white px-4 pt-2 rounded-t-xl shadow-sm">
+    <nav class="flex space-x-6 -mb-px text-xs font-semibold" aria-label="Catalog Subsystems">
+      <a href="{% url 'dashboard:products' %}" class="pb-3 border-b-2 border-transparent text-neutral-500 hover:text-neutral-800 flex items-center space-x-2 transition-colors">
+        <span>Products</span>
+      </a>
+      <a href="{% url 'dashboard:categories' %}" class="pb-3 border-b-2 border-amber-600 text-amber-600 flex items-center space-x-2">
+        <span>Categories</span>
+      </a>
+      <a href="{% url 'dashboard:brands' %}" class="pb-3 border-b-2 border-transparent text-neutral-500 hover:text-neutral-800 flex items-center space-x-2 transition-colors">
+        <span>Brands</span>
+      </a>
+      <a href="{% url 'dashboard:options' %}" class="pb-3 border-b-2 border-transparent text-neutral-500 hover:text-neutral-800 flex items-center space-x-2 transition-colors">
+        <span>Option Groups</span>
+      </a>
+    </nav>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Left Column: Categories Table -->
+    <div class="lg:col-span-2 rounded-xl border border-neutral-200 bg-white shadow-sm overflow-hidden">
+      <div class="p-4 border-b border-neutral-200 bg-neutral-50 flex items-center justify-between">
+        <h3 class="text-xs font-bold uppercase tracking-wider text-neutral-700">Category Directory</h3>
+        <span class="text-xs text-neutral-500 font-semibold">{{ categories.count }} total categories</span>
+      </div>
+      
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse text-xs">
+          <thead>
+            <tr class="border-b border-neutral-200 bg-neutral-50/50 text-neutral-500 text-[11px] font-bold uppercase tracking-wider">
+              <th class="py-3 px-4">Category Name</th>
+              <th class="py-3 px-4">Parent Category</th>
+              <th class="py-3 px-4 text-center">Active Products</th>
+              <th class="py-3 px-4 text-center">Status</th>
+              <th class="py-3 px-4 text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-neutral-100">
+            {% for cat in categories %}
+            <tr class="hover:bg-neutral-50 transition-colors">
+              <td class="py-3 px-4 font-bold text-neutral-900">
+                <a href="{% url 'dashboard:category_edit' cat.pk %}" class="hover:text-amber-600 transition-colors">
+                  {{ cat.name }}
+                </a>
+                <span class="block text-[10px] text-neutral-400 font-mono">/category/{{ cat.slug }}/</span>
+              </td>
+              <td class="py-3 px-4 text-neutral-600">
+                {% if cat.parent %}
+                  <span class="px-2 py-0.5 rounded bg-neutral-100 font-semibold">{{ cat.parent.name }}</span>
+                {% else %}
+                  <span class="text-neutral-400 italic">Root Collection</span>
+                {% endif %}
+              </td>
+              <td class="py-3 px-4 text-center font-bold text-neutral-800">
+                {{ cat.product_count }}
+              </td>
+              <td class="py-3 px-4 text-center">
+                {% if cat.is_active %}
+                  <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700">Active</span>
+                {% else %}
+                  <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-neutral-100 text-neutral-500">Hidden</span>
+                {% endif %}
+              </td>
+              <td class="py-3 px-4 text-right">
+                <div class="flex items-center justify-end space-x-2">
+                  <a href="{% url 'dashboard:category_edit' cat.pk %}" class="px-2.5 py-1 rounded border border-neutral-300 bg-white font-semibold text-neutral-700 hover:bg-neutral-50 transition-colors">Edit</a>
+                  {% if can_delete_category %}
+                  <form method="post" action="{% url 'dashboard:category_delete' cat.pk %}" onsubmit="return confirm('Permanently delete {{ cat.name|escapejs }}?');" class="inline">
+                    {% csrf_token %}
+                    <button type="submit" class="px-2 py-1 rounded text-rose-600 hover:bg-rose-50 font-semibold transition-colors">Delete</button>
+                  </form>
+                  {% endif %}
+                </div>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="5" class="py-8 text-center text-neutral-400 italic">No categories created yet.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Right Column: Add Category Form -->
+    <div class="rounded-xl border border-neutral-200 bg-white p-6 shadow-sm space-y-4 h-fit">
+      <h3 class="text-sm font-bold text-neutral-900 uppercase tracking-wider border-b border-neutral-100 pb-3">Create New Category</h3>
+      
+      <form method="post" action="{% url 'dashboard:category_add' %}" enctype="multipart/form-data" class="space-y-4 text-xs">
+        {% csrf_token %}
+        
+        <div class="space-y-1.5">
+          <label class="block font-bold text-neutral-700">Category Name <span class="text-rose-600">*</span></label>
+          {{ form.name }}
+        </div>
+
+        <div class="space-y-1.5">
+          <label class="block font-bold text-neutral-700">URL Slug</label>
+          {{ form.slug }}
+          <p class="text-[10px] text-neutral-400">Leave blank to auto-generate.</p>
+        </div>
+
+        <div class="space-y-1.5">
+          <label class="block font-bold text-neutral-700">Parent Category</label>
+          {{ form.parent }}
+          <p class="text-[10px] text-neutral-400">Select parent for nested hierarchies.</p>
+        </div>
+
+        <div class="space-y-1.5">
+          <label class="block font-bold text-neutral-700">Description</label>
+          {{ form.description }}
+        </div>
+
+        <div class="grid grid-cols-2 gap-4 pt-2">
+          <div class="space-y-1.5">
+            <label class="block font-bold text-neutral-700">Sort Order</label>
+            {{ form.sort_order }}
+          </div>
+          <div class="flex items-center space-x-2 pt-6">
+            {{ form.is_active }}
+            <label class="font-bold text-neutral-800">Active & Visible</label>
+          </div>
+        </div>
+
+        <button type="submit" class="w-full py-2.5 rounded-lg bg-neutral-900 hover:bg-neutral-800 text-white font-bold transition-colors shadow-sm mt-4">
+          Add Category
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -153,6 +153,13 @@ AUTHENTICATION_BACKENDS = [
     "django.contrib.auth.backends.ModelBackend",
 ]
 
+# Phase 5.8.6 — Automated Default Superuser Creation for Non-Interactive Deployments
+# Reads administrator credentials exclusively from environment variables (e.g., Render Free).
+# Safe defaults (empty strings) prevent startup errors when variables are absent.
+DJANGO_SUPERUSER_USERNAME = config("DJANGO_SUPERUSER_USERNAME", default="")
+DJANGO_SUPERUSER_EMAIL = config("DJANGO_SUPERUSER_EMAIL", default="")
+DJANGO_SUPERUSER_PASSWORD = config("DJANGO_SUPERUSER_PASSWORD", default="")
+
 
 # ─── Password Validation ────────────────────────────────────────────────────────
 AUTH_PASSWORD_VALIDATORS = [

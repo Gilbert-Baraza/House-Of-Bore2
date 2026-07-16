@@ -1490,3 +1490,134 @@ class TestAuthenticationThrottling(TestCase):
         self.assertTrue(any("Too many unsuccessful attempts" in str(m) for m in messages_list))
 
 
+# ─── Phase 5.8.6 — Management Command Tests ────────────────────────────────────
+from io import StringIO
+from django.core.management import call_command
+from django.core.management.base import CommandError
+from django.test import override_settings
+
+
+class CreateDefaultAdminCommandTests(TestCase):
+    """
+    Unit tests for the `create_default_admin` custom management command.
+    Verifies Phase 5.8.6 requirements: idempotency, environment validation,
+    custom User model compatibility, and secure error handling.
+    """
+
+    @override_settings(
+        DJANGO_SUPERUSER_USERNAME="admin",
+        DJANGO_SUPERUSER_EMAIL="admin@houseofbore.com",
+        DJANGO_SUPERUSER_PASSWORD="SuperPassword123!",
+    )
+    def test_create_default_admin_success(self):
+        """Test successful creation of a new default administrator."""
+        out = StringIO()
+        err = StringIO()
+
+        with unittest.mock.patch("accounts.management.commands.create_default_admin.config", return_value=""):
+            call_command("create_default_admin", stdout=out, stderr=err)
+
+        User = get_user_model()
+        self.assertTrue(User.objects.filter(email="admin@houseofbore.com").exists())
+        self.assertIn("SUCCESS: Default administrator created successfully.", out.getvalue())
+
+    @override_settings(
+        DJANGO_SUPERUSER_USERNAME="admin",
+        DJANGO_SUPERUSER_EMAIL="admin@houseofbore.com",
+        DJANGO_SUPERUSER_PASSWORD="SuperPassword123!",
+    )
+    def test_create_default_admin_existing_user(self):
+        """Test idempotency when the default administrator already exists."""
+        User = get_user_model()
+        User.objects.create_superuser(email="admin@houseofbore.com", password="ExistingPassword")
+        initial_count = User.objects.count()
+
+        out = StringIO()
+        err = StringIO()
+        with unittest.mock.patch("accounts.management.commands.create_default_admin.config", return_value=""):
+            call_command("create_default_admin", stdout=out, stderr=err)
+
+        self.assertEqual(User.objects.count(), initial_count)
+        self.assertIn("WARNING: Default administrator already exists.", out.getvalue())
+        self.assertIn("Skipping creation.", out.getvalue())
+
+    @override_settings(
+        DJANGO_SUPERUSER_USERNAME="",
+        DJANGO_SUPERUSER_EMAIL="",
+        DJANGO_SUPERUSER_PASSWORD="",
+    )
+    def test_create_default_admin_missing_env_vars(self):
+        """Test graceful exit with warning when required variables are missing."""
+        out = StringIO()
+        err = StringIO()
+
+        with unittest.mock.patch("accounts.management.commands.create_default_admin.config", return_value=""):
+            call_command("create_default_admin", stdout=out, stderr=err)
+
+        User = get_user_model()
+        self.assertEqual(User.objects.count(), 0)
+        self.assertIn("WARNING: Missing environment variables.", out.getvalue())
+        self.assertIn("Skipping default admin creation.", out.getvalue())
+
+    @override_settings(
+        DJANGO_SUPERUSER_USERNAME="admin",
+        DJANGO_SUPERUSER_EMAIL="customadmin@houseofbore.com",
+        DJANGO_SUPERUSER_PASSWORD="SecureCustomUserPass99!",
+    )
+    def test_create_default_admin_custom_user_model(self):
+        """Test compatibility with House-Of-Bore custom User model (`email` identifier, `username = None`)."""
+        out = StringIO()
+        with unittest.mock.patch("accounts.management.commands.create_default_admin.config", return_value=""):
+            call_command("create_default_admin", stdout=out)
+
+        User = get_user_model()
+        user = User.objects.get(email="customadmin@houseofbore.com")
+        self.assertTrue(user.is_superuser)
+        self.assertTrue(user.is_staff)
+        self.assertTrue(user.check_password("SecureCustomUserPass99!"))
+        self.assertIsNone(getattr(user, "username", None))
+
+    @override_settings(
+        DJANGO_SUPERUSER_USERNAME="admin",
+        DJANGO_SUPERUSER_EMAIL="idempotent@houseofbore.com",
+        DJANGO_SUPERUSER_PASSWORD="IdempotencyTestPass1!",
+    )
+    def test_create_default_admin_idempotency_repeated_runs(self):
+        """Test that repeated execution of the command is strictly idempotent."""
+        out1 = StringIO()
+        out2 = StringIO()
+
+        with unittest.mock.patch("accounts.management.commands.create_default_admin.config", return_value=""):
+            call_command("create_default_admin", stdout=out1)
+            first_user = get_user_model().objects.get(email="idempotent@houseofbore.com")
+            first_hash = first_user.password
+
+            call_command("create_default_admin", stdout=out2)
+            second_user = get_user_model().objects.get(email="idempotent@houseofbore.com")
+
+        self.assertIn("SUCCESS: Default administrator created successfully.", out1.getvalue())
+        self.assertIn("WARNING: Default administrator already exists.", out2.getvalue())
+        self.assertEqual(first_user.pk, second_user.pk)
+        self.assertEqual(first_hash, second_user.password)
+
+    @override_settings(
+        DJANGO_SUPERUSER_USERNAME="admin",
+        DJANGO_SUPERUSER_EMAIL="failtest@houseofbore.com",
+        DJANGO_SUPERUSER_PASSWORD="SuperSecretPasswordNotToBeLogged!",
+    )
+    def test_create_default_admin_graceful_failure(self):
+        """Test error handling when database or creation failure occurs without exposing secrets."""
+        err = StringIO()
+        User = get_user_model()
+
+        with unittest.mock.patch("accounts.management.commands.create_default_admin.config", return_value=""):
+            with unittest.mock.patch.object(User._default_manager, "create_superuser", side_effect=Exception("Simulated Database Error")):
+                with self.assertRaises(CommandError) as cm:
+                    call_command("create_default_admin", stderr=err)
+
+        self.assertIn("Failed to create default administrator.", str(cm.exception))
+        self.assertIn("ERROR: An unexpected exception occurred during default superuser creation", err.getvalue())
+        self.assertNotIn("SuperSecretPasswordNotToBeLogged!", err.getvalue())
+
+
+

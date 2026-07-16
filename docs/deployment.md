@@ -231,3 +231,50 @@ sudo systemctl restart house-of-bore-celery.service
 # 5. Verify readiness endpoint confirms recovery
 curl -f http://localhost/health/ready/ || echo "CRITICAL: Rollback verification failed!"
 ```
+
+---
+
+## 6. Automated PaaS Deployments & Non-Interactive Superuser Creation (Phase 5.8.6)
+
+### 6.1 Why `create_default_admin` is Required on Render Free
+When deploying to automated Platform-as-a-Service (PaaS) providers such as **Render Free**, **Heroku**, or **Railway**, deployments run non-interactively via build pipelines (`build.sh` or Docker builds). During these automated pipelines:
+- Interactive shell sessions are not available (`stdin` is closed or non-blocking).
+- Standard commands like `python manage.py createsuperuser` prompt for terminal input (`username`, `email`, `password`), which causes automated builds to hang indefinitely or fail with EOF exceptions.
+- Requiring manual post-deployment SSH/console intervention introduces friction and leaves freshly deployed production instances temporarily without administrative access.
+
+To solve this cleanly, Phase 5.8.6 introduces the custom management command:
+```bash
+python manage.py create_default_admin
+```
+
+### 6.2 Required Environment Variables & Configuration
+The command reads administrator credentials exclusively from environment variables defined via `python-decouple` in `config/settings/base.py`. Set the following variables in your platform's Environment Variables / Secrets dashboard (e.g., Render Dashboard → Environment):
+
+| Environment Variable | Required | Description | Example |
+| :--- | :--- | :--- | :--- |
+| `DJANGO_SUPERUSER_USERNAME` | Yes | Administrator username / display identifier | `admin` |
+| `DJANGO_SUPERUSER_EMAIL` | Yes | Administrator email address (primary login identifier) | `admin@house-of-bore.com` |
+| `DJANGO_SUPERUSER_PASSWORD` | Yes | Strong, unique administrator password | `Secure_Prod_P@ss_2026!` |
+
+### 6.3 Command Behaviour & Idempotency
+1. **Validation & Safe Skip**: Before attempting creation, `create_default_admin` checks whether `DJANGO_SUPERUSER_USERNAME`, `DJANGO_SUPERUSER_EMAIL`, and `DJANGO_SUPERUSER_PASSWORD` are all configured and non-empty. If any variable is missing, the command outputs a clear warning (`Skipping default admin creation. Required environment variables are missing.`) and exits gracefully (`status code 0`). **Deployments never fail if these variables are absent.**
+2. **Idempotency**: The command checks the database (`get_user_model().objects.filter(...)`) by `email` (House-Of-Bore's `USERNAME_FIELD`) and `username` before creating any records. If an administrator matching the configured identifier already exists, it outputs (`Default administrator already exists. Skipping creation.`) and terminates cleanly. Running the command on every deployment will **never create duplicate accounts or modify existing credentials**.
+3. **Custom User Model Compatibility**: The command dynamically inspects `get_user_model()` (`accounts.User`), sets `email` and `password`, clears `username = None`, and populates any required fields without hardcoding project-specific schema details.
+
+### 6.4 Build Script Integration (`build.sh`)
+The automated build pipeline (`build.sh`) executes `create_default_admin` right after running database migrations:
+```bash
+#!/usr/bin/env bash
+set -o errexit
+
+pip install -r requirements/production.txt
+python manage.py collectstatic --noinput
+python manage.py migrate
+python manage.py create_default_admin
+```
+
+### 6.5 Security & Operational Best Practices
+- **Zero Credential Commitment**: **Never** commit `.env` files or hardcode administrator credentials in source code, build scripts, or Dockerfiles.
+- **Environment-Only Storage**: Secrets must exist solely within encrypted platform environment configurations (e.g., Render Environment tab).
+- **Sanitized Tracebacks & Logs**: `create_default_admin` catches unexpected exceptions and logs sanitized diagnostics using Django's management styling (`self.style.ERROR(...)`), ensuring that `DJANGO_SUPERUSER_PASSWORD` and other secrets are **never printed or exposed in tracebacks**.
+
