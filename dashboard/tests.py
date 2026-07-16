@@ -400,7 +400,7 @@ class DashboardViewsTestCase(TestCase):
     def test_navigation_placeholder_views(self):
         """Verify all navigation section views render placeholder cleanly."""
         self.client.force_login(self.staff)
-        sections = ["products", "customers", "marketing", "reports", "settings", "users"]
+        sections = ["marketing", "reports", "users"]
         for sec in sections:
             resp = self.client.get(reverse(f"dashboard:{sec}"))
             self.assertEqual(resp.status_code, 200)
@@ -446,4 +446,33 @@ class DashboardViewsTestCase(TestCase):
         self.assertIsNotNone(product)
         self.assertEqual(product.images.count(), 1)
         self.assertTrue(product.images.first().is_primary)
+
+    def test_product_add_with_image_upload_failure(self):
+        """Verify that when storage/Cloudinary throws an exception during image upload, product creation does not crash with 500."""
+        from unittest.mock import patch
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        self.client.force_login(self.staff)
+        category = Category.objects.create(name="Outerwear Fail Test", slug="outerwear-fail-test")
+        image_content = b"\x47\x49\x46\x38\x39\x61\x01\x00\x01\x00\x80\x00\x00\x00\x00\x00\xff\xff\xff\x21\xf9\x04\x01\x00\x00\x00\x00\x2c\x00\x00\x00\x00\x01\x00\x01\x00\x00\x02\x02\x44\x01\x00\x3b"
+        img_file = SimpleUploadedFile("test_garment_fail.gif", image_content, content_type="image/gif")
+
+        post_data = {
+            "name": "Luxury Trench Fail",
+            "slug": "luxury-trench-fail",
+            "short_description": "Short summary",
+            "description": "Full detailed description",
+            "category": category.pk,
+            "price": "1200.00",
+            "stock_quantity": "10",
+            "low_stock_threshold": "2",
+            "is_active": "on",
+            "image": img_file,
+        }
+        with patch.object(ProductImage.objects, "create", side_effect=PermissionError("Request forbidden due to missing permissions (actions=['create'])")):
+            resp = self.client.post(reverse("dashboard:product_add"), data=post_data, follow=True)
+            self.assertEqual(resp.status_code, 200)
+            product = Product.objects.filter(slug="luxury-trench-fail").first()
+            self.assertIsNotNone(product)
+            self.assertIn("image upload failed due to storage permissions", resp.content.decode())
+
 

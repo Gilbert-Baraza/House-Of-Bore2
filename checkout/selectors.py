@@ -20,11 +20,14 @@ def get_checkout(request: HttpRequest) -> Optional[CheckoutSession]:
     cart = get_cart(request)
     if not cart:
         return None
-    return CheckoutSession.objects.filter(
+    checkout = CheckoutSession.objects.filter(
         cart=cart, status="active"
     ).select_related(
         "shipping_address", "billing_address", "cart"
     ).first()
+    if checkout and checkout.is_expired:
+        return None
+    return checkout
 
 
 def get_shipping_address(checkout_session: Optional[CheckoutSession]) -> Optional[CheckoutAddress]:

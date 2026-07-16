@@ -23,11 +23,18 @@ from orders.selectors import get_customer_orders, get_order, get_order_items
 from orders.services import create_order
 
 
-class OrderCreateView(View):
+class OrderCreateView(LoginRequiredMixin, View):
     """
     POST-only endpoint triggered when the customer submits the final checkout review screen.
-    Converts the validated checkout session into a permanent Order.
+    Converts the validated checkout session into a permanent Order. Requires authentication.
     """
+    def dispatch(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
+        if not request.user.is_authenticated:
+            messages.info(request, "Please sign in or create an account to place your order.")
+            from django.contrib.auth.views import redirect_to_login
+            return redirect_to_login(request.get_full_path(), login_url=reverse("accounts:login"))
+        return super().dispatch(request, *args, **kwargs)
+
     def post(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
         checkout_session = get_checkout(request)
         if not checkout_session or not checkout_session.cart or checkout_session.cart.item_count() == 0:

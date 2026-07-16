@@ -31,7 +31,7 @@ def get_or_create_checkout(request: HttpRequest) -> CheckoutSession:
         # Create empty cart to associate
         cart = get_or_create_cart(request)
 
-    checkout_session = CheckoutSession.objects.filter(cart=cart, status="active").first()
+    checkout_session = CheckoutSession.objects.filter(cart=cart).first()
 
     if not checkout_session:
         user = request.user if (hasattr(request, "user") and request.user.is_authenticated) else None
@@ -49,10 +49,21 @@ def get_or_create_checkout(request: HttpRequest) -> CheckoutSession:
             status="active"
         )
     else:
+        updated = False
+        if checkout_session.status != "active" or checkout_session.is_expired:
+            if checkout_session.status != "active":
+                checkout_session.notes = ""
+            checkout_session.status = "active"
+            checkout_session.expires_at = timezone.now() + datetime.timedelta(hours=24)
+            updated = True
+
         # Update user binding if they authenticated since creation
-        if hasattr(request, "user") and request.user.is_authenticated and not checkout_session.user:
+        if hasattr(request, "user") and request.user.is_authenticated and checkout_session.user != request.user:
             checkout_session.user = request.user
             checkout_session.session_key = None
+            updated = True
+
+        if updated:
             checkout_session.save()
 
     return checkout_session
@@ -111,6 +122,9 @@ def validate_checkout(checkout_session: CheckoutSession) -> None:
     Ensures the cart is not empty, products are active, stock is not exceeded,
     and required addresses are snapshotted.
     """
+    if checkout_session.status != "active" or checkout_session.is_expired:
+        raise ValidationError("Your checkout session has expired or is no longer active.")
+
     # 1. Cart Empty Check
     cart = checkout_session.cart
     if not cart or cart.item_count() == 0:

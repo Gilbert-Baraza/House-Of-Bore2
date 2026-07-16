@@ -111,6 +111,34 @@ class CheckoutModelAndServiceTests(CheckoutBaseTestCase):
         self.assertIsNone(checkout.user)
         self.assertEqual(checkout.session_key, req.session.session_key)
 
+    def test_get_or_create_checkout_reuse_completed_or_expired_session(self):
+        req = self.factory.get("/")
+        req = self.add_session_to_request(req)
+        req.user = self.user
+
+        # Create checkout session and mark as completed (simulating previous order)
+        checkout1 = get_or_create_checkout(req)
+        checkout1.status = "completed"
+        checkout1.notes = "Leave at front door"
+        checkout1.save()
+
+        # Calling get_or_create_checkout on same cart should reactivate session without raising IntegrityError
+        checkout2 = get_or_create_checkout(req)
+        self.assertEqual(checkout2.pk, checkout1.pk)
+        self.assertEqual(checkout2.status, "active")
+        self.assertEqual(checkout2.notes, "")
+        self.assertFalse(checkout2.is_expired)
+
+        # Force expiry on active session and verify reactivation
+        checkout2.expires_at = timezone.now() - datetime.timedelta(hours=1)
+        checkout2.save()
+        self.assertTrue(checkout2.is_expired)
+
+        checkout3 = get_or_create_checkout(req)
+        self.assertEqual(checkout3.pk, checkout2.pk)
+        self.assertEqual(checkout3.status, "active")
+        self.assertFalse(checkout3.is_expired)
+
     def test_update_shipping_address(self):
         req = self.factory.get("/")
         req = self.add_session_to_request(req)
@@ -233,7 +261,14 @@ class CheckoutViewsAndFormsTests(CheckoutBaseTestCase):
     """
     Integration tests covering Forms, URLs routing, and Class-Based Views.
     """
+    def test_start_checkout_unauthenticated_redirects(self):
+        """Verify unauthenticated guest user trying to access checkout is redirected to login."""
+        res = self.client.get(reverse("checkout:start"))
+        self.assertRedirects(res, f"{reverse('accounts:login')}?next={reverse('checkout:start')}")
+
     def test_start_checkout_with_empty_cart_redirects(self):
+        """Verify authenticated user with empty cart is redirected to shopping bag detail."""
+        self.client.force_login(self.user)
         res = self.client.get(reverse("checkout:start"))
         self.assertRedirects(res, reverse("cart:cart_detail"))
 

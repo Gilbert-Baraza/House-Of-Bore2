@@ -149,7 +149,11 @@ class StaffProductCreateView(DashboardPermissionRequiredMixin, CreateView):
             object_id=self.object.pk,
             ip_address=self.request.META.get("REMOTE_ADDR"),
         )
-        messages.success(self.request, f"Product '{self.object.name}' successfully created! Now you can upload images and configure variants.")
+        image_error = getattr(form, "image_upload_error", None) or getattr(self.object, "_image_upload_error", None)
+        if image_error:
+            messages.warning(self.request, f"Product '{self.object.name}' was created successfully, but image upload failed due to storage permissions or configuration: {image_error}")
+        else:
+            messages.success(self.request, f"Product '{self.object.name}' successfully created! Now you can upload images and configure variants.")
         return redirect("dashboard:product_edit", pk=self.object.pk)
 
 
@@ -185,7 +189,11 @@ class StaffProductUpdateView(DashboardPermissionRequiredMixin, UpdateView):
             object_id=self.object.pk,
             ip_address=self.request.META.get("REMOTE_ADDR"),
         )
-        messages.success(self.request, f"Product '{self.object.name}' successfully updated.")
+        image_error = getattr(form, "image_upload_error", None) or getattr(self.object, "_image_upload_error", None)
+        if image_error:
+            messages.warning(self.request, f"Product '{self.object.name}' updated successfully, but image upload failed due to storage permissions or configuration: {image_error}")
+        else:
+            messages.success(self.request, f"Product '{self.object.name}' successfully updated.")
         return redirect("dashboard:product_edit", pk=self.object.pk)
 
 
@@ -254,16 +262,22 @@ class StaffProductImageUploadView(DashboardPermissionRequiredMixin, View):
         if form.is_valid():
             img = form.save(commit=False)
             img.product = product
-            img.save()
-            create_audit_log(
-                user=request.user,
-                action="UPLOAD_PRODUCT_IMAGE",
-                description=f"Uploaded image ID {img.pk} for product '{product.name}'.",
-                model_name="ProductImage",
-                object_id=img.pk,
-                ip_address=request.META.get("REMOTE_ADDR"),
-            )
-            messages.success(request, "Image added to product gallery.")
+            try:
+                img.save()
+                create_audit_log(
+                    user=request.user,
+                    action="UPLOAD_PRODUCT_IMAGE",
+                    description=f"Uploaded image ID {img.pk} for product '{product.name}'.",
+                    model_name="ProductImage",
+                    object_id=img.pk,
+                    ip_address=request.META.get("REMOTE_ADDR"),
+                )
+                messages.success(request, "Image added to product gallery.")
+            except Exception as e:
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error("Failed to upload gallery image for product '%s': %s", product.name, e, exc_info=True)
+                messages.error(request, f"Image upload failed due to storage permissions or configuration: {e}")
         else:
             for error in form.errors.values():
                 messages.error(request, f"Image upload error: {error}")

@@ -168,18 +168,7 @@ class StaffProductForm(forms.ModelForm):
         image_file = self.cleaned_data.get("image")
         if image_file:
             if commit:
-                is_primary = not product.images.filter(is_primary=True).exists()
-                ProductImage.objects.create(
-                    product=product,
-                    image=image_file,
-                    alt_text=product.name,
-                    is_primary=is_primary,
-                )
-            else:
-                old_save_m2m = getattr(self, "save_m2m", lambda: None)
-                def new_save_m2m():
-                    if callable(old_save_m2m):
-                        old_save_m2m()
+                try:
                     is_primary = not product.images.filter(is_primary=True).exists()
                     ProductImage.objects.create(
                         product=product,
@@ -187,6 +176,31 @@ class StaffProductForm(forms.ModelForm):
                         alt_text=product.name,
                         is_primary=is_primary,
                     )
+                except Exception as e:
+                    import logging
+                    logger = logging.getLogger(__name__)
+                    logger.error("Failed to upload primary image for product '%s': %s", product.name, e, exc_info=True)
+                    self.image_upload_error = str(e)
+                    product._image_upload_error = str(e)
+            else:
+                old_save_m2m = getattr(self, "save_m2m", lambda: None)
+                def new_save_m2m():
+                    if callable(old_save_m2m):
+                        old_save_m2m()
+                    try:
+                        is_primary = not product.images.filter(is_primary=True).exists()
+                        ProductImage.objects.create(
+                            product=product,
+                            image=image_file,
+                            alt_text=product.name,
+                            is_primary=is_primary,
+                        )
+                    except Exception as e:
+                        import logging
+                        logger = logging.getLogger(__name__)
+                        logger.error("Failed to upload primary image for product '%s' in save_m2m: %s", product.name, e, exc_info=True)
+                        self.image_upload_error = str(e)
+                        product._image_upload_error = str(e)
                 self.save_m2m = new_save_m2m
         return product
 

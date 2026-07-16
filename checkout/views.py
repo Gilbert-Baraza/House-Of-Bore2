@@ -11,9 +11,11 @@ and redirection validation.
 
 from typing import Any, Dict
 from django.contrib import messages
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import ValidationError
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import redirect, render
+from django.urls import reverse
 from django.views import View
 from django.views.generic import TemplateView
 
@@ -31,12 +33,16 @@ from accounts.models import Address
 from accounts.services import create_address
 
 
-class CheckoutBaseView(View):
+class CheckoutBaseView(LoginRequiredMixin, View):
     """
-    Base validation view ensuring checkout can only be accessed with a non-empty cart.
-    Redirects back to shopping bag detail with a flash warning if prerequisites fail.
+    Base validation view ensuring checkout can only be accessed by authenticated users with a non-empty cart.
+    Redirects to login if unauthenticated, or back to shopping bag detail with a flash warning if cart is empty.
     """
     def dispatch(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
+        if not request.user.is_authenticated:
+            messages.info(request, "Please sign in or create an account to proceed to checkout.")
+            from django.contrib.auth.views import redirect_to_login
+            return redirect_to_login(request.get_full_path(), login_url=reverse("accounts:login"))
         cart = get_cart(request)
         if not cart or cart.item_count() == 0:
             messages.warning(request, "Your shopping bag is empty. Please add pieces to proceed to checkout.")

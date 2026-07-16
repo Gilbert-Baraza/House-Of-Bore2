@@ -269,6 +269,11 @@ class OrderViewsAndPaginationTests(OrderBaseTestCase):
     """
     Verify UI endpoints: OrderCreateView POST, OrderListView pagination, and OrderDetailView rendering.
     """
+    def test_order_create_view_unauthenticated_redirects(self):
+        """Verify unauthenticated user cannot POST to create order and is redirected to login."""
+        res = self.client.post(reverse("orders:create"), {"customer_notes": "Leave at porch"})
+        self.assertRedirects(res, f"{reverse('accounts:login')}?next={reverse('orders:create')}")
+
     def test_order_create_view_post_creates_order_and_redirects(self):
         self.client.force_login(self.user)
         req = self.factory.get("/")
