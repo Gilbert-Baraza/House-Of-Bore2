@@ -26,7 +26,7 @@ from django.views.generic import View
 
 from accounts.models import UserProfile
 from orders.models import Order, OrderStatus, PaymentStatus
-from products.models import Category, Product
+from products.models import Category, Product, ProductImage
 from .models import AuditLog, StaffPreference, StaffRole
 from .permissions import (
     DashboardPermissionRequiredMixin,
@@ -420,3 +420,30 @@ class DashboardViewsTestCase(TestCase):
         resp = self.client.get(reverse("dashboard:access_denied"))
         self.assertEqual(resp.status_code, 403)
         self.assertTemplateUsed(resp, "dashboard/access_denied.html")
+
+    def test_product_add_with_image(self):
+        """Verify adding a product with an initial image field creates the Product and ProductImage."""
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        self.client.force_login(self.staff)
+        category = Category.objects.create(name="Outerwear Test", slug="outerwear-test")
+        image_content = b"\x47\x49\x46\x38\x39\x61\x01\x00\x01\x00\x80\x00\x00\x00\x00\x00\xff\xff\xff\x21\xf9\x04\x01\x00\x00\x00\x00\x2c\x00\x00\x00\x00\x01\x00\x01\x00\x00\x02\x02\x44\x01\x00\x3b"
+        img_file = SimpleUploadedFile("test_garment.gif", image_content, content_type="image/gif")
+
+        post_data = {
+            "name": "New Luxury Trench",
+            "slug": "new-luxury-trench",
+            "short_description": "Short summary",
+            "description": "Full detailed description",
+            "category": category.pk,
+            "price": "1200.00",
+            "stock_quantity": "10",
+            "low_stock_threshold": "2",
+            "is_active": "on",
+            "image": img_file,
+        }
+        resp = self.client.post(reverse("dashboard:product_add"), data=post_data)
+        product = Product.objects.filter(slug="new-luxury-trench").first()
+        self.assertIsNotNone(product)
+        self.assertEqual(product.images.count(), 1)
+        self.assertTrue(product.images.first().is_primary)
+

@@ -25,6 +25,16 @@ class StaffProductForm(forms.ModelForm):
     """
     Comprehensive administrative form for creating and editing catalog products.
     """
+    image = forms.ImageField(
+        required=False,
+        help_text="Upload an initial primary image for this garment.",
+        widget=forms.FileInput(
+            attrs={
+                "class": "block w-full text-sm text-neutral-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-neutral-900 file:text-white hover:file:bg-neutral-800 cursor-pointer",
+            }
+        ),
+    )
+
     class Meta:
         model = Product
         fields = [
@@ -152,6 +162,33 @@ class StaffProductForm(forms.ModelForm):
                 "Compare-at price must be strictly greater than the selling price."
             )
         return cleaned_data
+
+    def save(self, commit=True):
+        product = super().save(commit=commit)
+        image_file = self.cleaned_data.get("image")
+        if image_file:
+            if commit:
+                is_primary = not product.images.filter(is_primary=True).exists()
+                ProductImage.objects.create(
+                    product=product,
+                    image=image_file,
+                    alt_text=product.name,
+                    is_primary=is_primary,
+                )
+            else:
+                old_save_m2m = getattr(self, "save_m2m", lambda: None)
+                def new_save_m2m():
+                    if callable(old_save_m2m):
+                        old_save_m2m()
+                    is_primary = not product.images.filter(is_primary=True).exists()
+                    ProductImage.objects.create(
+                        product=product,
+                        image=image_file,
+                        alt_text=product.name,
+                        is_primary=is_primary,
+                    )
+                self.save_m2m = new_save_m2m
+        return product
 
 
 class StaffProductImageForm(forms.ModelForm):
@@ -345,11 +382,6 @@ class StaffCategoryForm(forms.ModelForm):
                     "placeholder": "Editorial category story...",
                 }
             ),
-            "image": forms.FileInput(
-                attrs={
-                    "class": "block w-full text-sm text-neutral-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-neutral-900 file:text-white hover:file:bg-neutral-800 cursor-pointer",
-                }
-            ),
             "is_active": forms.CheckboxInput(
                 attrs={"class": "h-4 w-4 rounded border-neutral-300 text-amber-600 focus:ring-amber-600"}
             ),
@@ -366,7 +398,6 @@ class StaffCategoryForm(forms.ModelForm):
         self.fields["slug"].required = False
         self.fields["parent"].required = False
         self.fields["description"].required = False
-        self.fields["image"].required = False
 
         # Prevent a category from being its own parent on edit
         qs = Category.objects.order_by("sort_order", "name")
